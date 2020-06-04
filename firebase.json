@@ -1,0 +1,26 @@
+{
+  "hosting": [
+    {
+      "site": "pn-wiki",
+      "public": "public",
+      "rewrites": [
+        {
+          "source": "/widget",
+          "destination": "/widget.html"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "tw/**",
+        "scripts/**",
+        "static/**",
+        "**/node_modules/**"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "pn-wiki",
+  "version": "1.0.0",
+  "description": "",
+  "author": "neumark.peter@gmail.com",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "npx tiddlywiki tw --listen host=127.0.0.1 port=8080",
+    "debug": "node --inspect-brk ./tw/tiddlywiki-debug tw --listen host=127.0.0.1 port=8080",
+    "login": "npx firebase login",
+    "clean": "rm -rf public/*",
+    "build": "./scripts/build.sh",
+    "rebuild": "npm run clean && npm run build",
+    "deploy": "npx firebase deploy",
+    "serve-static": "npx http-server -p 8081"
+  },
+  "devDependencies": {
+    "firebase-admin": "^8.3.0",
+    "firebase-tools": "^7.2.2",
+    "http-server": "^0.11.1"
+  },
+  "dependencies": {
+    "tiddlywiki": "^5.1.22"
+  }
+}

@@ -1,0 +1,8 @@
+setup:
+
+npm install
+./node_modules/.bin/firebase use --add peterneumark-com
+
+deploy:
+
+./scripts/deploy.sh
