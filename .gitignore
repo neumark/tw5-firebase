@@ -3,4 +3,4 @@ tw/tiddlers/_system/StoryList.tid
 node_modules/
 package-lock.json
 .firebase
-build/*.html
+public/index.html
