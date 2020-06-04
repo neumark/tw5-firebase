@@ -23,7 +23,7 @@ function FirestoreClientAdaptor(options) {
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
-    this.tokenPromise = null;
+    this.user = JSON.parse($tw.wiki.getTiddler('$:/tmp/user').fields.text);
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -34,9 +34,7 @@ FirestoreClientAdaptor.prototype.setLoggerSaveBuffer = function(loggerForSaving)
 	this.logger.setSaveBuffer(loggerForSaving);
 };
 
-FirestoreClientAdaptor.prototype.isReady = function() {
-	return this.hasStatus;
-};
+FirestoreClientAdaptor.prototype.isReady = () => true;
 
 FirestoreClientAdaptor.prototype.getHost = function() {
 	var text = this.wiki.getTiddlerText(CONFIG_HOST_TIDDLER,DEFAULT_HOST_TIDDLER),
@@ -62,63 +60,29 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return tiddler.fields.revision;
 };
 
-FirestoreClientAdaptor.prototype.withTokenPromise = function(fn) {
-    if (this.tokenPromise === null) {
-        this.tokenPromise = firebase.auth().currentUser.getIdToken();
-    }
-    return this.tokenPromise.then(fn);
+FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
+    return new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
+        url: this.host + endpoint,
+        callback: (error, ...args) => error ? reject(error) : resolve(...args),
+        headers: {
+            'Authorization': 'Bearer ' + this.user.token,
+			"Content-type": "application/json"
+        }
+    })));
 };
 
 /*
 Get the current status of the TiddlyWeb connection
 */
 FirestoreClientAdaptor.prototype.getStatus = function(callback) {
-	// Get status
-	var self = this;
-    this.withTokenPromise(token => $tw.utils.httpRequest({
-        url: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/hello",
-		type: "GET",
-		headers: {
-            'Authorization': 'Bearer ' + token
-			//"Content-type": "application/json"
-		},
-        callback: (...args) => console.log(args)}));
-	this.logger.log("Getting status");
-    this.withTokenPromise((function (token) {
-        $tw.utils.httpRequest({
-            url: this.host + "status",
-            headers: {
-                'Authorization': 'Bearer ' + token
-            },
-            callback: function(err,data) {
-                self.hasStatus = true;
-                if(err) {
-                    return callback(err);
-                }
-                // Decode the status JSON
-                var json = null;
-                try {
-                    json = JSON.parse(data);
-                } catch (e) {
-                }
-                if(json) {
-                    self.logger.log("Status:",data);
-                    // Record the recipe
-                    if(json.space) {
-                        self.recipe = json.space.recipe;
-                    }
-                    // Check if we're logged in
-                    self.isLoggedIn = json.username !== "GUEST";
-                    self.isReadOnly = !!json["read_only"];
-                    self.isAnonymous = !!json.anonymous;
-                }
-                // Invoke the callback if present
-                if(callback) {
-                    callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
-                }
-            }
-        });
-    }).bind(this));
+    // hijack getstatus to read all tiddlers
+    this.request("all").then(() => {
+        // Get status
+        if (callback) {
+            // callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
+            callback(null,true,this.user.email,false,false);
+        }
+    });
 };
 
 /*
@@ -129,25 +93,9 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	if(this.isReadOnly) {
 		return callback(null);
 	}
-	$tw.utils.httpRequest({
-		url: this.host + "recipes/" + encodeURIComponent(this.recipe) + "/tiddlers/" + encodeURIComponent(tiddler.fields.title),
+	return this.request("save", {
 		type: "PUT",
-		headers: {
-			"Content-type": "application/json"
-		},
-		data: this.convertTiddlerToTiddlyWebFormat(tiddler),
-		callback: function(err,data,request) {
-			if(err) {
-				return callback(err);
-			}
-			// Save the details of the new revision of the tiddler
-			var etagInfo = self.parseEtag(request.getResponseHeader("Etag"));
-			// Invoke the callback
-			callback(null,{
-				bag: etagInfo.bag
-			}, etagInfo.revision);
-		}
-	});
+		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then((adaptorInfo, revision) => callback(null, adaptorInfo, revision));
 };
 
 /*
@@ -241,10 +189,6 @@ FirestoreClientAdaptor.prototype.convertTiddlerFromTiddlyWebFormat = function(ti
 			result[title] = tiddlerFields[title];
 		}
 	});
-	// Make sure the revision is expressed as a string
-	if(typeof result.revision === "number") {
-		result.revision = result.revision.toString();
-	}
 	// Some unholy freaking of content types
 	if(result.type === "text/javascript") {
 		result.type = "application/javascript";
@@ -254,35 +198,6 @@ FirestoreClientAdaptor.prototype.convertTiddlerFromTiddlyWebFormat = function(ti
 	return result;
 };
 
-/*
-Split a TiddlyWeb Etag into its constituent parts. For example:
-
-```
-"system-images_public/unsyncedIcon/946151:9f11c278ccde3a3149f339f4a1db80dd4369fc04"
-```
-
-Note that the value includes the opening and closing double quotes.
-
-The parts are:
-
-```
-<bag>/<title>/<revision>:<hash>
-```
-*/
-FirestoreClientAdaptor.prototype.parseEtag = function(etag) {
-	var firstSlash = etag.indexOf("/"),
-		lastSlash = etag.lastIndexOf("/"),
-		colon = etag.lastIndexOf(":");
-	if(firstSlash === -1 || lastSlash === -1 || colon === -1) {
-		return null;
-	} else {
-		return {
-			bag: decodeURIComponent(etag.substring(1,firstSlash)),
-			title: decodeURIComponent(etag.substring(firstSlash + 1,lastSlash)),
-			revision: etag.substring(lastSlash + 1,colon)
-		};
-	}
-};
 
 if($tw.browser && document.location.protocol.substr(0,4) === "http" ) {
 	exports.adaptorClass = FirestoreClientAdaptor;

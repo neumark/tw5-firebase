@@ -125,21 +125,15 @@ var signInWithPopup = function() {
  * @param {!firebase.User} user
  */
 var handleSignedInUser = function(user) {
-  // start tiddlywiki
-    // $tw.preloadTiddlerArray([{
-    title: "$:/config/SaveWikiButton/Template",
-    text: "$:/core/save/all-external-js"
-}]);
-
-  window.$tw.boot.boot();
-  console.log("user", user);
+  
   document.getElementById('user-signed-in').style.display = 'block';
   document.getElementById('user-signed-out').style.display = 'none';
   document.getElementById('name').textContent = user.displayName;
   document.getElementById('email').textContent = user.email;
   document.getElementById('phone').textContent = user.phoneNumber;
+  let photoURL  
   if (user.photoURL) {
-    var photoURL = user.photoURL;
+    photoURL = user.photoURL;
     // Append size to the photo URL for Google hosted images to avoid requesting
     // the image with its original resolution (using more bandwidth than needed)
     // when it is going to be presented in smaller size.
@@ -153,6 +147,21 @@ var handleSignedInUser = function(user) {
   } else {
     document.getElementById('photo').style.display = 'none';
   }
+  // start tiddlywiki
+  user.getIdToken().then(token => {
+      const data = {
+          token,
+          uid: user.uid,
+          photo: photoURL,
+          name: user.displayName,
+          email: user.email
+      };
+      window.$tw.preloadTiddlerArray([{
+        title: "$:/tmp/user",
+        text: JSON.stringify(data)
+      }]);
+      window.$tw.boot.boot();
+  });
 };
 
 
