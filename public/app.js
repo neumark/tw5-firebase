@@ -126,7 +126,13 @@ var signInWithPopup = function() {
  */
 var handleSignedInUser = function(user) {
   // start tiddlywiki
-  window.$tw.boot.boot()
+    // $tw.preloadTiddlerArray([{
+    title: "$:/config/SaveWikiButton/Template",
+    text: "$:/core/save/all-external-js"
+}]);
+
+  window.$tw.boot.boot();
+  console.log("user", user);
   document.getElementById('user-signed-in').style.display = 'block';
   document.getElementById('user-signed-out').style.display = 'none';
   document.getElementById('name').textContent = user.displayName;

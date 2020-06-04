@@ -23,11 +23,12 @@ function FirestoreClientAdaptor(options) {
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
+    this.tokenPromise = null;
 }
 
-FirestoreClientAdaptor.prototype.name = "tiddlyweb";
+FirestoreClientAdaptor.prototype.name = "firestore";
 
-FirestoreClientAdaptor.prototype.supportsLazyLoading = true;
+FirestoreClientAdaptor.prototype.supportsLazyLoading = false;
 
 FirestoreClientAdaptor.prototype.setLoggerSaveBuffer = function(loggerForSaving) {
 	this.logger.setSaveBuffer(loggerForSaving);
@@ -61,130 +62,63 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return tiddler.fields.revision;
 };
 
+FirestoreClientAdaptor.prototype.withTokenPromise = function(fn) {
+    if (this.tokenPromise === null) {
+        this.tokenPromise = firebase.auth().currentUser.getIdToken();
+    }
+    return this.tokenPromise.then(fn);
+};
+
 /*
 Get the current status of the TiddlyWeb connection
 */
 FirestoreClientAdaptor.prototype.getStatus = function(callback) {
 	// Get status
 	var self = this;
-    firebase.auth().currentUser.getIdToken().then(function(token) {
-        $tw.utils.httpRequest({
-        url: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app",
+    this.withTokenPromise(token => $tw.utils.httpRequest({
+        url: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/hello",
 		type: "GET",
 		headers: {
             'Authorization': 'Bearer ' + token
 			//"Content-type": "application/json"
 		},
-        callback: (...args) => console.log(args)});
-    });
+        callback: (...args) => console.log(args)}));
 	this.logger.log("Getting status");
-	$tw.utils.httpRequest({
-		url: this.host + "status",
-		callback: function(err,data) {
-			self.hasStatus = true;
-			if(err) {
-				return callback(err);
-			}
-			// Decode the status JSON
-			var json = null;
-			try {
-				json = JSON.parse(data);
-			} catch (e) {
-			}
-			if(json) {
-				self.logger.log("Status:",data);
-				// Record the recipe
-				if(json.space) {
-					self.recipe = json.space.recipe;
-				}
-				// Check if we're logged in
-				self.isLoggedIn = json.username !== "GUEST";
-				self.isReadOnly = !!json["read_only"];
-				self.isAnonymous = !!json.anonymous;
-			}
-			// Invoke the callback if present
-			if(callback) {
-				callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
-			}
-		}
-	});
-};
-
-/*
-Attempt to login and invoke the callback(err)
-*/
-FirestoreClientAdaptor.prototype.login = function(username,password,callback) {
-	var options = {
-		url: this.host + "challenge/tiddlywebplugins.tiddlyspace.cookie_form",
-		type: "POST",
-		data: {
-			user: username,
-			password: password,
-			tiddlyweb_redirect: "/status" // workaround to marginalize automatic subsequent GET
-		},
-		callback: function(err) {
-			callback(err);
-		}
-	};
-	this.logger.log("Logging in:",options);
-	$tw.utils.httpRequest(options);
-};
-
-/*
-*/
-FirestoreClientAdaptor.prototype.logout = function(callback) {
-	var options = {
-		url: this.host + "logout",
-		type: "POST",
-		data: {
-			csrf_token: this.getCsrfToken(),
-			tiddlyweb_redirect: "/status" // workaround to marginalize automatic subsequent GET
-		},
-		callback: function(err,data) {
-			callback(err);
-		}
-	};
-	this.logger.log("Logging out:",options);
-	$tw.utils.httpRequest(options);
-};
-
-/*
-Retrieve the CSRF token from its cookie
-*/
-FirestoreClientAdaptor.prototype.getCsrfToken = function() {
-	var regex = /^(?:.*; )?csrf_token=([^(;|$)]*)(?:;|$)/,
-		match = regex.exec(document.cookie),
-		csrf = null;
-	if (match && (match.length === 2)) {
-		csrf = match[1];
-	}
-	return csrf;
-};
-
-/*
-Get an array of skinny tiddler fields from the server
-*/
-FirestoreClientAdaptor.prototype.getSkinnyTiddlers = function(callback) {
-	var self = this;
-	$tw.utils.httpRequest({
-		url: this.host + "recipes/" + this.recipe + "/tiddlers.json",
-		data: {
-			filter: "[all[tiddlers]] -[[$:/isEncrypted]] -[prefix[$:/temp/]] -[prefix[$:/status/]]"
-		},
-		callback: function(err,data) {
-			// Check for errors
-			if(err) {
-				return callback(err);
-			}
-			// Process the tiddlers to make sure the revision is a string
-			var tiddlers = JSON.parse(data);
-			for(var t=0; t<tiddlers.length; t++) {
-				tiddlers[t] = self.convertTiddlerFromTiddlyWebFormat(tiddlers[t]);
-			}
-			// Invoke the callback with the skinny tiddlers
-			callback(null,tiddlers);
-		}
-	});
+    this.withTokenPromise((function (token) {
+        $tw.utils.httpRequest({
+            url: this.host + "status",
+            headers: {
+                'Authorization': 'Bearer ' + token
+            },
+            callback: function(err,data) {
+                self.hasStatus = true;
+                if(err) {
+                    return callback(err);
+                }
+                // Decode the status JSON
+                var json = null;
+                try {
+                    json = JSON.parse(data);
+                } catch (e) {
+                }
+                if(json) {
+                    self.logger.log("Status:",data);
+                    // Record the recipe
+                    if(json.space) {
+                        self.recipe = json.space.recipe;
+                    }
+                    // Check if we're logged in
+                    self.isLoggedIn = json.username !== "GUEST";
+                    self.isReadOnly = !!json["read_only"];
+                    self.isAnonymous = !!json.anonymous;
+                }
+                // Invoke the callback if present
+                if(callback) {
+                    callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
+                }
+            }
+        });
+    }).bind(this));
 };
 
 /*
