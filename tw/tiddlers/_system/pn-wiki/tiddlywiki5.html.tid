@@ -1,4 +1,4 @@
-title: $:/core/templates/tiddlywiki5.html
+title: $:/pn-wiki/tiddlywiki5.html
 
 <$set name="saveTiddlerAndShadowsFilter" filter="[subfilter<saveTiddlerFilter>] [subfilter<saveTiddlerFilter>plugintiddlers[]]">
 `<!doctype html>
@@ -48,6 +48,7 @@ title: $:/core/templates/tiddlywiki5.html
 <!--~~ Boot kernel prologue ~~-->
 <div id="bootKernelPrefix" style="display:none;">
 `{{ $:/boot/bootprefix.js ||$:/core/templates/javascript-tiddler}}`
+`{{ $:/pn-wiki/suppressboot.js ||$:/core/templates/javascript-tiddler}}`
 </div>
 <!--~~ Boot kernel ~~-->
 <div id="bootKernel" style="display:none;">
@@ -55,5 +56,7 @@ title: $:/core/templates/tiddlywiki5.html
 </div>
 <!--~~ Raw markup for the bottom of the body section ~~-->
 `{{{ [enlist<saveTiddlerAndShadowsFilter>tag[$:/tags/RawMarkupWikified/BottomBody]] ||$:/core/templates/raw-static-tiddler}}}`
+<!-- transclude tiddler to do stuff prior to tw5 boot -->
+`{{$:/pn-wiki/preboot.template.html}}`
 </body>
 </html>`

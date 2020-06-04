@@ -1,0 +1,4 @@
+title: $:/pn-wiki/preboot.template.html
+
+`<button onclick="$tw.boot.boot();">start tiddlywiki</button>`
+
