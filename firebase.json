@@ -11,6 +11,10 @@
         {
           "source": "**",
           "destination": "/index.html"
+        },
+        {
+          "source":"**",
+          "function":"app"
         }
       ],
       "ignore": [
