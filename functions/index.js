@@ -131,11 +131,19 @@ app.use(validateFirebaseIdToken);
 
 app.get('/:wiki/all', (req, res) => {
   const mapTiddler = req.query.revisionOnly ? ({title, revision}) => ({title, revision}) : fixDates;
-  // TODO: add per-user tiddlers also
   return getAllTiddlers(req.params.wiki, req.user).then(
       tiddlers => res.send(JSON.stringify(tiddlers.map(mapTiddler))),
       error => sendErr(res, err));
 });
+
+app.delete('/:wiki/:title', async (req, res) => {
+    const dbTitle = tiddlerTitleToFirebaseDocName(req.params.title);
+    const wiki = req.params.wiki;
+    const globalSnapshot = await globalTiddlersCollection(wiki).doc(dbTitle).delete();
+    const perUserSnapshot = await peruserTiddlersCollection(wiki, req.user.email).doc(dbTitle).delete();
+    res.status(200).json({});
+});
+
 
 const prepareTiddler = (user, doc, tiddler) => {
       const timestamp = new Date();

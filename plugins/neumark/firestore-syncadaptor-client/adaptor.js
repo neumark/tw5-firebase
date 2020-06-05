@@ -157,17 +157,11 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 		return callback(null);
 	}
 	// Issue HTTP request to delete the tiddler
-	$tw.utils.httpRequest({
-		url: this.host + "bags/" + encodeURIComponent(bag) + "/tiddlers/" + encodeURIComponent(title),
-		type: "DELETE",
-		callback: function(err,data,request) {
-			if(err) {
-				return callback(err);
-			}
-			// Invoke the callback
-			callback(null);
-		}
-	});
+    return this.request(
+        encodeURIComponent(title),
+        {type: "DELETE"}).then(
+            () => callback(null),
+            callback);
 };
 
 /*
