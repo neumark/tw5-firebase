@@ -94,18 +94,7 @@ const fixDates = tiddler => Object.assign({}, tiddler, {
       modified: stringifyDate(tiddler.modified.toDate())
 });
 
-const getTiddlersCollection = () => db.collection('wikis').doc('pn-wiki').collection('tiddlers');
-
-app.use(cors({origin: true}));
-app.use(validateFirebaseIdToken);
-app.get('/all', (req, res) => {
-  // add per-user tiddlers also
-  return getTiddlersCollection().get().then(snapshot => {
-            var result = [];
-            snapshot.forEach(doc => result.push(fixDates(doc.data())));
-            return result;
-  }).then(tiddlers => res.send(JSON.stringify(tiddlers)));
-});
+const globalTiddlersCollection = wikiName => db.collection('wikis').doc(wikiName).collection('tiddlers');
 
 // Should we include a device-specfic ID in the revision?
 const getRevision = (user, timestamp) => `${stringifyDate(timestamp)}:${user.email}`
@@ -120,8 +109,49 @@ class HTTPError extends Error {
 
 const HTTP_CONFLICT = 409;
 
-app.put('/save', (req, res) => {
-  const tiddler = req.body;
+const sendErr = (res, err) => res.status(err.statusCode || 500).json({message: err.message, stack: err.stack});
+
+app.use(cors({origin: true}));
+app.use(validateFirebaseIdToken);
+
+app.get('/:wiki/all', (req, res) => {
+  const mapTiddler = req.query.revisionOnly ? ({title, revision}) => ({title, revision}) : fixDates;
+  // TODO: add per-user tiddlers also
+  return globalTiddlersCollection(req.params.wiki).get().then(snapshot => {
+            var result = [];
+            snapshot.forEach(doc => result.push(mapTiddler(doc.data())));
+            return result;
+  }).then(tiddlers => res.send(JSON.stringify(tiddlers)));
+});
+
+const prepareTiddler = (user, doc, tiddler) => {
+      const timestamp = new Date();
+      const newRevision = getRevision(user, timestamp);
+      return Object.assign({}, tiddler, {
+            creator: doc.exists ? doc.data().creator : user.email,
+            modifier: user.email,
+            created: doc.exists ? doc.data().created : admin.firestore.Timestamp.fromDate(timestamp),
+            modified: admin.firestore.Timestamp.fromDate(timestamp),
+            revision: newRevision
+      });
+};
+
+const saveGlobalTiddler = (user, wiki, tiddler) => {
+  const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
+  const tiddlerRef = globalTiddlersCollection(wiki).doc(dbTitle);
+  return db.runTransaction(async t => {
+      const lastRevision = tiddler.revision;
+      const doc = await t.get(tiddlerRef)
+      if (doc.exists && doc.data().revision !== lastRevision) {
+        throw new HTTPError(`revision conflict: current is ${doc.data().revision}, received update to ${lastRevision}`, HTTP_CONFLICT);
+      }
+      const updatedTiddler = prepareTiddler(user, doc, tiddler);
+      await t.set(tiddlerRef, updatedTiddler);
+      return updatedTiddler.revision;
+  });
+}
+
+app.put('/:wiki/save', (req, res) => {
   // TODOs:
   // * ajv schema for tiddler
   // * override username, timestamp for tiddler
@@ -130,30 +160,13 @@ app.put('/save', (req, res) => {
   // * save per-user tiddlers in the 'peruser' collection (StoryList, drafts) - only latest version.
   // * save global tiddler to versions collection as well.
   // * return new revision of tiddler.
-  const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
-  const tiddlerRef = getTiddlersCollection().doc(dbTitle);
-  let transaction = db.runTransaction(async t => {
-      const lastRevision = tiddler.revision;
-      const doc = await t.get(tiddlerRef)
-      if (doc.exists && doc.data().revision !== lastRevision) {
-        throw new HTTPError(`revision conflict: current is ${doc.data().revision}, received update to ${lastRevision}`, HTTP_CONFLICT);
-      }
-      const timestamp = new Date();
-      const newRevision = getRevision(req.user, timestamp);
-      const updatedTiddler = Object.assign({}, tiddler, {
-            creator: doc.exists ? doc.data().creator : req.user.email,
-            modifier: req.user.email,
-            created: doc.exists ? doc.data().created : admin.firestore.Timestamp.fromDate(timestamp),
-            modified: admin.firestore.Timestamp.fromDate(timestamp),
-            revision: newRevision
-      });
-      delete updatedTiddler.lastRevision;
-      await t.set(tiddlerRef, updatedTiddler);
-      return newRevision;
-  }).then(revision => res.send(JSON.stringify({revision}))).catch(err => {
-    console.error('Transaction failure:', err);
-    throw err;
-  });
+
+  const wiki = req.params.wiki;
+  const tiddler = req.body;
+  const transaction = saveGlobalTiddler(req.user, wiki, tiddler)
+  return transaction.then(
+      revision => res.send(JSON.stringify({revision})),
+      err => sendErr(res, err));
 });
 
 // global error handler:

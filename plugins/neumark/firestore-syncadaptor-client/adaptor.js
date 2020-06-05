@@ -23,7 +23,7 @@ function FirestoreClientAdaptor(options) {
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
-    this.user = JSON.parse($tw.wiki.getTiddler('$:/tmp/user').fields.text);
+    this.user = JSON.parse($tw.wiki.getTiddler('$:/temp/user').fields.text);
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -60,10 +60,22 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return tiddler.fields.revision;
 };
 
+FirestoreClientAdaptor.prototype.getUpdatedTiddlers = function(_, callback) {
+    if (callback) {
+        this.request("all", {data: {revisionOnly: true}}).then(
+            tiddlerRevisions => {
+                console.log(tiddlerRevisions);
+                return callback(null, {modifications: [], deletions: []})
+            },
+            // on error
+            callback);
+    }
+};
+
 FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
     return new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
         url: this.host + endpoint,
-        callback: (error, ...args) => error ? reject(error) : resolve(...args),
+        callback: (error, data) => error ? reject(error) : resolve(JSON.parse(data)),
         headers: {
             'Authorization': 'Bearer ' + this.user.token,
 			"Content-type": "application/json"
@@ -76,13 +88,18 @@ Get the current status of the TiddlyWeb connection
 */
 FirestoreClientAdaptor.prototype.getStatus = function(callback) {
     // hijack getstatus to read all tiddlers
-    this.request("all").then(() => {
-        // Get status
-        if (callback) {
-            // callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
-            callback(null,true,this.user.email,false,false);
-        }
-    });
+    const doCallback = () => callback(null,true,this.user.email,false,false);
+    if (this.hasStatus) {
+        return doCallback();
+    }
+    this.hasStatus = true;
+    this.request("all").then(
+        tiddlers => {
+            tiddlers.forEach(t => this.wiki.addTiddler(t));
+            doCallback();
+        },
+        // on error
+        callback);
 };
 
 /*
@@ -95,7 +112,18 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	}
 	return this.request("save", {
 		type: "PUT",
-		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then((adaptorInfo, revision) => callback(null, adaptorInfo, revision));
+		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then(
+            ({revision}) => {
+                this.wiki.setText(tiddler.fields.title, 'revision', null, revision)
+                return callback(null, adaptorInfo, revision);
+            },
+            // on error
+            err => {
+                if (err === "XMLHttpRequest error code: 409") {
+                    console.log("save conflict on tiddler", tiddler);
+                }
+                return callback(err);
+            });
 };
 
 /*

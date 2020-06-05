@@ -157,7 +157,7 @@ var handleSignedInUser = function(user) {
           email: user.email
       };
       window.$tw.preloadTiddlerArray([{
-        title: "$:/tmp/user",
+        title: "$:/temp/user",
         text: JSON.stringify(data)
       }]);
       window.$tw.boot.boot();
