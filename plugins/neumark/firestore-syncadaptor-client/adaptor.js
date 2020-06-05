@@ -24,6 +24,7 @@ function FirestoreClientAdaptor(options) {
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
     this.user = JSON.parse($tw.wiki.getTiddler('$:/temp/user').fields.text);
+    this.revisions = {};
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -49,22 +50,16 @@ FirestoreClientAdaptor.prototype.getHost = function() {
 	return text;
 };
 
-FirestoreClientAdaptor.prototype.getTiddlerInfo = function(tiddler) {
-	return {
-		bag: tiddler.fields.bag
-	};
-};
+FirestoreClientAdaptor.prototype.getTiddlerInfo = _ => ({bag: "a"});
 
 FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
-	var tiddler = this.wiki.getTiddler(title);
-	return tiddler.fields.revision;
+	return this.revisions[title];
 };
 
 FirestoreClientAdaptor.prototype.getUpdatedTiddlers = function(_, callback) {
     if (callback) {
         this.request("all", {data: {revisionOnly: true}}).then(
             tiddlerRevisions => {
-                console.log(tiddlerRevisions);
                 return callback(null, {modifications: [], deletions: []})
             },
             // on error
@@ -95,7 +90,10 @@ FirestoreClientAdaptor.prototype.getStatus = function(callback) {
     this.hasStatus = true;
     this.request("all").then(
         tiddlers => {
-            tiddlers.forEach(t => this.wiki.addTiddler(t));
+            tiddlers.forEach(t => {
+                this.revisions[t.title] = t.revision;
+                this.wiki.addTiddler(this.convertTiddlerFromTiddlyWebFormat(t))
+            });
             doCallback();
         },
         // on error
@@ -114,8 +112,8 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 		type: "PUT",
 		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then(
             ({revision}) => {
-                this.wiki.setText(tiddler.fields.title, 'revision', null, revision)
-                return callback(null, adaptorInfo, revision);
+                this.revisions[tiddler.fields.title] = revision;
+                return callback(null, {bag: "a"}, revision);
             },
             // on error
             err => {
@@ -195,6 +193,7 @@ FirestoreClientAdaptor.prototype.convertTiddlerToTiddlyWebFormat = function(tidd
 				result.fields[fieldName] = fieldString;
 			}
 		});
+        result.revision = this.revisions[tiddler.fields.title];
 	}
 	// Default the content type
 	result.type = result.type || "text/vnd.tiddlywiki";

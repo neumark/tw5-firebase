@@ -96,6 +96,8 @@ const fixDates = tiddler => Object.assign({}, tiddler, {
 
 const globalTiddlersCollection = wikiName => db.collection('wikis').doc(wikiName).collection('tiddlers');
 
+const peruserTiddlersCollection = (wikiName, email) => db.collection('wikis').doc(wikiName).collection('peruser').doc(email).collection('tiddlers');
+
 // Should we include a device-specfic ID in the revision?
 const getRevision = (user, timestamp) => `${stringifyDate(timestamp)}:${user.email}`
 
@@ -111,17 +113,28 @@ const HTTP_CONFLICT = 409;
 
 const sendErr = (res, err) => res.status(err.statusCode || 500).json({message: err.message, stack: err.stack});
 
+const PERUSER_TIDDLERS = ['$:/StoryList'];
+
+const isPerUserTiddler = tiddler => PERUSER_TIDDLERS.includes(tiddler.title) || (tiddler.fields && tiddler.fields['draft.of']);
+
+const getAllTiddlers = async (wiki, user) => {
+    const globalSnapshot = await globalTiddlersCollection(wiki).get();
+    const perUserSnapshot = await peruserTiddlersCollection(wiki, user.email).get();
+    const result = [];
+    globalSnapshot.forEach(doc => result.push(doc.data()));
+    perUserSnapshot.forEach(doc => result.push(doc.data()));
+    return result;
+};
+
 app.use(cors({origin: true}));
 app.use(validateFirebaseIdToken);
 
 app.get('/:wiki/all', (req, res) => {
   const mapTiddler = req.query.revisionOnly ? ({title, revision}) => ({title, revision}) : fixDates;
   // TODO: add per-user tiddlers also
-  return globalTiddlersCollection(req.params.wiki).get().then(snapshot => {
-            var result = [];
-            snapshot.forEach(doc => result.push(mapTiddler(doc.data())));
-            return result;
-  }).then(tiddlers => res.send(JSON.stringify(tiddlers)));
+  return getAllTiddlers(req.params.wiki, req.user).then(
+      tiddlers => res.send(JSON.stringify(tiddlers.map(mapTiddler))),
+      error => sendErr(res, err));
 });
 
 const prepareTiddler = (user, doc, tiddler) => {
@@ -135,6 +148,19 @@ const prepareTiddler = (user, doc, tiddler) => {
             revision: newRevision
       });
 };
+
+const savePerUserTiddler = (user, wiki, tiddler) => {
+  const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
+  const tiddlerRef = peruserTiddlersCollection(wiki, user.email).doc(dbTitle);
+  return db.runTransaction(async t => {
+      const lastRevision = tiddler.revision;
+      const doc = await t.get(tiddlerRef);
+      // silently ignore revision mismatch
+      const updatedTiddler = prepareTiddler(user, doc, tiddler);
+      await t.set(tiddlerRef, updatedTiddler);
+      return updatedTiddler.revision;
+  });
+}
 
 const saveGlobalTiddler = (user, wiki, tiddler) => {
   const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
@@ -163,7 +189,7 @@ app.put('/:wiki/save', (req, res) => {
 
   const wiki = req.params.wiki;
   const tiddler = req.body;
-  const transaction = saveGlobalTiddler(req.user, wiki, tiddler)
+  const transaction = isPerUserTiddler(tiddler) ? savePerUserTiddler(req.user, wiki, tiddler) : saveGlobalTiddler(req.user, wiki, tiddler);
   return transaction.then(
       revision => res.send(JSON.stringify({revision})),
       err => sendErr(res, err));
