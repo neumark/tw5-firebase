@@ -110,6 +110,7 @@ class HTTPError extends Error {
 }
 
 const HTTP_CONFLICT = 409;
+const HTTP_FORBIDDEN = 403;
 
 const sendErr = (res, err) => res.status(err.statusCode || 500).json({message: err.message, stack: err.stack});
 
@@ -126,24 +127,6 @@ const getAllTiddlers = async (wiki, user) => {
     return result;
 };
 
-app.use(cors({origin: true}));
-app.use(validateFirebaseIdToken);
-
-app.get('/:wiki/all', (req, res) => {
-  const mapTiddler = req.query.revisionOnly ? ({title, revision}) => ({title, revision}) : fixDates;
-  return getAllTiddlers(req.params.wiki, req.user).then(
-      tiddlers => res.send(JSON.stringify(tiddlers.map(mapTiddler))),
-      error => sendErr(res, err));
-});
-
-app.delete('/:wiki/:title', async (req, res) => {
-    const dbTitle = tiddlerTitleToFirebaseDocName(req.params.title);
-    const wiki = req.params.wiki;
-    const globalSnapshot = await globalTiddlersCollection(wiki).doc(dbTitle).delete();
-    const perUserSnapshot = await peruserTiddlersCollection(wiki, req.user.email).doc(dbTitle).delete();
-    res.status(200).json({});
-});
-
 
 const prepareTiddler = (user, doc, tiddler) => {
       const timestamp = new Date();
@@ -157,43 +140,82 @@ const prepareTiddler = (user, doc, tiddler) => {
       });
 };
 
+const revisionCheck = (doc, revision) => {
+    if (doc.exists && doc.data().revision !== revision) {
+        throw new HTTPError(`revision conflict: current is ${doc.data().revision}, received update to ${revision}`, HTTP_CONFLICT);
+    }
+};
+
+const ACCESS_TIDDLER = "$:/config/firestore-syncadaptor-client/access";
+const ACCESS_FIELDS = {
+    // format is: ACCESS_TYPE: [list of permissions which provide this access]
+    "write": ["write"],
+    "read": ["read", "write"],
+};
+
+const accessCheck = async (transaction, wiki, email, accessType) => {
+    const tiddlerRef = globalTiddlersCollection(wiki).doc(tiddlerTitleToFirebaseDocName(ACCESS_TIDDLER));
+    const doc = await transaction.get(tiddlerRef);
+    // if no access rights doc, any authenticated user can write to global tiddlers.
+    if (!doc.exists) {
+        return;
+    }
+    const accessRights = JSON.parse(doc.data().text);
+    const hasAccess = ACCESS_FIELDS[accessType].map(at => (accessRights[at] || []).includes(email)).some(x => x);
+    if (!hasAccess) {
+        throw new HTTPError(`no ${accessType} access is granted to ${email}`, HTTP_FORBIDDEN);
+    }
+};
+
+const withGlobalTiddlerWriteCheck = (user, wiki, title, revision, writeAction) => {
+  const tiddlerRef = globalTiddlersCollection(wiki).doc(tiddlerTitleToFirebaseDocName(title));
+  return db.runTransaction(async transaction => {
+      await accessCheck(transaction, wiki, user.email, "write");
+      const doc = await transaction.get(tiddlerRef);
+      revisionCheck(doc, revision);
+      return writeAction(transaction, tiddlerRef, doc);
+  });
+};
+
+const saveGlobalTiddler = (user, wiki, tiddler) => withGlobalTiddlerWriteCheck(user, wiki, tiddler.title, tiddler.revision,
+      async (transaction, tiddlerRef, doc) => {
+        const updatedTiddler = prepareTiddler(user, doc, tiddler);
+        await transaction.set(tiddlerRef, updatedTiddler);
+        return updatedTiddler.revision;
+      });
+
 const savePerUserTiddler = (user, wiki, tiddler) => {
-  const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
-  const tiddlerRef = peruserTiddlersCollection(wiki, user.email).doc(dbTitle);
-  return db.runTransaction(async t => {
-      const lastRevision = tiddler.revision;
-      const doc = await t.get(tiddlerRef);
+  const tiddlerRef = peruserTiddlersCollection(wiki, user.email).doc(tiddlerTitleToFirebaseDocName(tiddler.title));
+  return db.runTransaction(async transaction => {
+      // anyone who can read the wiki should be able to write preuser tiddlers (to save things like StoryList).
+      await accessCheck(transaction, wiki, user.email, "read");
+      const doc = await transaction.get(tiddlerRef);
       // silently ignore revision mismatch
       const updatedTiddler = prepareTiddler(user, doc, tiddler);
-      await t.set(tiddlerRef, updatedTiddler);
+      await transaction.set(tiddlerRef, updatedTiddler);
       return updatedTiddler.revision;
   });
-}
+};
 
-const saveGlobalTiddler = (user, wiki, tiddler) => {
-  const dbTitle = tiddlerTitleToFirebaseDocName(tiddler.title);
-  const tiddlerRef = globalTiddlersCollection(wiki).doc(dbTitle);
-  return db.runTransaction(async t => {
-      const lastRevision = tiddler.revision;
-      const doc = await t.get(tiddlerRef)
-      if (doc.exists && doc.data().revision !== lastRevision) {
-        throw new HTTPError(`revision conflict: current is ${doc.data().revision}, received update to ${lastRevision}`, HTTP_CONFLICT);
-      }
-      const updatedTiddler = prepareTiddler(user, doc, tiddler);
-      await t.set(tiddlerRef, updatedTiddler);
-      return updatedTiddler.revision;
-  });
-}
+app.use(cors({origin: true}));
+app.use(validateFirebaseIdToken);
+
+app.get('/:wiki/all', (req, res) => {
+  const mapTiddler = req.query.revisionOnly ? ({title, revision}) => ({title, revision}) : fixDates;
+  return getAllTiddlers(req.params.wiki, req.user).then(
+      tiddlers => res.send(JSON.stringify(tiddlers.map(mapTiddler))),
+      error => sendErr(res, err));
+});
 
 app.put('/:wiki/save', (req, res) => {
   // TODOs:
-  // * ajv schema for tiddler
-  // * override username, timestamp for tiddler
-  // * Don't allow save if there is a revision conflict (make saving atomic in transaction).
-  // * compute and return new revision based on tiddler, user, device
-  // * save per-user tiddlers in the 'peruser' collection (StoryList, drafts) - only latest version.
+  // * ajv schema for tiddler?
+  // * DONE: override username, timestamp for tiddler
+  // * DONE: Don't allow save if there is a revision conflict (make saving atomic in transaction).
+  // * DONE: compute and return new revision based on tiddler, user
+  // * DONE: save per-user tiddlers in the 'peruser' collection (StoryList, drafts) - only latest version.
   // * save global tiddler to versions collection as well.
-  // * return new revision of tiddler.
+  // * DONE: return new revision of tiddler.
 
   const wiki = req.params.wiki;
   const tiddler = req.body;
@@ -203,8 +225,24 @@ app.put('/:wiki/save', (req, res) => {
       err => sendErr(res, err));
 });
 
-// global error handler:
-// app.use((err, req, res, next) => err ? res.status(err.statusCode || 500).json({message: err.message, stack: err.stack}) : next());
+app.delete('/:wiki/:title', async (req, res) => {
+    const dbTitle = tiddlerTitleToFirebaseDocName(req.params.title);
+    const wiki = req.params.wiki;
+    try {
+        await withGlobalTiddlerWriteCheck(req.user, wiki, req.params.title, req.query.revision,
+            async (transaction, tiddlerRef, doc) => {
+                // only delete global tiddler if write checks OK
+                await transaction.delete(tiddlerRef);
+                // delete per user tiddler if it exists
+                await transaction.delete(
+                    peruserTiddlersCollection(wiki, req.user.email).doc(
+                        tiddlerTitleToFirebaseDocName(req.params.title)));
+            });
+        res.status(200).json({});
+    } catch (err) {
+        sendErr(res, err);
+    }
+});
 
 // This HTTPS endpoint can only be accessed by your Firebase Users.
 // Requests need to be authorized by providing an `Authorization` HTTP header

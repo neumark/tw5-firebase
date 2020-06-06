@@ -158,7 +158,7 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 	}
 	// Issue HTTP request to delete the tiddler
     return this.request(
-        encodeURIComponent(title),
+        `${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
         {type: "DELETE"}).then(
             () => callback(null),
             callback);

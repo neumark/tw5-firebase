@@ -1,0 +1,6 @@
+title: $:/config/firestore-syncadaptor-client/access
+type: application/json
+
+{
+    "write": ["neumark.peter@gmail.com"]
+}
