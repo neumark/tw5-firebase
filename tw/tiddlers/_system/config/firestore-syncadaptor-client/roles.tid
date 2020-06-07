@@ -1,0 +1,8 @@
+title: $:/config/firestore-syncadaptor-client/roles
+type: application/json
+
+{
+    "admin": ["neumark.peter@gmail.com"],
+    "editor": ["peter.neumark.jetfabric@gmail.com"],
+    "reader": ["peter@jetfabric.com"]
+}

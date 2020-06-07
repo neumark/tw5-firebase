@@ -25,7 +25,7 @@ title: $:/pn-wiki/preboot.template.html
           <div id="user-signed-out" class="hidden">
             <h4>You are signed out.</h4>
             <fieldset>
-              <div style="display:none">
+              <div style="">
               <legend>Configuration</legend>
               reCAPTCHA mode for Phone Auth:
               <label for="recaptcha-normal">
@@ -39,7 +39,7 @@ title: $:/pn-wiki/preboot.template.html
               Email signInMethod:
               <label for="email-signInMethod-password">
                 <input type="radio" id="email-signInMethod-password" name="emailSignInMethod"
-                       value="password">
+                       value="password" checked="checked">
                 Password
               </label>
               <label for="email-signInMethod-emailLink">
@@ -48,11 +48,11 @@ title: $:/pn-wiki/preboot.template.html
                 Email Link
               </label>
             </fieldset>
-            <div>
             <p>
-            <!--<button id="sign-in-with-redirect">Sign In with Redirect</button>-->
+            <button id="sign-in-with-redirect">Sign In with Redirect</button>
               <button id="sign-in-with-popup">Sign In with Popup</button>
             </p>
+            <div>
             <div id="firebaseui-spa">
               <h5>Single Page Application mode:</h5>
               <div id="firebaseui-container"></div>
@@ -63,4 +63,3 @@ title: $:/pn-wiki/preboot.template.html
     </div>
     <script src="app.js"></script>
 `
-
