@@ -1,0 +1,20 @@
+{
+    "description": "Basic client-server edition",
+    "plugins": [
+        "tiddlywiki/highlight",
+        "tiddlywiki/tiddlyweb",
+        "tiddlywiki/filesystem"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ],
+    "build": {
+        "index": [
+            "--rendertiddler",
+            "$:/pn-wiki/save-all",
+            "index.html",
+            "text/plain"
+        ]
+    }
+}
