@@ -56,17 +56,6 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return this.revisions[title];
 };
 
-FirestoreClientAdaptor.prototype.getUpdatedTiddlers = function(_, callback) {
-    if (callback) {
-        this.request("all", {data: {revisionOnly: true}}).then(
-            tiddlerRevisions => {
-                return callback(null, {modifications: [], deletions: []})
-            },
-            // on error
-            callback);
-    }
-};
-
 FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
     return new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
         url: this.host + endpoint,
@@ -76,6 +65,20 @@ FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
 			"Content-type": "application/json"
         }
     })));
+};
+
+const maybeInvokeCallback = (promise, callback) => callback ? promise.then(
+        data => callback(null, data),
+        callback) : promise;
+
+/*
+Load a tiddler and invoke the callback with (err,tiddlerFields)
+*/
+FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
+    return maybeInvokeCallback(
+        this.request(`recipes/default/tiddlers/${encodeURIComponent(title || "")}`).then(
+            data => Array.isArray(data) ? data.map(this.convertTiddlerFromTiddlyWebFormat.bind(this)) : this.convertTiddlerFromTiddlyWebFormat(data)),
+        callback);
 };
 
 /*
@@ -88,16 +91,18 @@ FirestoreClientAdaptor.prototype.getStatus = function(callback) {
         return doCallback();
     }
     this.hasStatus = true;
-    this.request("all").then(
+    // load the initial load of all tiddlers:
+    this.loadTiddler().then(
         tiddlers => {
-            tiddlers.forEach(t => {
-                this.revisions[t.title] = t.revision;
-                this.wiki.addTiddler(this.convertTiddlerFromTiddlyWebFormat(t))
-            });
-            doCallback();
+                tiddlers.forEach(t => {
+                    this.revisions[t.title] = t.revision;
+                    window.$tw.syncer.storeTiddler(t);
+                });
+                doCallback();
         },
         // on error
-        callback);
+        callback
+    );
 };
 
 /*
@@ -108,12 +113,13 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	if(this.isReadOnly) {
 		return callback(null);
 	}
-	return this.request("save", {
+	return this.request(
+        `recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`, {
 		type: "PUT",
 		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then(
-            ({revision}) => {
+            ({bag, revision}) => {
                 this.revisions[tiddler.fields.title] = revision;
-                return callback(null, {bag: "a"}, revision);
+                return callback(null, {bag}, revision);
             },
             // on error
             err => {
@@ -124,22 +130,6 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
             });
 };
 
-/*
-Load a tiddler and invoke the callback with (err,tiddlerFields)
-*/
-FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
-	var self = this;
-	$tw.utils.httpRequest({
-		url: this.host + "recipes/" + encodeURIComponent(this.recipe) + "/tiddlers/" + encodeURIComponent(title),
-		callback: function(err,data,request) {
-			if(err) {
-				return callback(err);
-			}
-			// Invoke the callback
-			callback(null,self.convertTiddlerFromTiddlyWebFormat(JSON.parse(data)));
-		}
-	});
-};
 
 /*
 Delete a tiddler and invoke the callback with (err)
@@ -158,7 +148,7 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 	}
 	// Issue HTTP request to delete the tiddler
     return this.request(
-        `${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
+        `bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
         {type: "DELETE"}).then(
             () => callback(null),
             callback);

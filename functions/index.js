@@ -1,18 +1,3 @@
-/**
- * Copyright 2016 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 'use strict';
 
 const functions = require('firebase-functions');
@@ -115,9 +100,11 @@ const getTiddlerRef = (wiki, bag, title) => getBagRef(wiki, bag).doc(tiddlerTitl
 
 const PERSONAL_TIDDLERS = ['$:/StoryList', '$:/HistoryList', '$:/DefaultTiddlers'].map(tiddlerTitleToFirebaseDocName);
 
+const PERSONAL_TAG = "personal";
+
 const isDraftTiddler = tiddler => tiddler.fields && tiddler.fields['draft.of'];
 
-const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddlerTitleToFirebaseDocName(tiddler.title));
+const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddlerTitleToFirebaseDocName(tiddler.title)) || (tiddler.tags && tiddler.tags.includes(PERSONAL_TAG));
 
 const isSystemTiddler = tiddler => tiddlerTitleToFirebaseDocName(tiddler.title).startsWith(tiddlerTitleToFirebaseDocName('$:/'));
 
@@ -173,38 +160,53 @@ const revisionCheck = (doc, revision) => {
     }
 };
 
+const readBags = async (transaction, wiki, bags) => {
+    const allTiddlers = [];
+    const titles = {};
+    for (let bag of bags) {
+        const bagContents = await transaction.get(getBagRef(wiki, bag));
+        bagContents.forEach(doc => {
+            const tiddler = doc.data();
+            if (!titles.hasOwnProperty(tiddler.title)) {
+                titles[tiddler.title] = true;
+                allTiddlers.push(Object.assign(fixDates(tiddler), {bag}));
+            }
+          });
+    }
+    return allTiddlers;
+};
+
+const readTiddler = async (transaction, wiki, bags, title) => {
+    for (let bag of bags) {
+        const doc = await transaction.get(getTiddlerRef(wiki, bag, title));
+        if (doc.exists) {
+            return Object.assign(fixDates(doc.data()), {bag});
+        }
+    }
+    return null;
+};
 
 app.use(cors({origin: true}));
 app.use(validateFirebaseIdToken);
 
-app.get('/:wiki/all', (req, res) => {
+app.get('/:wiki/recipes/default/tiddlers/:title?', (req, res) => {
   const wiki = req.params.wiki;
+  const title = req.params.title;
   const email = req.user.email;
-  const revisionOnly = req.query.revisionOnly === 'true'; 
   return db.runTransaction(async transaction => {
       const role = await getUserRole(transaction, wiki, email);
-      if (role === ROLES.none) {
+      if (role < ROLES.reader) {
           throw new HTTPError(`no read access is granted to ${email}`, HTTP_FORBIDDEN);
       }
       // personal bag overrides global bag
-      const allTiddlers = [];
-      const titles = {};
-      const addTiddlerIfNotDuplicate = doc => {
-          const tiddler = doc.data();
-          if (!titles.hasOwnProperty(tiddler.title)) {
-              titles[tiddler.title] = true;
-              allTiddlers.push(fixDates(tiddler));
-          }
-      }
-      (await getBagRef(wiki, personalBag(email)).get()).forEach(addTiddlerIfNotDuplicate);
-      (await getBagRef(wiki, GLOBAL_BAG).get()).forEach(addTiddlerIfNotDuplicate);
-      return allTiddlers;
+      const bags = [personalBag(email), GLOBAL_BAG];
+      return title ? readTiddler(transaction, wiki, bags, title) : readBags(transaction, wiki, bags); 
   }).then(
-      tiddlers => res.json(tiddlers),
+      res.json.bind(res),
       err => sendErr(res, err));
 });
 
-app.put('/:wiki/save', (req, res) => {
+app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
   // TODOs:
   // * ajv schema for tiddler?
   // * DONE: override username, timestamp for tiddler
@@ -216,6 +218,9 @@ app.put('/:wiki/save', (req, res) => {
   const tiddler = req.body;
   const revision = tiddler.revision;
   const email = req.user.email;
+  if (tiddler.title !== req.params.title) {
+      return sendErr(res, new HTTPError(`mismatch between tiddler titles in URL and PUT body`, HTTP_FORBIDDEN));
+  }
   return db.runTransaction(async transaction => {
       const role = await getUserRole(transaction, wiki, email);
       const bag = getBagForWrite(wiki, email, role, tiddler);
@@ -233,7 +238,8 @@ app.put('/:wiki/save', (req, res) => {
       err => sendErr(res, err));
 });
 
-app.delete('/:wiki/:title', async (req, res) => {
+// TODO: don't allow deletion of a tiddler the user doesn't have write access to.
+app.delete('/:wiki/bags/:bag/tiddlers/:title', async (req, res) => {
     const title = req.params.title;
     const wiki = req.params.wiki;
     const email = req.user.email;
