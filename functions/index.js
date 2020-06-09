@@ -232,9 +232,9 @@ app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
       }
       const updatedTiddler = prepareTiddler(email, doc, tiddler);
       await transaction.set(tiddlerRef, updatedTiddler);
-      return updatedTiddler.revision;
+      return {bag, revision: updatedTiddler.revision};
   }).then(
-      revision => res.send(JSON.stringify({revision})),
+      res.json.bind(res),
       err => sendErr(res, err));
 });
 

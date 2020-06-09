@@ -50,7 +50,7 @@ FirestoreClientAdaptor.prototype.getHost = function() {
 	return text;
 };
 
-FirestoreClientAdaptor.prototype.getTiddlerInfo = _ => ({bag: "a"});
+FirestoreClientAdaptor.prototype.getTiddlerInfo = tiddler => ({ bag: tiddler.fields.bag });
 
 FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return this.revisions[title];
