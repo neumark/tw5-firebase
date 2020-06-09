@@ -5,7 +5,7 @@
   "author": "neumark.peter@gmail.com",
   "license": "UNLICENSED",
   "scripts": {
-    "clean": "git clean -fd",
+    "clean": "git checkout . && git clean -fd",
     "local": "node ./node_modules/.bin/tiddlywiki tw-local --listen",
     "build": "./scripts/build.sh",
     "backup": "./scripts/backup.sh",
