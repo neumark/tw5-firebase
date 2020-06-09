@@ -46,7 +46,6 @@ const db = admin.firestore();
 // Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
 const tiddlerTitleToFirebaseDocName = (tiddlerTitle) => tiddlerTitle.replace(/\//g, "_");
 
-
 // Should we include a device-specfic ID in the revision?
 const getRevision = (email, timestamp) => `${stringifyDate(timestamp)}:${email}`
 
@@ -75,11 +74,18 @@ const isDraftTiddler = tiddler => tiddler.fields && tiddler.fields['draft.of'];
 
 const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddlerTitleToFirebaseDocName(tiddler.title)) || (tiddler.tags && tiddler.tags.includes(PERSONAL_TAG));
 
-const isSystemTiddler = tiddler => tiddlerTitleToFirebaseDocName(tiddler.title).startsWith(tiddlerTitleToFirebaseDocName('$:/'));
+const TIDDLER_TYPE = "text/vnd.tiddlywiki";
+const SYSTEM_TITLE_PREFIX = "$:/";
 
-const GLOBAL_BAG = "global";
+const isSystemTiddler = tiddler => tiddlerTitleToFirebaseDocName(tiddler.title).startsWith(tiddlerTitleToFirebaseDocName(SYSTEM_TITLE_PREFIX)) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
+
+const GLOBAL_CONTENT_BAG = "content";
+
+const GLOBAL_SYSTEM_BAG = "system";
 
 const personalBag = email => tiddlerTitleToFirebaseDocName(`user:${email}`)
+
+const applicableBags = email => ([personalBag(email), GLOBAL_SYSTEM_BAG, GLOBAL_CONTENT_BAG]);
 
 const ROLES_TIDDLER = "$:/config/firestore-syncadaptor-client/roles";
 
@@ -91,7 +97,7 @@ const ROLES = {
 };
 
 const getUserRole = async (transaction, wiki, email) => {
-    const doc = await transaction.get(getTiddlerRef(wiki, GLOBAL_BAG, ROLES_TIDDLER));
+    const doc = await transaction.get(getTiddlerRef(wiki, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER));
     if (!doc.exists) {
         // default is admin role if no roles tiddler found
         return ROLES.admin;
@@ -101,13 +107,19 @@ const getUserRole = async (transaction, wiki, email) => {
 };
 
 const getBagForWrite = (wiki, email, role, tiddler) => {
-    if (role === ROLES.none) {
-        throw new HTTPError(`no write access is granted to ${email}`, HTTP_FORBIDDEN);
-    }
-    if (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler) || (role < ROLES.admin && isSystemTiddler(tiddler))) {
+    // personal tiddler - anybody with a role can write to their personal bag
+    if (role >= ROLES.reader && (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler))) {
         return personalBag(email);
     }
-    return GLOBAL_BAG;
+    // non personal tiddlers are either global content or system tiddlers, editors can write the former, but...
+    if (role >= ROLES.editor && !isSystemTiddler(tiddler)) {
+        return GLOBAL_CONTENT_BAG;
+    }
+    // ... only admins can write the later.
+    if (role === ROLES.admin) {
+        return GLOBAL_SYSTEM_BAG;
+    }
+    throw new HTTPError(`no write access granted to ${email}`, HTTP_FORBIDDEN);
 };
 
 
@@ -168,7 +180,7 @@ app.get('/:wiki/recipes/default/tiddlers/:title?', (req, res) => {
           throw new HTTPError(`no read access is granted to ${email}`, HTTP_FORBIDDEN);
       }
       // personal bag overrides global bag
-      const bags = [personalBag(email), GLOBAL_BAG];
+      const bags = applicableBags(email);
       return title ? readTiddler(transaction, wiki, bags, title) : readBags(transaction, wiki, bags); 
   }).then(
       res.json.bind(res),
@@ -196,6 +208,7 @@ app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
       const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
       const doc = await transaction.get(tiddlerRef);
       // personal tiddler's don't need revision checking - solves the bug where $:/StoryList is saved before it's read.
+      // TODO: the real solution is to preload these tiddlers.
       if (!isPersonalTiddler(tiddler)) {
         revisionCheck(doc, revision);
       }
@@ -209,38 +222,24 @@ app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
 
 // TODO: don't allow deletion of a tiddler the user doesn't have write access to.
 app.delete('/:wiki/bags/:bag/tiddlers/:title', async (req, res) => {
-    const title = req.params.title;
-    const wiki = req.params.wiki;
     const email = req.user.email;
+    const wiki = req.params.wiki;
+    const bag = req.params.bag;
+    const title = req.params.title;
     const revision = req.query.revision;
     try {
         await db.runTransaction(async transaction => {
             const role = await getUserRole(transaction, wiki, email);
-            if (role === ROLES.none) {
+            if ((role < ROLES.reader) ||
+                ((role < ROLES.editor) && (bag === GLOBAL_CONTENT_BAG)) ||
+                ((role < ROLES.admin) && (bag === GLOBAL_SYSTEM_BAG)) ||
+                !applicableBags(email).includes(bag)) {
                 throw new HTTPError(`no delete access is granted to ${email}`, HTTP_FORBIDDEN);
             }
-            // A tiddler should only be written to the global or a user's personal bag, but we don't know which one
-            // based on just the title. So let's try to delete from both bags if we have permission. The revision passed
-            // will of course apply to one, but that's OK, because revisionCheck is happy if it finds no existing tiddler.
-            // Firestore requires all reads to be preformed before all writes, hence the ordering.
-            const globalTiddlerRef = getTiddlerRef(wiki, GLOBAL_BAG, title);
-            let globalDoc = null;
-            const personalTiddlerRef = getTiddlerRef(wiki, personalBag(email), title);
-            let personalDoc = null;
-            if (role === ROLES.admin) {
-                globalDoc = await transaction.get(globalTiddlerRef);
-                revisionCheck(globalDoc, revision);
-            }
-            if (role > ROLES.reader) {
-                personalDoc = await transaction.get(personalTiddlerRef);
-                revisionCheck(personalDoc, revision);
-            }
-            if (globalDoc) {
-                await transaction.delete(globalTiddlerRef);
-            }
-            if (personalDoc) {
-                await transaction.delete(personalTiddlerRef);
-            }
+            const tiddlerRef = getTiddlerRef(wiki, bag, title);
+            const doc = await transaction.get(tiddlerRef);
+            revisionCheck(doc, revision);
+            await transaction.delete(tiddlerRef);
         });
         res.status(200).json({});
     } catch (err) {
