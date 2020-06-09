@@ -12,6 +12,8 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 /*global $tw: false */
 "use strict";
 
+const {request, convertTiddlerToTiddlyWebFormat, convertTiddlerFromTiddlyWebFormat, loadTiddler} = require('./core');
+
 var CONFIG_HOST_TIDDLER = "$:/config/firestore-syncadaptor-client/host",
 	DEFAULT_HOST_TIDDLER = "$protocol$//$host$/";
 
@@ -56,30 +58,15 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 	return this.revisions[title];
 };
 
-FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
-    return window._pnwiki.getIdToken().then(token => 
-        new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
-            url: this.host + endpoint,
-            callback: (error, data) => error ? reject(error) : resolve(JSON.parse(data)),
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-type": "application/json"
-            }
-        }))));
-};
-
-const maybeInvokeCallback = (promise, callback) => callback ? promise.then(
+const promiseToCallback = (promise, callback) => promise.then(
         data => callback(null, data),
-        callback) : promise;
+        callback);
 
 /*
 Load a tiddler and invoke the callback with (err,tiddlerFields)
 */
 FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
-    return maybeInvokeCallback(
-        this.request(`recipes/default/tiddlers/${encodeURIComponent(title || "")}`).then(
-            data => Array.isArray(data) ? data.map(this.convertTiddlerFromTiddlyWebFormat.bind(this)) : this.convertTiddlerFromTiddlyWebFormat(data)),
-        callback);
+    return promiseToCallback(loadTiddler(this.host, title), callback);
 };
 
 /*
@@ -93,7 +80,7 @@ FirestoreClientAdaptor.prototype.getStatus = function(callback) {
     }
     this.hasStatus = true;
     // load the initial load of all tiddlers:
-    this.loadTiddler().then(
+    loadTiddler(this.host).then(
         tiddlers => {
                 tiddlers.forEach(t => {
                     this.revisions[t.title] = t.revision;
@@ -114,10 +101,12 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	if(this.isReadOnly) {
 		return callback(null);
 	}
-	return this.request(
-        `recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`, {
-		type: "PUT",
-		data: this.convertTiddlerToTiddlyWebFormat(tiddler)}).then(
+	return request(
+        `${this.host}recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`, {
+		method: "PUT",
+		body: Object.assign(
+            convertTiddlerToTiddlyWebFormat(tiddler),
+            {revision: this.revisions[tiddler.fields.title]})}).then(
             ({bag, revision}) => {
                 this.revisions[tiddler.fields.title] = revision;
                 return callback(null, {bag}, revision);
@@ -148,66 +137,11 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 		return callback(null);
 	}
 	// Issue HTTP request to delete the tiddler
-    return this.request(
-        `bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
-        {type: "DELETE"}).then(
+    return request(
+        `${host}bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
+        {method: "DELETE"}).then(
             () => callback(null),
             callback);
-};
-
-/*
-Convert a tiddler to a field set suitable for PUTting to TiddlyWeb
-*/
-FirestoreClientAdaptor.prototype.convertTiddlerToTiddlyWebFormat = function(tiddler) {
-	var result = {},
-		knownFields = [
-			"bag", "created", "creator", "modified", "modifier", "permissions", "recipe", "revision", "tags", "text", "title", "type", "uri"
-		];
-	if(tiddler) {
-		$tw.utils.each(tiddler.fields,function(fieldValue,fieldName) {
-			var fieldString = fieldName === "tags" ?
-								tiddler.fields.tags :
-								tiddler.getFieldString(fieldName); // Tags must be passed as an array, not a string
-
-			if(knownFields.indexOf(fieldName) !== -1) {
-				// If it's a known field, just copy it across
-				result[fieldName] = fieldString;
-			} else {
-				// If it's unknown, put it in the "fields" field
-				result.fields = result.fields || {};
-				result.fields[fieldName] = fieldString;
-			}
-		});
-        result.revision = this.revisions[tiddler.fields.title];
-	}
-	// Default the content type
-	result.type = result.type || "text/vnd.tiddlywiki";
-	return JSON.stringify(result,null,$tw.config.preferences.jsonSpaces);
-};
-
-/*
-Convert a field set in TiddlyWeb format into ordinary TiddlyWiki5 format
-*/
-FirestoreClientAdaptor.prototype.convertTiddlerFromTiddlyWebFormat = function(tiddlerFields) {
-	var self = this,
-		result = {};
-	// Transfer the fields, pulling down the `fields` hashmap
-	$tw.utils.each(tiddlerFields,function(element,title,object) {
-		if(title === "fields") {
-			$tw.utils.each(element,function(element,subTitle,object) {
-				result[subTitle] = element;
-			});
-		} else {
-			result[title] = tiddlerFields[title];
-		}
-	});
-	// Some unholy freaking of content types
-	if(result.type === "text/javascript") {
-		result.type = "application/javascript";
-	} else if(!result.type || result.type === "None") {
-		result.type = "text/x-tiddlywiki";
-	}
-	return result;
 };
 
 
