@@ -17,7 +17,7 @@ title: $:/pn-wiki/tiddlywiki5.html
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="format-detection" content="telephone=no" />
 <meta name="copyright" content="`{{$:/core/copyright.txt}}`" />
-<link id="faviconLink" rel="shortcut icon" href="favicon.ico">
+<link id="faviconLink" rel="shortcut icon" href="favicon.png">
 <!-- transclude tiddler to do stuff prior to tw5 boot -->
 `{{$:/pn-wiki/firebase-head.html}}`
 
