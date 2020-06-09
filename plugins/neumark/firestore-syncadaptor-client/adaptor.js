@@ -57,14 +57,15 @@ FirestoreClientAdaptor.prototype.getTiddlerRevision = function(title) {
 };
 
 FirestoreClientAdaptor.prototype.request = function(endpoint, obj = {}) {
-    return new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
-        url: this.host + endpoint,
-        callback: (error, data) => error ? reject(error) : resolve(JSON.parse(data)),
-        headers: {
-            'Authorization': 'Bearer ' + this.user.token,
-			"Content-type": "application/json"
-        }
-    })));
+    return window._pnwiki.getIdToken().then(token => 
+        new Promise((resolve, reject) => $tw.utils.httpRequest(Object.assign(obj, {
+            url: this.host + endpoint,
+            callback: (error, data) => error ? reject(error) : resolve(JSON.parse(data)),
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-type": "application/json"
+            }
+        }))));
 };
 
 const maybeInvokeCallback = (promise, callback) => callback ? promise.then(

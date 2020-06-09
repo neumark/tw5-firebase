@@ -3,6 +3,9 @@ setup:
 npm install
 ./node_modules/.bin/firebase use --add peterneumark-com
 
+run:
+./node_modules/.bin/firebase login:ci and save the resulting token as .firebase-token
+
 deploy:
 
 ./scripts/deploy.sh

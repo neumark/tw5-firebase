@@ -6,3 +6,4 @@ package-lock.json
 .firebase-token
 public/index.html
 *.swp
+service-account-key.json

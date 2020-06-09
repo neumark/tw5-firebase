@@ -148,20 +148,18 @@ var handleSignedInUser = function(user) {
     document.getElementById('photo').style.display = 'none';
   }
   // start tiddlywiki
-  user.getIdToken().then(token => {
-      const data = {
-          token,
-          uid: user.uid,
-          photo: photoURL,
-          name: user.displayName,
-          email: user.email
-      };
-      window.$tw.preloadTiddlerArray([{
-        title: "$:/temp/user",
-        text: JSON.stringify(data)
-      }]);
-      window.$tw.boot.boot();
-  });
+  window._pnwiki = {getIdToken: () => user.getIdToken()};
+  const data = {
+      uid: user.uid,
+      photo: photoURL,
+      name: user.displayName,
+      email: user.email
+  };
+  window.$tw.preloadTiddlerArray([{
+    title: "$:/temp/user",
+    text: JSON.stringify(data)
+  }]);
+  window.$tw.boot.boot();
 };
 
 
