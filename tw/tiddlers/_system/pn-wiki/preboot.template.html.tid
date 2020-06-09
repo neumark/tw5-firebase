@@ -1,6 +1,9 @@
 title: $:/pn-wiki/preboot.template.html
 
 `
+<script>
+window._pnwiki = Object.assign(window._pnwiki || {},  {adaptorExports: `{{{ $:/plugins/neumark/firestore-syncadaptor-client/adaptor.js || $:/pn-wiki/export-javascript-tiddler}}}`});
+</script>
 <div id="container">
       <h3>FirebaseUI Demo</h3>
       <div id="loading">Loading...</div>

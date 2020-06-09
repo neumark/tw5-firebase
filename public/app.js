@@ -148,7 +148,7 @@ var handleSignedInUser = function(user) {
     document.getElementById('photo').style.display = 'none';
   }
   // start tiddlywiki
-  window._pnwiki = {getIdToken: () => user.getIdToken()};
+  window._pnwiki = Object.assign(window._pnwiki || {},  {getIdToken: () => user.getIdToken()});
   const data = {
       uid: user.uid,
       photo: photoURL,
