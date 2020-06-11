@@ -46,7 +46,6 @@ const db = admin.firestore();
 // Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
 const tiddlerTitleToFirebaseDocName = (tiddlerTitle) => tiddlerTitle.replace(/\//g, "_");
 
-// Should we include a device-specfic ID in the revision?
 const getRevision = (email, timestamp) => `${stringifyDate(timestamp)}:${email}`
 
 class HTTPError extends Error {
@@ -75,9 +74,9 @@ const isDraftTiddler = tiddler => tiddler.fields && tiddler.fields['draft.of'];
 const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddlerTitleToFirebaseDocName(tiddler.title)) || (tiddler.tags && tiddler.tags.includes(PERSONAL_TAG));
 
 const TIDDLER_TYPE = "text/vnd.tiddlywiki";
-const SYSTEM_TITLE_PREFIX = "$:/";
+const SYSTEM_TITLE_PREFIX = tiddlerTitleToFirebaseDocName("$:/");
 
-const isSystemTiddler = tiddler => tiddlerTitleToFirebaseDocName(tiddler.title).startsWith(tiddlerTitleToFirebaseDocName(SYSTEM_TITLE_PREFIX)) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
+const isSystemTiddler = tiddler => tiddlerTitleToFirebaseDocName(tiddler.title).startsWith(SYSTEM_TITLE_PREFIX) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
 
 const GLOBAL_CONTENT_BAG = "content";
 
@@ -106,23 +105,24 @@ const getUserRole = async (transaction, wiki, email) => {
     return Math.max(...(Object.entries(usersToRolls).map(([role, users]) => users.includes(email) ? (ROLES[role] || 0) : ROLES.none)));
 };
 
-const assertWriteAccess = async (transaction, wiki, email, bag) => {
-    const role = await getUserRole(transaction, wiki, email);
-    if ((role < ROLES.reader) ||
-        ((role < ROLES.editor) && (bag === GLOBAL_CONTENT_BAG)) ||
-        ((role < ROLES.admin) && (bag === GLOBAL_SYSTEM_BAG)) ||
-        !applicableBags(email).includes(bag)) {
+const hasWriteAccess = (role, email, bag) => !(
+    (role < ROLES.reader) ||
+    ((role < ROLES.editor) && (bag === GLOBAL_CONTENT_BAG)) ||
+    ((role < ROLES.admin) && (bag === GLOBAL_SYSTEM_BAG)) ||
+    !applicableBags(email).includes(bag))
+
+const hasReadAccess = (role, email, bag) => (role >= ROLES.reader) && applicableBags(email).includes(bag)
+
+const assertWriteAccess = (role, wiki, email, bag) => {
+    if (!hasWriteAccess(role, email, bag)) {
         throw new HTTPError(`no write access granted to ${email} on wiki ${wiki} bag ${bag}`, HTTP_FORBIDDEN);
     }
-    return role;
 }
 
-const assertReadAccess = async (transaction, wiki, email, bag) => {
-    const role = await getUserRole(transaction, wiki, email);
-    if ((role < ROLES.reader) || !applicableBags(email).includes(bag)) {
+const assertReadAccess = (role, wiki, email, bag) => {
+    if (!hasReadAccess(role, email, bag)) {
         throw new HTTPError(`no read access granted to ${email} on wiki ${wiki} bag ${bag}`, HTTP_FORBIDDEN);
     }
-    return role;
 }
 
 const getBagForTiddler = (email, tiddler) => {
@@ -134,24 +134,6 @@ const getBagForTiddler = (email, tiddler) => {
     }
     return GLOBAL_CONTENT_BAG;
 }
-
-
-const getBagForWrite = (wiki, email, role, tiddler) => {
-    // personal tiddler - anybody with a role can write to their personal bag
-    if (role >= ROLES.reader && (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler))) {
-        return personalBag(email);
-    }
-    // non personal tiddlers are either global content or system tiddlers, editors can write the former, but...
-    if (role >= ROLES.editor && !isSystemTiddler(tiddler)) {
-        return GLOBAL_CONTENT_BAG;
-    }
-    // ... only admins can write the later.
-    if (role === ROLES.admin) {
-        return GLOBAL_SYSTEM_BAG;
-    }
-    throw new HTTPError(`no write access granted to ${email}`, HTTP_FORBIDDEN);
-};
-
 
 const prepareTiddler = (email, doc, tiddler) => {
       const timestamp = new Date();
@@ -209,8 +191,8 @@ app.get('/:wiki/recipes/default/tiddlers/:title?', (req, res) => {
       if (role < ROLES.reader) {
           throw new HTTPError(`no read access is granted to ${email}`, HTTP_FORBIDDEN);
       }
-      // personal bag overrides global bag
       const bags = applicableBags(email);
+      // personal bag overrides global bag
       return title ? readTiddler(transaction, wiki, bags, title) : readBags(transaction, wiki, bags); 
   }).then(
       res.json.bind(res),
@@ -234,7 +216,9 @@ app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
   }
   return db.runTransaction(async transaction => {
       const role = await getUserRole(transaction, wiki, email);
-      const bag = getBagForWrite(wiki, email, role, tiddler);
+      const bag = getBagForTiddler(email, tiddler);
+      // TODO: check if tiddler has a bag field which differs from value of getBagForTidler()
+      assertWriteAccess(role, wiki, email, bag)
       const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
       const doc = await transaction.get(tiddlerRef);
       revisionCheck(doc, revision);
@@ -256,12 +240,7 @@ app.delete('/:wiki/bags/:bag/tiddlers/:title', async (req, res) => {
     try {
         await db.runTransaction(async transaction => {
             const role = await getUserRole(transaction, wiki, email);
-            if ((role < ROLES.reader) ||
-                ((role < ROLES.editor) && (bag === GLOBAL_CONTENT_BAG)) ||
-                ((role < ROLES.admin) && (bag === GLOBAL_SYSTEM_BAG)) ||
-                !applicableBags(email).includes(bag)) {
-                throw new HTTPError(`no delete access is granted to ${email}`, HTTP_FORBIDDEN);
-            }
+            assertWriteAccess(role, wiki, email, bag);
             const tiddlerRef = getTiddlerRef(wiki, bag, title);
             const doc = await transaction.get(tiddlerRef);
             revisionCheck(doc, revision);

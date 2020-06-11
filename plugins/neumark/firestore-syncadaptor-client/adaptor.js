@@ -91,7 +91,10 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
                 convertTiddlerToTiddlyWebFormat(tiddler),
                 {revision: this.revisions[tiddler.fields.title]})
         }).then(
-            ({bag, revision}) => callback(null, {bag}, revision),
+            ({bag, revision}) => {
+                this.revisions[tiddler.fields.title] = revision;
+                return callback(null, {bag}, revision);
+            },
             // on error
             err => {
                 if (err === "XMLHttpRequest error code: 409") {
