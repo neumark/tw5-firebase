@@ -26,7 +26,7 @@ function FirestoreClientAdaptor(options) {
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
     this.user = JSON.parse($tw.wiki.getTiddler('$:/temp/user').fields.text);
-    this.revisions = {};
+    this.revisions = Object.fromEntries(window._pnwiki.initialTidders.map(({title, revision}) => [title, revision]));
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -72,45 +72,26 @@ FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
 /*
 Get the current status of the TiddlyWeb connection
 */
-FirestoreClientAdaptor.prototype.getStatus = function(callback) {
-    // hijack getstatus to read all tiddlers
-    const doCallback = () => callback(null,true,this.user.email,false,false);
-    if (this.hasStatus) {
-        return doCallback();
-    }
-    this.hasStatus = true;
-    // load the initial load of all tiddlers:
-    loadTiddler(this.host).then(
-        tiddlers => {
-                tiddlers.forEach(t => {
-                    this.revisions[t.title] = t.revision;
-                    window.$tw.syncer.storeTiddler(t);
-                });
-                doCallback();
-        },
-        // on error
-        callback
-    );
-};
+// TODO: set the anonymous and readOnly fields according to the roles
+// callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
+FirestoreClientAdaptor.prototype.getStatus = function(callback) { return callback(null,true,this.user.email,false,false); };
 
 /*
 Save a tiddler and invoke the callback with (err,adaptorInfo,revision)
 */
 FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
-	var self = this;
 	if(this.isReadOnly) {
 		return callback(null);
 	}
 	return request(
-        `${this.host}recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`, {
-		method: "PUT",
-		body: Object.assign(
-            convertTiddlerToTiddlyWebFormat(tiddler),
-            {revision: this.revisions[tiddler.fields.title]})}).then(
-            ({bag, revision}) => {
-                this.revisions[tiddler.fields.title] = revision;
-                return callback(null, {bag}, revision);
-            },
+        `${this.host}recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`,
+        {
+            method: "PUT",
+            body: Object.assign(
+                convertTiddlerToTiddlyWebFormat(tiddler),
+                {revision: this.revisions[tiddler.fields.title]})
+        }).then(
+            ({bag, revision}) => callback(null, {bag}, revision),
             // on error
             err => {
                 if (err === "XMLHttpRequest error code: 409") {
@@ -127,7 +108,6 @@ options include:
 tiddlerInfo: the syncer's tiddlerInfo for this tiddler
 */
 FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options) {
-	var self = this;
 	if(this.isReadOnly) {
 		return callback(null);
 	}
@@ -138,7 +118,7 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 	}
 	// Issue HTTP request to delete the tiddler
     return request(
-        `${host}bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
+        `${this.host}bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
         {method: "DELETE"}).then(
             () => callback(null),
             callback);

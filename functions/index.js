@@ -106,6 +106,36 @@ const getUserRole = async (transaction, wiki, email) => {
     return Math.max(...(Object.entries(usersToRolls).map(([role, users]) => users.includes(email) ? (ROLES[role] || 0) : ROLES.none)));
 };
 
+const assertWriteAccess = async (transaction, wiki, email, bag) => {
+    const role = await getUserRole(transaction, wiki, email);
+    if ((role < ROLES.reader) ||
+        ((role < ROLES.editor) && (bag === GLOBAL_CONTENT_BAG)) ||
+        ((role < ROLES.admin) && (bag === GLOBAL_SYSTEM_BAG)) ||
+        !applicableBags(email).includes(bag)) {
+        throw new HTTPError(`no write access granted to ${email} on wiki ${wiki} bag ${bag}`, HTTP_FORBIDDEN);
+    }
+    return role;
+}
+
+const assertReadAccess = async (transaction, wiki, email, bag) => {
+    const role = await getUserRole(transaction, wiki, email);
+    if ((role < ROLES.reader) || !applicableBags(email).includes(bag)) {
+        throw new HTTPError(`no read access granted to ${email} on wiki ${wiki} bag ${bag}`, HTTP_FORBIDDEN);
+    }
+    return role;
+}
+
+const getBagForTiddler = (email, tiddler) => {
+    if (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler)) {
+        return personalBag(email);
+    }
+    if (isSystemTiddler(tiddler)) {
+        return GLOBAL_SYSTEM_BAG;
+    }
+    return GLOBAL_CONTENT_BAG;
+}
+
+
 const getBagForWrite = (wiki, email, role, tiddler) => {
     // personal tiddler - anybody with a role can write to their personal bag
     if (role >= ROLES.reader && (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler))) {
@@ -207,11 +237,7 @@ app.put('/:wiki/recipes/default/tiddlers/:title', (req, res) => {
       const bag = getBagForWrite(wiki, email, role, tiddler);
       const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
       const doc = await transaction.get(tiddlerRef);
-      // personal tiddler's don't need revision checking - solves the bug where $:/StoryList is saved before it's read.
-      // TODO: the real solution is to preload these tiddlers.
-      if (!isPersonalTiddler(tiddler)) {
-        revisionCheck(doc, revision);
-      }
+      revisionCheck(doc, revision);
       const updatedTiddler = prepareTiddler(email, doc, tiddler);
       await transaction.set(tiddlerRef, updatedTiddler);
       return {bag, revision: updatedTiddler.revision};

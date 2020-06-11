@@ -12,11 +12,14 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 /*global $tw: false */
 "use strict";
 
+const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
+
 const request = (url, options) => window._pnwiki.getIdToken().then(
     token => fetch(url, Object.assign(
         {},
         options,
         {
+            body: stringifyIfNeeded(options.body),
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
@@ -49,7 +52,7 @@ const convertTiddlerToTiddlyWebFormat = tiddler => {
 	}
 	// Default the content type
 	result.type = result.type || "text/vnd.tiddlywiki";
-	return JSON.stringify(result);
+	return result;
 };
 
 const each = function(object,callback) {
