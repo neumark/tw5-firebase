@@ -13,11 +13,11 @@
   },
   "scripts": {
     "lint": "./node_modules/.bin/eslint --max-warnings=0 .",
-    "serve": "firebase serve --only functions",
-    "shell": "firebase experimental:functions:shell",
+    "serve": "../node_modules/.bin/firebase serve --only functions",
+    "shell": "../node_modules/.bin/firebase experimental:functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "deploy": "../node_modules/.bin/firebase deploy --only functions",
+    "logs": "../node_modules/.bin/firebase functions:log"
   },
   "engines": {
     "node": "10"
