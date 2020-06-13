@@ -9,7 +9,7 @@ let adminInitStub, firestore, persistence;
 class FirestoreRef extends Array {
   // TODO: validate doc / collection based on existing array length
   doc(name) {
-    name.split("/").forEach(this.push.bind(this));
+    name.split("/").forEach(n => this.push(n));
     return this;
   }
   collection(name) {
@@ -40,9 +40,17 @@ test.after(t => {
 });
 
 test('read tiddler', async t => {
-    const tx = {
-        get: sinon.stub().returns({})
+    t.plan(1);
+    const txGet = ref => {
+        t.deepEqual(ref, ['wikis', 'wiki', 'bag', 'title']);
+        return {data: "asdf"};
     };
+    const tx = {
+        get: sinon.stub()
+            .callsFake(txGet)
+    };
+
+    debugger;
     persistence.readTiddler(tx, 'wiki', ['bag'], 'title');
     // sinon.assert.calledOnceWithExactly(t.context.res.status, 400);
 });
