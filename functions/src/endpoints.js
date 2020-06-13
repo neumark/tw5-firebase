@@ -1,4 +1,5 @@
-const { runTransaction, readTiddler, readBags, writeTiddler, removeTiddler } = require('./persistence');
+const { readTiddler, readBags, writeTiddler, removeTiddler } = require('./persistence');
+const { runTransaction } = require('./db');
 const { applicableBags, getBagForTiddler } = require('./tw');
 const { HTTPError, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr } = require('./errors');
 const { getUserRole, ROLES, assertWriteAccess } = require('./authorization');
@@ -47,22 +48,20 @@ const write = (req, res) => {
       err => sendErr(res, err));
 };
 
-const remove = async (req, res) => {
+const remove = (req, res) => {
     const email = req.user.email;
     const wiki = req.params.wiki;
     const bag = req.params.bag;
     const title = req.params.title;
     const revision = req.query.revision;
-    try {
-        await runTransaction(async transaction => {
+    return runTransaction(async transaction => {
             const role = await getUserRole(transaction, wiki, email);
             assertWriteAccess(role, wiki, email, bag);
             await removeTiddler(transaction, wiki, bag, title, revision);
-        });
-        res.status(200).json({});
-    } catch (err) {
-        sendErr(res, err);
-    }
+            return {};
+    }).then(
+        res.json.bind(res),
+        err => sendErr(res, err));
 };
 
 module.exports = { read, write, remove };

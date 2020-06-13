@@ -9,9 +9,12 @@
     "firebase-functions": "^3.3.0"
   },
   "devDependencies": {
+    "@firebase/testing": "^0.20.1",
     "ava": "^3.8.2",
     "eslint": "^6.8.0",
-    "eslint-plugin-promise": "^4.2.1"
+    "eslint-plugin-promise": "^4.2.1",
+    "firebase-functions-test": "^0.2.1",
+    "sinon": "^9.0.2"
   },
   "scripts": {
     "lint": "./node_modules/.bin/eslint --max-warnings=0 .",
@@ -20,7 +23,8 @@
     "start": "npm run shell",
     "deploy": "../node_modules/.bin/firebase deploy --only functions",
     "logs": "../node_modules/.bin/firebase functions:log",
-    "test": "./node_modules/.bin/ava"
+    "test": "./node_modules/.bin/ava",
+    "debugtest": "./node_modules/.bin/ava --timeout 400000 --node-arguments=--inspect-brk"
   },
   "engines": {
     "node": "10"

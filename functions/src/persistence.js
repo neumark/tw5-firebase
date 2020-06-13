@@ -1,8 +1,6 @@
-const admin = require('firebase-admin');
 const { HTTP_CONFLICT, HTTPError } = require('./errors');
 const { stringifyDate, getRevision } = require('./tw');
-
-const db = admin.firestore();
+const { dateToFirestoreTimestamp, collectionRef } = require('./db');
 
 // converts firestore dates to string timestamps in tiddler fields
 const fixDates = tiddler => Object.assign({}, tiddler, {
@@ -13,18 +11,19 @@ const fixDates = tiddler => Object.assign({}, tiddler, {
 // Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
 const stringToFirebaseDocName = str => str.replace(/\//g, "_");
 
-const getBagRef = (wiki, bag) => db.collection(`wikis/${stringToFirebaseDocName(wiki)}/${stringToFirebaseDocName(bag)}`);
+const getBagRef = (wiki, bag) => collectionRef(`wikis/${stringToFirebaseDocName(wiki)}/${stringToFirebaseDocName(bag)}`);
 
 const getTiddlerRef = (wiki, bag, title) => getBagRef(wiki, bag).doc(stringToFirebaseDocName(title));
 
 const prepareTiddler = (email, doc, tiddler) => {
     const timestamp = new Date();
+    const firestoreTS = dateToFirestoreTimestamp(timestamp);
     const newRevision = getRevision(email, timestamp);
     const newTiddler = Object.assign({}, tiddler, {
         creator: doc.exists ? doc.data().creator : email,
         modifier: email,
-        created: doc.exists ? doc.data().created : admin.firestore.Timestamp.fromDate(timestamp),
-        modified: admin.firestore.Timestamp.fromDate(timestamp),
+        created: doc.exists ? doc.data().created : firestoreTS,
+        modified: firestoreTS,
         revision: newRevision
     });
     delete newTiddler.bag;
@@ -83,6 +82,4 @@ const removeTiddler = async (transaction, wiki, bag, title, revision) => {
     await transaction.delete(tiddlerRef);
 };
 
-const runTransaction = fn => db.runTransaction(fn);
-
-module.exports = {runTransaction, readBags, readTiddler, removeTiddler, writeTiddler};
+module.exports = {readBags, readTiddler, removeTiddler, writeTiddler};
