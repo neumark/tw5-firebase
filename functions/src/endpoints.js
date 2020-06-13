@@ -2,7 +2,7 @@ const { runTransaction, readTiddler, readBags, writeTiddler, removeTiddler } = r
 const { applicableBags, getBagForTiddler } = require('./tw');
 const { HTTPError, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr } = require('./errors');
 const { getUserRole, ROLES, assertWriteAccess } = require('./authorization');
-
+const { validateTiddler } = require('./schema');
 
 const read = (req, res) => {
   const wiki = req.params.wiki;
@@ -23,23 +23,22 @@ const read = (req, res) => {
 
 const write = (req, res) => {
   // TODOs:
-  // * ajv schema for tiddler?
-  // * DONE: override username, timestamp for tiddler
-  // * DONE: Don't allow save if there is a revision conflict (make saving atomic in transaction).
-  // * DONE: compute and return new revision based on tiddler, user
-  // * DONE: save per-user tiddlers in the 'peruser' collection (StoryList, drafts) - only latest version.
-  // * DONE: return new revision of tiddler.
+  // * support moving tiddlers between bags (write to different bag than which it came from).
   const wiki = req.params.wiki;
   const tiddler = req.body;
   const revision = tiddler.revision;
   const email = req.user.email;
   if (tiddler.title !== req.params.title) {
-      return sendErr(res, new HTTPError(`mismatch between tiddler titles in URL and PUT body`, HTTP_BAD_REQUEST));
+    throw new HTTPError(`mismatch between tiddler titles in URL and PUT body`, HTTP_BAD_REQUEST);
+  }
+  const validation = validateTiddler(tiddler);
+  if (!validation.valid) {
+    throw new HTTPError(`tiddler does not conform to schema: ${JSON.stringify(validation.errors)}`, HTTP_BAD_REQUEST);
   }
   return runTransaction(async transaction => {
       const role = await getUserRole(transaction, wiki, email);
       const bag = getBagForTiddler(email, tiddler);
-      // TODO: check if tiddler has a bag field which differs from value of getBagForTidler()
+      // TODO: check if tiddler has a bag field which differs from value of getBagForTidler(), if so, delete version in old bag.
       assertWriteAccess(role, wiki, email, bag);
       const updatedTiddler = await writeTiddler(transaction, email, wiki, bag, tiddler, revision);
       return {bag, revision: updatedTiddler.revision};

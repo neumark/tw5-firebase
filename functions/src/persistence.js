@@ -18,15 +18,17 @@ const getBagRef = (wiki, bag) => db.collection(`wikis/${stringToFirebaseDocName(
 const getTiddlerRef = (wiki, bag, title) => getBagRef(wiki, bag).doc(stringToFirebaseDocName(title));
 
 const prepareTiddler = (email, doc, tiddler) => {
-      const timestamp = new Date();
-      const newRevision = getRevision(email, timestamp);
-      return Object.assign({}, tiddler, {
-            creator: doc.exists ? doc.data().creator : email,
-            modifier: email,
-            created: doc.exists ? doc.data().created : admin.firestore.Timestamp.fromDate(timestamp),
-            modified: admin.firestore.Timestamp.fromDate(timestamp),
-            revision: newRevision
-      });
+    const timestamp = new Date();
+    const newRevision = getRevision(email, timestamp);
+    const newTiddler = Object.assign({}, tiddler, {
+        creator: doc.exists ? doc.data().creator : email,
+        modifier: email,
+        created: doc.exists ? doc.data().created : admin.firestore.Timestamp.fromDate(timestamp),
+        modified: admin.firestore.Timestamp.fromDate(timestamp),
+        revision: newRevision
+    });
+    delete newTiddler.bag;
+    return newTiddler;
 };
 
 const revisionCheck = (doc, revision) => {
