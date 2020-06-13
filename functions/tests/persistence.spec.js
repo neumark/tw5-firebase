@@ -4,9 +4,9 @@ const sinon = require('sinon');
 const firebaseFunctionsTest = require('firebase-functions-test')();
 const admin = require('firebase-admin');
 
-let adminInitStub, firestore, persistence;
+let adminInitStub, persistence, mockTimestamp = {toDate: () => new Date(1592079909432)};
 
-class FirestoreRef extends Array {
+class MockRef extends Array {
   // TODO: validate doc / collection based on existing array length
   doc(name) {
     name.split("/").forEach(n => this.push(n));
@@ -22,12 +22,11 @@ test.before(t => {
     // we need to stub it out before requiring index.js. This is because the
     // functions will be executed as a part of the require process.
     // Here we stub admin.initializeApp to be a dummy function that doesn't do anything.
-    sinon.stub(admin, 'initializeApp');
+    adminInitStub = sinon.stub(admin, 'initializeApp');
     const mockDb = {
-        collection: x => (new FirestoreRef()).collection(x)
+        collection: x => (new MockRef()).collection(x)
     };
     Object.defineProperty(admin, 'firestore', {get: () => () => mockDb});
-    require('../src/db');
     // Now we can require index.js and save the exports inside a namespace called myFunctions.
     persistence = require('../src/persistence');
 });
@@ -39,18 +38,24 @@ test.after(t => {
     firebaseFunctionsTest.cleanup();
 });
 
-test('read tiddler', async t => {
-    t.plan(1);
-    const txGet = ref => {
-        t.deepEqual(ref, ['wikis', 'wiki', 'bag', 'title']);
-        return {data: "asdf"};
+test('read tiddler from first bag where it is found', async t => {
+    t.plan(5);
+    let callsToGet = 0;
+    const get = ref => {
+        callsToGet += 1;
+        t.deepEqual([].concat(ref), ['wikis', 'wiki', 'bag' + callsToGet, 'title']);
+        return {
+            exists: true,
+            data: () => ({text: ref.join("/"),
+                          created: mockTimestamp,
+                          modified: mockTimestamp})
+        };
     };
-    const tx = {
-        get: sinon.stub()
-            .callsFake(txGet)
-    };
-
-    debugger;
-    persistence.readTiddler(tx, 'wiki', ['bag'], 'title');
-    // sinon.assert.calledOnceWithExactly(t.context.res.status, 400);
+    const tiddler = await persistence.readTiddler({ get }, 'wiki', ['bag1', 'bag2', 'bag3'], 'title');
+    t.is(callsToGet, 3);
+    t.deepEqual(tiddler, {
+        bag: 'bag1',
+        created: '20200613202509432',
+        modified: '20200613202509432',
+        text: "wikis/wiki/bag1/title"});
 });
