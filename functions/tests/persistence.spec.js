@@ -38,7 +38,7 @@ test.after(t => {
     firebaseFunctionsTest.cleanup();
 });
 
-test('read tiddler from first bag where it is found', async t => {
+test('read tiddler from first bag where it is found 1', async t => {
     t.plan(5);
     let callsToGet = 0;
     const get = ref => {
@@ -58,4 +58,26 @@ test('read tiddler from first bag where it is found', async t => {
         created: '20200613202509432',
         modified: '20200613202509432',
         text: "wikis/wiki/bag1/title"});
+});
+
+test('read tiddler from first bag where it is found 2', async t => {
+    t.plan(5);
+    let callsToGet = 0;
+    const get = ref => {
+        callsToGet += 1;
+        t.deepEqual([].concat(ref), ['wikis', 'wiki', 'bag' + callsToGet, 'title']);
+        return {
+            exists: callsToGet === 2,
+            data: callsToGet !== 2 ? () => null : () => ({text: ref.join("/"),
+                          created: mockTimestamp,
+                          modified: mockTimestamp})
+        };
+    };
+    const tiddler = await persistence.readTiddler({ get }, 'wiki', ['bag1', 'bag2', 'bag3'], 'title');
+    t.is(callsToGet, 3);
+    t.deepEqual(tiddler, {
+        bag: 'bag2',
+        created: '20200613202509432',
+        modified: '20200613202509432',
+        text: "wikis/wiki/bag2/title"});
 });
