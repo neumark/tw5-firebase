@@ -1,6 +1,7 @@
 const { HTTP_CONFLICT, HTTPError } = require('./errors');
 const { stringifyDate, getRevision } = require('./tw');
 const { dateToFirestoreTimestamp, collectionRef } = require('./db');
+const { getTimestamp } = require('./date');
 
 // converts firestore dates to string timestamps in tiddler fields
 const fixDates = tiddler => Object.assign({}, tiddler, {
@@ -16,7 +17,7 @@ const getBagRef = (wiki, bag) => collectionRef(`wikis/${stringToFirebaseDocName(
 const getTiddlerRef = (wiki, bag, title) => getBagRef(wiki, bag).doc(stringToFirebaseDocName(title));
 
 const prepareTiddler = (email, doc, tiddler) => {
-    const timestamp = new Date();
+    const timestamp = getTimestamp();
     const firestoreTS = dateToFirestoreTimestamp(timestamp);
     const newRevision = getRevision(email, timestamp);
     const newTiddler = Object.assign({}, tiddler, {
@@ -66,7 +67,8 @@ const readTiddler = async (transaction, wiki, bags, title) => {
         .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})));
 };
 
-const writeTiddler = async (transaction, email, wiki, bag, tiddler, revision) => {
+const writeTiddler = async (transaction, email, wiki, bag, tiddler) => {
+    const revision = tiddler.revision;
     const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
     const doc = await transaction.get(tiddlerRef);
     revisionCheck(doc, revision);

@@ -41,7 +41,7 @@ const write = (req, res) => {
       const bag = getBagForTiddler(email, tiddler);
       // TODO: check if tiddler has a bag field which differs from value of getBagForTidler(), if so, delete version in old bag.
       assertWriteAccess(role, wiki, email, bag);
-      const updatedTiddler = await writeTiddler(transaction, email, wiki, bag, tiddler, revision);
+      const updatedTiddler = await writeTiddler(transaction, email, wiki, bag, tiddler);
       return {bag, revision: updatedTiddler.revision};
   }).then(
       res.json.bind(res),
