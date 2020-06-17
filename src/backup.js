@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 const Firestore = require('@google-cloud/firestore');
-const {fixDates} = require('../functions/twutils');
+const {fixDates} = require('../functions/src/tw');
 
 admin.initializeApp({
   databaseURL: "https://peterneumark-com.firebaseio.com"
