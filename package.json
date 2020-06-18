@@ -8,7 +8,7 @@
     "clean": "git checkout . && git clean -fd",
     "local": "node ./node_modules/.bin/tiddlywiki tw-local --listen",
     "build": "./scripts/build.sh",
-    "backup": "./scripts/backup.sh",
+    "backup": "./scripts/backup2.sh",
     "deploy": "./scripts/build.sh && ./scripts/deploy.sh"
   },
   "devDependencies": {
