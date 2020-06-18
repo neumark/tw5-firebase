@@ -14,7 +14,7 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
-const request = (url, options={}) => window._pnwiki.getIdToken().then(
+const request = (url, options={}, token) => (token ? Promise.resolve(token) : window._pnwiki.getIdToken()).then(
     token => fetch(url, Object.assign(
         {},
         options,
@@ -102,9 +102,13 @@ const convertTiddlerFromTiddlyWebFormat = tiddlerFields => {
 	return result;
 };
 
-const loadTiddler = (host, title) => request(`${host}recipes/default/tiddlers/${encodeURIComponent(title || "")}`).then(
+const loadTiddler = (host, title, token) => request(`${host}recipes/default/tiddlers/${encodeURIComponent(title || "")}`, {}, token).then(
             data => Array.isArray(data) ? data.map(convertTiddlerFromTiddlyWebFormat) : convertTiddlerFromTiddlyWebFormat(data));
 
 Object.assign(exports, {request, convertTiddlerToTiddlyWebFormat, convertTiddlerFromTiddlyWebFormat, loadTiddler});
+
+if (module && module.exports) {
+    Object.assign(module.exports, exports);
+}
 
 })();

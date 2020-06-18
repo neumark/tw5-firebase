@@ -3,7 +3,7 @@ tw/tiddlers/_system/StoryList.tid
 node_modules/
 package-lock.json
 .firebase
-.firebase-token
 public/index.html
 *.swp
 service-account-key.json
+keys.json
