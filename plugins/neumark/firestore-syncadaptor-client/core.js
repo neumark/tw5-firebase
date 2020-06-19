@@ -107,8 +107,4 @@ const loadTiddler = (host, title, token) => request(`${host}recipes/default/tidd
 
 Object.assign(exports, {request, convertTiddlerToTiddlyWebFormat, convertTiddlerFromTiddlyWebFormat, loadTiddler});
 
-if (module && module.exports) {
-    Object.assign(module.exports, exports);
-}
-
 })();

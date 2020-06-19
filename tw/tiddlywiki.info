@@ -4,7 +4,18 @@
         "neumark/firestore-syncadaptor-client",
         "tiddlywiki/highlight",
         "tiddlywiki/internals",
-        "tiddlywiki/menubar"
+        "tiddlywiki/menubar",
+        "tiddlywiki/codemirror",
+		"tiddlywiki/codemirror-closebrackets",
+		"tiddlywiki/codemirror-closetag",
+		"tiddlywiki/codemirror-autocomplete",
+		"tiddlywiki/codemirror-search-replace",
+		"tiddlywiki/codemirror-fullscreen-editing",
+		"tiddlywiki/codemirror-mode-xml",
+		"tiddlywiki/codemirror-mode-javascript",
+		"tiddlywiki/codemirror-mode-css",
+		"tiddlywiki/codemirror-mode-x-tiddlywiki",
+		"tiddlywiki/codemirror-mode-markdown"
     ],
     "themes": [
         "tiddlywiki/vanilla",
