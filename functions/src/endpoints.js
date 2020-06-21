@@ -5,10 +5,20 @@ const { HTTPError, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr } = require('./erro
 const { getUserRole, ROLES, assertWriteAccess } = require('./authorization');
 const { validateTiddler } = require('./schema');
 
+const requireAuthorizedUser = req => {
+    if (!req.user || !req.user.isAuthenticated) {
+        throw new HTTPError('Unauthorized', 403);
+    }
+};
+
 const read = (req, res) => {
-  const wiki = req.params.wiki;
-  const title = req.params.title;
+  // not prepared for anonymous users yet
+  requireAuthorizedUser(req);
   const email = req.user.email;
+  const wiki = req.params.wiki;
+  const recipe = req.params.recipe;
+  let bag = req.params.bag;
+  const title = req.params.title;
   return runTransaction(async transaction => {
       const role = await getUserRole(transaction, wiki, email);
       if (role < ROLES.reader) {
@@ -23,6 +33,8 @@ const read = (req, res) => {
 };
 
 const write = (req, res) => {
+  // not prepared for anonymous users yet
+  requireAuthorizedUser(req);
   // TODOs:
   // * support moving tiddlers between bags (write to different bag than which it came from).
   const wiki = req.params.wiki;
@@ -49,6 +61,8 @@ const write = (req, res) => {
 };
 
 const remove = (req, res) => {
+    // not prepared for anonymous users yet
+    requireAuthorizedUser(req);
     const email = req.user.email;
     const wiki = req.params.wiki;
     const bag = req.params.bag;

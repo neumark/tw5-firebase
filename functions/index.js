@@ -33,7 +33,9 @@ restapi.use(validateFirebaseIdToken(admin));
  */
 
 restapi.get('/:wiki/recipes/:recipe/tiddlers/:title?', read);
+restapi.get('/:wiki/bags/:bag/tiddlers/:title?', read);
 restapi.put('/:wiki/recipes/:recipe/tiddlers/:title', write);
+restapi.put('/:wiki/bags/:bag/tiddlers/:title', write);
 restapi.delete('/:wiki/bags/:bag/tiddlers/:title', remove);
 
 exports.wiki = {app: functions.region('europe-west3').https.onRequest(restapi)};

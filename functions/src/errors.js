@@ -10,6 +10,6 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 
-const sendErr = (res, err) => res.status(err.statusCode || 500).json({message: err.message, stack: err.stack});
+const sendErr = (res, err, statusCode) => res.status(err.statusCode || statusCode || 500).json({message: err.message, stack: err.stack});
 
 module.exports = {HTTPError, HTTP_CONFLICT, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr};
