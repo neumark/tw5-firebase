@@ -1,9 +1,4 @@
-const PERSONAL_TIDDLERS = ['$:/StoryList', '$:/HistoryList', '$:/DefaultTiddlers'];
-const PERSONAL_TAG = "personal";
-const GLOBAL_CONTENT_BAG = "content";
-const GLOBAL_SYSTEM_BAG = "system";
-const TIDDLER_TYPE = "text/vnd.tiddlywiki";
-const SYSTEM_TITLE_PREFIX = "$:/";
+const {PERSONAL_TIDDLERS, PERSONAL_TAG, GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, TIDDLER_TYPE, SYSTEM_TITLE_PREFIX} = require('./constants');
 
 const isDate = value => Object.prototype.toString.call(value) === "[object Date]";
 
@@ -41,18 +36,4 @@ const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddler.title) |
 
 const isSystemTiddler = tiddler => tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
 
-const personalBag = email => `user:${email}`;
-
-const applicableBags = email => ([personalBag(email), GLOBAL_SYSTEM_BAG, GLOBAL_CONTENT_BAG]);
-
-const getBagForTiddler = (email, tiddler) => {
-    if (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler)) {
-        return personalBag(email);
-    }
-    if (isSystemTiddler(tiddler)) {
-        return GLOBAL_SYSTEM_BAG;
-    }
-    return GLOBAL_CONTENT_BAG;
-}
-
-module.exports = {isDate, parseDate, pad, stringifyDate, getRevision, isDraftTiddler, isPersonalTiddler, isSystemTiddler, personalBag, applicableBags, getBagForTiddler, GLOBAL_SYSTEM_BAG, GLOBAL_CONTENT_BAG};
+module.exports = {isDate, parseDate, pad, stringifyDate, getRevision, isDraftTiddler, isPersonalTiddler, isSystemTiddler};

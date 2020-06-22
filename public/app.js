@@ -125,6 +125,17 @@ var signInWithPopup = function() {
  * @param {!firebase.User} user
  */
 var handleSignedInUser = function(user) {
+
+  const getQueryVariables = () => {
+    var query = window.location.search.substring(1);
+    var vars = query.split('&');
+    const parsed = {};
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        parsed[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+    }
+    return parsed;
+  };
   
   document.getElementById('user-signed-in').style.display = 'block';
   document.getElementById('user-signed-out').style.display = 'none';
@@ -149,7 +160,8 @@ var handleSignedInUser = function(user) {
   }
   // start tiddlywiki
   window._pnwiki.getIdToken = () => user.getIdToken();
-  window._pnwiki.adaptorCore.loadTiddler(window._pnwiki.host).then(tiddlers => {
+  const host = getQueryVariables().host || window._pnwiki.defaultHost;
+  window._pnwiki.adaptorCore.loadTiddler(host).then(tiddlers => {
     window._pnwiki.initialTidders = tiddlers;
     const data = {
       uid: user.uid,
@@ -160,6 +172,10 @@ var handleSignedInUser = function(user) {
     window.$tw.preloadTiddlerArray([{
       title: "$:/temp/user",
       text: JSON.stringify(data)
+    }, {
+      title: "$:/config/firestore-syncadaptor-client/host",
+      type: "text/plain",
+      text: host
     }, ...tiddlers]);
     window.$tw.boot.boot();
   });

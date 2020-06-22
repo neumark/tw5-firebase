@@ -1,8 +1,8 @@
 const { readTiddler, readBags, writeTiddler, removeTiddler } = require('./persistence');
 const { runTransaction } = require('./db');
-const { applicableBags, getBagForTiddler } = require('./tw');
+const { applicableBags, getBagForTiddler, assertWriteAccess } = require('./bag');
 const { HTTPError, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr } = require('./errors');
-const { getUserRole, ROLES, assertWriteAccess } = require('./authorization');
+const { getUserRole, ROLES } = require('./role');
 const { validateTiddler } = require('./schema');
 
 const requireAuthorizedUser = req => {
@@ -20,7 +20,7 @@ const read = (req, res) => {
   let bag = req.params.bag;
   const title = req.params.title;
   return runTransaction(async transaction => {
-      const role = await getUserRole(transaction, wiki, email);
+      const role = await getUserRole(transaction, wiki, req.user);
       if (role < ROLES.reader) {
           throw new HTTPError(`no read access is granted to ${email}`, HTTP_FORBIDDEN);
       }
@@ -49,7 +49,7 @@ const write = (req, res) => {
     throw new HTTPError(`tiddler does not conform to schema: ${JSON.stringify(validation.errors)}`, HTTP_BAD_REQUEST);
   }
   return runTransaction(async transaction => {
-      const role = await getUserRole(transaction, wiki, email);
+      const role = await getUserRole(transaction, wiki, req.user);
       const bag = getBagForTiddler(email, tiddler);
       // TODO: check if tiddler has a bag field which differs from value of getBagForTidler(), if so, delete version in old bag.
       assertWriteAccess(role, wiki, email, bag);
@@ -69,7 +69,7 @@ const remove = (req, res) => {
     const title = req.params.title;
     const revision = req.query.revision;
     return runTransaction(async transaction => {
-            const role = await getUserRole(transaction, wiki, email);
+            const role = await getUserRole(transaction, wiki, req.user);
             assertWriteAccess(role, wiki, email, bag);
             await removeTiddler(transaction, wiki, bag, title, revision);
             return {};

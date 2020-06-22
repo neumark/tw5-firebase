@@ -2,6 +2,7 @@ const { HTTP_CONFLICT, HTTPError } = require('./errors');
 const { stringifyDate, getRevision } = require('./tw');
 const { dateToFirestoreTimestamp, collectionRef } = require('./db');
 const { getTimestamp } = require('./date');
+const { getValidator } = require('./schema');
 
 // converts firestore dates to string timestamps in tiddler fields
 const fixDates = tiddler => Object.assign({}, tiddler, {
@@ -67,6 +68,20 @@ const readTiddler = async (transaction, wiki, bags, title) => {
         .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})));
 };
 
+// validates the "text" field of a tiddler against a schema.
+const getContentValidatingReader = (schema, fallbackValue={}) => {
+    const validate = getValidator(schema);
+    return async (...args) => {
+        const tiddler = await readTiddler(...args);
+        const value = (tiddler && tiddler.text) ? JSON.parse(tiddler.text) : fallbackValue;
+        const validation = validate(value)
+        if (!validation.valid) {
+            throw new Error(`tiddler does not conform to schema: ${JSON.stringify(validation.errors)}`);
+        }
+        return value;
+    };
+};
+
 const writeTiddler = async (transaction, email, wiki, bag, tiddler) => {
     const revision = tiddler.revision;
     const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
@@ -84,4 +99,4 @@ const removeTiddler = async (transaction, wiki, bag, title, revision) => {
     await transaction.delete(tiddlerRef);
 };
 
-module.exports = {readBags, readTiddler, removeTiddler, writeTiddler};
+module.exports = {readBags, readTiddler, removeTiddler, writeTiddler, getContentValidatingReader};

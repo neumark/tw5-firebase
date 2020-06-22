@@ -27,3 +27,9 @@ refreshToken can be gotten by logging into the wiki, and the running `firebase.a
 deploy:
 
 ./scripts/deploy.sh
+
+local development:
+
+# cd functions; ./run.sh
+# python -m SimpleHTTPServer
+# open http://localhost:8000/public/?host=http%3A%2F%2Flocalhost%3A5000%2Fpeterneumark-com%2Feurope-west3%2Fwiki-app%2Fpn-wiki%2F

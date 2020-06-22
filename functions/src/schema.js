@@ -8,6 +8,11 @@ const user = Object.assign({format: "email"}, string);
 
 const timestamp = Object.assign({pattern: "^[0-9]{17}$"}, string);
 
+// NOTE: order matters, role.js uses this array to assign role numbers to each role.
+const roleNames = ['anonymous', 'authenticated', 'reader', 'editor', 'admin'];
+
+const role = {type: "string", "enum": roleNames};
+
 const tiddlerSchema = {
     type: "object",
     properties: {
@@ -42,6 +47,59 @@ const getValidator = (schema) => {
     }
 };
 
+/* Roles tiddler example:
+ * {
+     "admin": ["neumark.peter@gmail.com"],
+     "editor": ["peter@jetfabric.com"],
+     "reader": ["peter.neumark.jetfabric@gmail.com"]
+   }
+ *
+ */
+
+const rolesSchema = {
+    type: "object",
+    additionalProperties: {
+        type: "array",
+        items: user
+    },
+};
+
+/* Bag policy example:
+ * {
+ *  "write": [{"user": "j@j.com"}, {"role": "admin"}],
+ *  "read": [{"role": "anonymous"}],
+ *  "constraints": ["systemTiddler", "!isDraft"]
+ * }
+ */
+
+const grantee = {
+    anyOf: [
+        {
+            type: 'object',
+            properties: {user},
+            additionalProperties: false,
+            required: ["user"]
+        },
+        {
+            type: 'object',
+            properties: {role},
+            additionalProperties: false,
+            required: ["role"]
+        },
+    ]
+}
+
+const bagPolicySchema = {
+    type: "object",
+    properties: {
+        write: {type: 'array', items: grantee},
+        read: {type: 'array', items: grantee},
+        constraints: {type: 'array', items: nonEmptyString}
+    },
+    additionalProperties: false,
+    required: ["write", "read", "constraints"]
+}
+
 const validateTiddler = getValidator(tiddlerSchema);
 
-module.exports = {validateTiddler};
+module.exports = {validateTiddler, getValidator, tiddlerSchema, rolesSchema, bagPolicySchema, roleNames};

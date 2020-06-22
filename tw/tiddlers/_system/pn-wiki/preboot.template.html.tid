@@ -3,7 +3,7 @@ title: $:/pn-wiki/preboot.template.html
 `
 <script>
 window._pnwiki = Object.assign(window._pnwiki || {},  {
-    host: "`{{{ $:/config/firestore-syncadaptor-client/host || $:/core/templates/plain-text-tiddler }}}`",
+    defaultHost: "`{{{ $:/config/firestore-syncadaptor-client/host || $:/core/templates/plain-text-tiddler }}}`",
     adaptorCore: `{{{ $:/plugins/neumark/firestore-syncadaptor-client/core.js || $:/pn-wiki/export-javascript-tiddler}}}`});
 </script>
 <div id="container">
