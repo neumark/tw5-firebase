@@ -28,3 +28,7 @@ firebase.initializeApp(firebaseConfig);
 // Google OAuth Client ID, needed to support One-tap sign-up.
 // Set to null if One-tap sign-up is not supported.
  var CLIENT_ID = null; //'1019270346260-fh2s7fjmige0qlu6nonmm514rvrafbd9.apps.googleusercontent.com';
+
+window._pnwiki = Object.assign(window._pnwiki || {},  {
+    defaultHost: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/pn-wiki/"
+});
