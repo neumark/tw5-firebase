@@ -55,24 +55,24 @@ const readBags = async (transaction, wiki, bags) => {
     return allTiddlers;
 };
 
-const firstOrNull = list => list.length > 0 ? list[0] : null;
+const firstOrFallback = (list, fallback) => list.length > 0 ? list[0] : fallback;
 
 const readTiddler = async (transaction, wiki, bags, title) => {
     const maybeDocs = await asyncMap(bags, async bag => ({bag, doc: await transaction.get(getTiddlerRef(wiki, bag, title))}));
-    return firstOrNull(maybeDocs
+    return firstOrFallback(maybeDocs
         // only consider docs which exist in firestore
         .filter(({doc}) => doc.exists)
         // we only need the first one
         .slice(0,1)
         // make it into a serializable tiddler
-        .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})));
+        .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})), null);
 };
 
 // validates the "text" field of a tiddler against a schema.
-const getContentValidatingReader = (schema, fallbackValue={}) => {
+const getContentValidatingReader = (schema) => {
     const validate = getValidator(schema);
-    return async (...args) => {
-        const tiddler = await readTiddler(...args);
+    return async (transaction, wiki, bag, title, fallbackValue={}) => {
+        const tiddler = await readTiddler(transaction, wiki, [bag], title);
         const value = (tiddler && tiddler.text) ? JSON.parse(tiddler.text) : fallbackValue;
         const validation = validate(value)
         if (!validation.valid) {

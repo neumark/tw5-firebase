@@ -14,7 +14,7 @@ const readRoles = getContentValidatingReader(rolesSchema);
 
 const getUserRole = async (transaction, wiki, user) => {
     if (user.isAuthenticated) {
-        const roles = await readRoles(transaction, wiki, [GLOBAL_SYSTEM_BAG], ROLES_TIDDLER);
+        const roles = await readRoles(transaction, wiki, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER);
         return computeRole(user.email, roles);
     }
     return ROLES.anonymous;

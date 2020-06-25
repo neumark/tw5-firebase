@@ -97,7 +97,7 @@ const bagPolicySchema = {
         constraints: {type: 'array', items: nonEmptyString}
     },
     additionalProperties: false,
-    required: ["write", "read", "constraints"]
+    required: ["write", "read"]
 }
 
 const validateTiddler = getValidator(tiddlerSchema);

@@ -2,6 +2,8 @@ const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER } = require('./cons
 const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
 const { ROLES } = require('./role');
 const { isDraftTiddler, isPersonalTiddler, isSystemTiddler } = require('./tw');
+const { getContentValidatingReader } = require('./persistence'); 
+const { bagPolicySchema } = require('./schema');
 
 const personalBag = email => `user:${email}`;
 
@@ -21,7 +23,51 @@ const hasWriteAccess = (role, email, bag) => {
     };
 }
 
-const hasReadAccess = (role, email, bag) => (role >= ROLES.reader) && applicableBags(email).includes(bag)
+const hasReadAccess = (role, email, bag) => (role >= ROLES.reader) && applicableBags(email).includes(bag);
+
+const readPolicy = getContentValidatingReader(bagPolicySchema);
+
+const bagPolicyTiddler = bag => `${bag}/policy`;
+
+const adminOnlyPolicy = {
+    write: [{role: "admin"}],
+    read: [{role: "admin"}],
+};
+
+const personalBagRE = /^user:(.*)$/;
+
+const personalBagOwner = bag => {
+    const match = bag.match(personalBagRE);
+    return match ? match[1] : null;
+}
+
+const defaultPolicy = bag => {
+    const user = personalBagOwner(bag);
+    if (user) {
+        return {
+            write: [{user}],
+            read: [{user}],
+        };
+    }
+    switch (bag) {
+        case GLOBAL_CONTENT_BAG:
+            return Object.assign({
+                constraints: ["!isSystemTiddler", "!isDraft"]
+            }, adminOnlyPolicy);
+        case GLOBAL_SYSTEM_BAG:
+            return Object.assign({
+                constraints: ["isSystemTiddler", "!isDraft"]
+            }, adminOnlyPolicy);
+        default: adminOnlyPolicy;
+    };
+};
+
+const hasAccess = async (transaction, wiki, bag, role, user, accessType) => {
+    if (user.isAuthenticated) {
+        const policy = await readPolicy(transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
+    }
+    return ROLES.anonymous;
+};
 
 const assertWriteAccess = (role, wiki, email, bag) => {
     if (!hasWriteAccess(role, email, bag)) {
