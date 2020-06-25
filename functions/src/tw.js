@@ -30,9 +30,13 @@ const stringifyDate = value => value.getUTCFullYear() +
 
 const getRevision = (email, timestamp) => `${stringifyDate(timestamp)}:${email}`
 
-const isDraftTiddler = tiddler => tiddler.fields && tiddler.fields['draft.of'];
+const hasField = (tiddler, field, value=null) => tiddler && tiddler.fields && tiddler.fields.hasOwnProperty(field) && (value != null ? tiddler.fields[tag] === value : true);
 
-const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddler.title) || (tiddler.tags && tiddler.tags.includes(PERSONAL_TAG));
+const hasTag = (tiddler, tag) => tiddler && tiddler.tags && tiddler.tags.includes(tag);
+
+const isDraftTiddler = tiddler => hasField(tiddler, 'draft.of');
+
+const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddler.title) || isDraftTiddler(tiddler) || hasTag(tiddler, PERSONAL_TAG);
 
 const isSystemTiddler = tiddler => tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
 

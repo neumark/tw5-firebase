@@ -52,7 +52,7 @@ const write = (req, res) => {
       const role = await getUserRole(transaction, wiki, req.user);
       const bag = getBagForTiddler(email, tiddler);
       // TODO: check if tiddler has a bag field which differs from value of getBagForTidler(), if so, delete version in old bag.
-      await assertHasAccess(transaction, wiki, bag, role, req.user, "write");
+      await assertHasAccess(transaction, wiki, bag, role, req.user, "write", tiddler);
       const updatedTiddler = await writeTiddler(transaction, email, wiki, bag, tiddler);
       return {bag, revision: updatedTiddler.revision};
   }).then(

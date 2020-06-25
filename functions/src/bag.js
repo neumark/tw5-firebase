@@ -1,7 +1,7 @@
 const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER } = require('./constants'); 
 const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
 const { ROLES } = require('./role');
-const { isDraftTiddler, isPersonalTiddler, isSystemTiddler} = require('./tw');
+const { isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker } = require('./tw');
 const { getContentValidatingReader } = require('./persistence'); 
 const { bagPolicySchema } = require('./schema');
 
@@ -30,23 +30,27 @@ const defaultPolicy = bag => {
     if (user) {
         return {
             write: [{user}],
-            read: [{user}]
+            read: [{user}],
+            constraints: ["isPersonalTiddler"]
         };
     }
     switch (bag) {
         case GLOBAL_CONTENT_BAG:
             return {
                 write: [{role: "editor"}],
-                read: [{role: "reader"}]
+                read: [{role: "reader"}],
+                constraints: ["!isSystemTiddler", "!isPersonalTiddler"]
             };
         case GLOBAL_SYSTEM_BAG:
             return Object.assign({
-                read: [{role: "reader"}]
+                read: [{role: "reader"}],
+                constraints: ["isSystemTiddler", "!isPersonalTiddler"]
             }, adminOnlyPolicy);
         default: adminOnlyPolicy;
     };
 };
 
+const verifyTiddlerConstraints = (constraints, tiddler) => constraints.map(getConstraintChecker).every(c => c(tiddler));
 
 const verifyUserAuthorized = (acl, role, user) => {
     const permittedByRole = rule => rule.hasOwnProperty("role") && ROLES.hasOwnProperty(rule.role) && ROLES[rule.role] <= role;
@@ -56,14 +60,15 @@ const verifyUserAuthorized = (acl, role, user) => {
 
 const hasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler=null) => {
     const policy = await readPolicy(transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
-    return verifyUserAuthorized(policy[accessType], role, user);
+    const constraintsCheck = (accessType === "write" && tiddler && policy.constraints) ? verifyTiddlerConstraints : () => true;
+    return verifyUserAuthorized(policy[accessType], role, user) && constraintsCheck(policy.constraints, tiddler);
 };
 
-const assertHasAccess = async (transaction, wiki, bag, role, user, accessType) => {
-    if (!(await hasAccess(transaction, wiki, bag, role, user, accessType))) {
-        throw new HTTPError(`no ${accessType} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag}`, HTTP_FORBIDDEN);
+const assertHasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler) => {
+    if (!(await hasAccess(transaction, wiki, bag, role, user, accessType, tiddler))) {
+        throw new HTTPError(`no ${accessType} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag} ${tiddler ? " tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
     }
-};
+}
 
 const getBagForTiddler = (email, tiddler) => {
     if (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler)) {
