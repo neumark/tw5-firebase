@@ -8,7 +8,7 @@ for (const [index, element] of roleNames.entries()) {
   ROLES[element] = index;
 }
 
-const computeRole = (email, usersToRolls) => Math.max(...(Object.entries(usersToRolls).map(([role, users]) => users.includes(email) ? (ROLES[role] || 0) : ROLES.authenticated)));
+const computeRole = (email, usersToRolls) => Math.max(ROLES.authenticated, ...(Object.entries(usersToRolls).map(([role, users]) => users.includes(email) ? (ROLES[role] || 0) : ROLES.authenticated)));
 
 const readRoles = getContentValidatingReader(rolesSchema);
 
