@@ -1,7 +1,7 @@
 const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER } = require('./constants'); 
 const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
 const { ROLES } = require('./role');
-const { isDraftTiddler, isPersonalTiddler, isSystemTiddler } = require('./tw');
+const { isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker } = require('./tw');
 const { getContentValidatingReader } = require('./persistence'); 
 const { bagPolicySchema } = require('./schema');
 
@@ -47,26 +47,37 @@ const defaultPolicy = bag => {
         return {
             write: [{user}],
             read: [{user}],
+            constraints: ["isPersonalTiddler"]
         };
     }
     switch (bag) {
         case GLOBAL_CONTENT_BAG:
-            return Object.assign({
-                constraints: ["!isSystemTiddler", "!isDraft"]
-            }, adminOnlyPolicy);
+            return {
+                write: [{role: "editor"}],
+                read: [{role: "reader"}],
+                constraints: ["!isSystemTiddler", "!isPersonalTiddler"]
+            };
         case GLOBAL_SYSTEM_BAG:
             return Object.assign({
-                constraints: ["isSystemTiddler", "!isDraft"]
+                read: [{role: "reader"}],
+                constraints: ["isSystemTiddler", "!isPersonalTiddler"]
             }, adminOnlyPolicy);
         default: adminOnlyPolicy;
     };
 };
 
-const hasAccess = async (transaction, wiki, bag, role, user, accessType) => {
-    if (user.isAuthenticated) {
-        const policy = await readPolicy(transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
-    }
-    return ROLES.anonymous;
+const verifyTiddlerConstraints = (constraints, tiddler) => constraints.map(getConstraintChecker).every(c => c(tiddler));
+
+const verifyUserAuthorized = (acl, role, user) => {
+    const permittedByRole = rule => rule.hasOwnProperty("role") && ROLES.hasOwnProperty(rule.role) && ROLES[rule.role] <= role;
+    const permittedByUser = rule => rule.hasOwnProperty("user") && rule.user === user.email;
+    return acl.some(rule => permittedByRole(rule) || permittedByUser(rule));
+};
+
+const hasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler=null) => {
+    const policy = await readPolicy(transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
+    const constraintsCheck = (accessType === "write" && policy.constraints) ? verifyTiddlerConstraints : () => true;
+    return verifyUserAuthorized(policy[accessType], role, user) && constraintsCheck(policy.constraints, tiddler);
 };
 
 const assertWriteAccess = (role, wiki, email, bag) => {
@@ -91,4 +102,4 @@ const getBagForTiddler = (email, tiddler) => {
     return GLOBAL_CONTENT_BAG;
 }
 
-module.exports = { assertWriteAccess, assertReadAccess, personalBag, applicableBags, getBagForTiddler};
+module.exports = { assertWriteAccess, assertReadAccess, personalBag, applicableBags, getBagForTiddler, hasAccess};

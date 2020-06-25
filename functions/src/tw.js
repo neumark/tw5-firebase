@@ -36,4 +36,17 @@ const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddler.title) |
 
 const isSystemTiddler = tiddler => tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
 
-module.exports = {isDate, parseDate, pad, stringifyDate, getRevision, isDraftTiddler, isPersonalTiddler, isSystemTiddler};
+const CONSTRAINTS = {isDraftTiddler, isPersonalTiddler, isSystemTiddler};
+
+const getConstraintChecker = constraint => {
+    const trimmed = constraint.trim();
+    const negate = trimmed.startsWith("!");
+    const name = trimmed.replace("!", "");
+    if (!CONSTRAINTS.hasOwnProperty(name)) {
+        throw new Error(`Unknown tiddler constraint: "${name}"`);
+    }
+    const fn = CONSTRAINTS[name];
+    return negate ? (...args) => !fn(...args) : fn;
+};
+
+module.exports = {isDate, parseDate, pad, stringifyDate, getRevision, isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker};
