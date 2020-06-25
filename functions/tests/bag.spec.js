@@ -65,7 +65,7 @@ test('verify access by user', async t => {
     t.is(true, await bag.hasAccess({get}, "wiki", "mybag", role.ROLES.admin, {email: "r@j.com"}, "write"), "no user-specific permission for read access, role sufficient");
 });
 
-
+/* TODO: move to recipes tests
 test('tiddler constraints', async t => {
     t.plan(12);
     const txReturningConstraint = (...constraints) => ({
@@ -92,7 +92,7 @@ test('tiddler constraints', async t => {
     t.is(false, await bag.hasAccess(txReturningConstraint("isSystemTiddler", "isPersonalTiddler"), "wiki", "mybag", role.ROLES.admin, {email: "r@j.com"}, "write", {title: "$:/SystemTitle"}), "Multiple constraints are AND-ed together");
     t.is(true, await bag.hasAccess(txReturningConstraint("isSystemTiddler", "isPersonalTiddler"), "wiki", "mybag", role.ROLES.admin, {email: "r@j.com"}, "write", {title: "$:/SystemTitle", tags: ["personal"]}), "Multiple constraints are AND-ed together");
 });
-
+*/
 
 test('default bag policies', async t => {
     // t.plan(1);
@@ -102,18 +102,11 @@ test('default bag policies', async t => {
     const user = {email: "r@j.com"};
     // personal bag
     t.is(true, await bag.hasAccess({get}, "wiki", bag.personalBag(user.email), role.ROLES.authenticated, user, "read"), "any user can read from their personal bag");
-    t.is(true, await bag.hasAccess({get}, "wiki", bag.personalBag(user.email), role.ROLES.authenticated, user, "write", {title: "$:/StoryList"}), "any user can write to their personal bag");
-    t.is(false, await bag.hasAccess({get}, "wiki", bag.personalBag(user.email), role.ROLES.authenticated, user, "write", {title: "StoryList"}), "if constraints arent met, cannot write");
+    t.is(true, await bag.hasAccess({get}, "wiki", bag.personalBag(user.email), role.ROLES.authenticated, user, "write"), "any user can write to their personal bag");
 
     // GLOBAL_CONTENT_BAG
     t.is(false, await bag.hasAccess({get}, "wiki", GLOBAL_CONTENT_BAG, role.ROLES.authenticated, user, "read"), "need reader role to read");
     t.is(true, await bag.hasAccess({get}, "wiki", GLOBAL_CONTENT_BAG, role.ROLES.reader, user, "read"), "need reader role to read");
-    t.is(true, await bag.hasAccess({get}, "wiki", GLOBAL_CONTENT_BAG, role.ROLES.editor, user, "write", {title: "ASDF"}), "editor can write if constraints met");
-
-    // GLOBAL_SYSTEM_BAG
-    t.is(false, await bag.hasAccess({get}, "wiki", GLOBAL_SYSTEM_BAG, role.ROLES.editor, user, "write", {title: "$:/ASDF"}), "need admin role to write");
-    t.is(true, await bag.hasAccess({get}, "wiki", GLOBAL_SYSTEM_BAG, role.ROLES.admin, user, "write", {title: "$:/ASDF"}), "need admin role to write");
-    t.is(true, await bag.hasAccess({get}, "wiki", GLOBAL_SYSTEM_BAG, role.ROLES.admin, user, "write", {title: "$:/ASDF"}), "editor can write if constraints met");
-    t.is(false, await bag.hasAccess({get}, "wiki", GLOBAL_SYSTEM_BAG, role.ROLES.admin, user, "write", {title: "ASDF"}), "editor can write if constraints met");
+    t.is(true, await bag.hasAccess({get}, "wiki", GLOBAL_CONTENT_BAG, role.ROLES.editor, user, "write"), "editor can write if constraints met");
 
 });
