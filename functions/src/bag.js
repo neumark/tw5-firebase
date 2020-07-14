@@ -1,4 +1,4 @@
-const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER } = require('./constants'); 
+const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER, ACCESS_READ, ACCESS_WRITE } = require('./constants'); 
 const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
 const { ROLES } = require('./role');
 const { isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker } = require('./tw');
@@ -14,8 +14,8 @@ const readPolicy = getContentValidatingReader(bagPolicySchema);
 const bagPolicyTiddler = bag => `${bag}/policy`;
 
 const adminOnlyPolicy = {
-    write: [{role: "admin"}],
-    read: [{role: "admin"}],
+    [ACCESS_WRITE]: [{role: "admin"}],
+    [ACCESS_READ]: [{role: "admin"}],
 };
 
 const personalBagRE = /^user:(.*)$/;
@@ -29,23 +29,23 @@ const defaultPolicy = bag => {
     const user = personalBagOwner(bag);
     if (user) {
         return {
-            write: [{user}],
-            read: [{user}],
+            [ACCESS_WRITE]: [{user}],
+            [ACCESS_READ]: [{user}],
             constraints: ["isPersonalTiddler"]
         };
     }
     switch (bag) {
         case GLOBAL_CONTENT_BAG:
             return {
-                write: [{role: "editor"}],
-                read: [{role: "reader"}],
+                [ACCESS_WRITE]: [{role: "editor"}],
+                [ACCESS_READ]: [{role: "reader"}],
                 constraints: ["!isSystemTiddler", "!isPersonalTiddler"]
             };
         case GLOBAL_SYSTEM_BAG:
-            return Object.assign({
-                read: [{role: "reader"}],
+            return Object.assign({}, adminOnlyPolicy, {
+                [ACCESS_READ]: [{role: "reader"}],
                 constraints: ["isSystemTiddler", "!isPersonalTiddler"]
-            }, adminOnlyPolicy);
+            });
         default: adminOnlyPolicy;
     };
 };
@@ -64,20 +64,15 @@ const hasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler
     return verifyUserAuthorized(policy[accessType], role, user) && constraintsCheck(policy.constraints, tiddler);
 };
 
+const bagsWithAccess = async (transaction, wiki, bags, role, user, accessType, tiddler=null) => (await Promise.all(
+    bags.map(async bag => [bag, await hasAccess(transaction, wiki, bag, role, user, accessType, tiddler)])))
+        .filter(([_bag, hasAccess]) => hasAccess)
+        .map(([bag, _hasAccess]) => bag);
+
 const assertHasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler) => {
     if (!(await hasAccess(transaction, wiki, bag, role, user, accessType, tiddler))) {
         throw new HTTPError(`no ${accessType} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag} ${tiddler ? " tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
     }
 }
 
-const getBagForTiddler = (email, tiddler) => {
-    if (isDraftTiddler(tiddler) || isPersonalTiddler(tiddler)) {
-        return personalBag(email);
-    }
-    if (isSystemTiddler(tiddler)) {
-        return GLOBAL_SYSTEM_BAG;
-    }
-    return GLOBAL_CONTENT_BAG;
-}
-
-module.exports = { assertHasAccess, personalBag, applicableBags, getBagForTiddler, hasAccess};
+module.exports = { assertHasAccess, personalBag, applicableBags, hasAccess, bagsWithAccess};

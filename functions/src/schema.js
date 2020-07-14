@@ -100,6 +100,8 @@ const bagPolicySchema = {
     required: ["write", "read"]
 }
 
+const recipeSchema = {type: 'array', items: nonEmptyString};
+
 const validateTiddler = getValidator(tiddlerSchema);
 
-module.exports = {validateTiddler, getValidator, tiddlerSchema, rolesSchema, bagPolicySchema, roleNames};
+module.exports = {validateTiddler, getValidator, tiddlerSchema, rolesSchema, bagPolicySchema, recipeSchema, roleNames};

@@ -8,6 +8,11 @@ module.exports = {
     GLOBAL_SYSTEM_BAG: "system",
     GLOBAL_RECIPE_BAG: "recipes",
 
+    DEFAULT_RECIPE: "default",
+
     TIDDLER_TYPE: "text/vnd.tiddlywiki",
-    SYSTEM_TITLE_PREFIX: "$:/"
+    SYSTEM_TITLE_PREFIX: "$:/",
+
+    ACCESS_READ: "read",
+    ACCESS_WRITE: "write"
 };

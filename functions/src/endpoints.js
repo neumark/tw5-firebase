@@ -1,9 +1,11 @@
 const { readTiddler, readBags, writeTiddler, removeTiddler } = require('./persistence');
 const { runTransaction } = require('./db');
-const { applicableBags, getBagForTiddler, assertHasAccess } = require('./bag');
+const { applicableBags, assertHasAccess, bagsWithAccess} = require('./bag');
+const { resolveRecipe } = require('./recipe');
 const { HTTPError, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr } = require('./errors');
 const { getUserRole, ROLES } = require('./role');
 const { validateTiddler } = require('./schema');
+const { ACCESS_READ, ACCESS_WRITE } = require('./constants');
 
 const requireAuthorizedUser = req => {
     if (!req.user || !req.user.isAuthenticated) {
@@ -16,16 +18,13 @@ const read = (req, res) => {
   requireAuthorizedUser(req);
   const email = req.user.email;
   const wiki = req.params.wiki;
-  const recipe = req.params.recipe;
-  let bag = req.params.bag;
   const title = req.params.title;
   return runTransaction(async transaction => {
-      // TODO: check bag policy for read access permission
+      const bags = !!req.params.bag ? [req.params.bag] : resolveRecipe(transaction, wiki, req.params.recipe, req.user);
       const role = await getUserRole(transaction, wiki, req.user);
-      if (role < ROLES.reader) {
-          throw new HTTPError(`no read access is granted to ${email}`, HTTP_FORBIDDEN);
+      if (bags.length === 0 || (await bagsWithAccess(transaction, wiki, bags, role, req.user, ACCESS_READ, tiddler)).length < bags.length) {
+        throw new HTTPError(`no ${ACCESS_READ} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag} ${!!req.params.recipe ? "recipe " + req.params.recipe} ${tiddler ? "tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
       }
-      const bags = applicableBags(email);
       return title ? readTiddler(transaction, wiki, bags, title) : readBags(transaction, wiki, bags); 
   }).then(
       res.json.bind(res),
@@ -49,12 +48,16 @@ const write = (req, res) => {
     throw new HTTPError(`tiddler does not conform to schema: ${JSON.stringify(validation.errors)}`, HTTP_BAD_REQUEST);
   }
   return runTransaction(async transaction => {
+      const bags = !!req.params.bag ? [req.params.bag] : resolveRecipe(transaction, wiki, req.params.recipe, req.user);
       const role = await getUserRole(transaction, wiki, req.user);
-      const bag = getBagForTiddler(email, tiddler);
+      const acceptingBags = await bagsWithAccess(transaction, wiki, bags, role, req.user, ACCESS_WRITE, tiddler);
       // TODO: check if tiddler has a bag field which differs from value of getBagForTidler(), if so, delete version in old bag.
-      await assertHasAccess(transaction, wiki, bag, role, req.user, "write", tiddler);
-      const updatedTiddler = await writeTiddler(transaction, email, wiki, bag, tiddler);
-      return {bag, revision: updatedTiddler.revision};
+      if (acceptingBags.length < 1) {
+        throw new HTTPError(`no ${ACCESS_WRITE} access granted to ${user.email} with role ${role} on wiki ${wiki} ${!!req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag} ${tiddler ? "tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
+      }
+      const destinationBag = acceptingBags[0];
+      const updatedTiddler = await writeTiddler(transaction, email, wiki, destinationBag, tiddler);
+      return {bag: destinationBag, revision: updatedTiddler.revision};
   }).then(
       res.json.bind(res),
       err => sendErr(res, err));
