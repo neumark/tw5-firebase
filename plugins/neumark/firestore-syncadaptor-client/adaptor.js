@@ -12,21 +12,21 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 /*global $tw: false */
 "use strict";
 
-const {request, convertTiddlerToTiddlyWebFormat, convertTiddlerFromTiddlyWebFormat, loadTiddler} = require('./core');
+const {loadTiddler, saveTiddler, deleteTiddler} = require('./core');
 
-var CONFIG_HOST_TIDDLER = "$:/config/firestore-syncadaptor-client/host",
-	DEFAULT_HOST_TIDDLER = "$protocol$//$host$/";
+const CONFIG_TIDDLER = "$:/config/firestore-syncadaptor-client/config";
+const USER_TIDDLER = "$:/temp/user";
 
 function FirestoreClientAdaptor(options) {
-	this.wiki = options.wiki;
-	this.host = this.getHost();
-	this.recipe = undefined;
+    // USER_TIDDLER and CONFIG_TIDDLER must be preloaded into the wiki
+    this.wiki = options.wiki;
+    this.config = JSON.parse(this.wiki.getTiddlerText(CONFIG_TIDDLER));
+    this.user = JSON.parse(this.wiki.getTiddlerText(USER_TIDDLER));
 	this.hasStatus = false;
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
-    this.user = JSON.parse($tw.wiki.getTiddler('$:/temp/user').fields.text);
-    this.revisions = Object.fromEntries(window._pnwiki.initialTidders.map(({title, revision}) => [title, revision]));
+    this.revisions = Object.fromEntries(globalThis._pnwiki.initialTidders.map(({title, revision}) => [title, revision]));
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -38,19 +38,6 @@ FirestoreClientAdaptor.prototype.setLoggerSaveBuffer = function(loggerForSaving)
 };
 
 FirestoreClientAdaptor.prototype.isReady = () => true;
-
-FirestoreClientAdaptor.prototype.getHost = function() {
-	var text = this.wiki.getTiddlerText(CONFIG_HOST_TIDDLER,DEFAULT_HOST_TIDDLER),
-		substitutions = [
-			{name: "protocol", value: document.location.protocol},
-			{name: "host", value: document.location.host}
-		];
-	for(var t=0; t<substitutions.length; t++) {
-		var s = substitutions[t];
-		text = $tw.utils.replaceString(text,new RegExp("\\$" + s.name + "\\$","mg"),s.value);
-	}
-	return text;
-};
 
 FirestoreClientAdaptor.prototype.getTiddlerInfo = tiddler => ({ bag: tiddler.fields.bag });
 
@@ -66,7 +53,7 @@ const promiseToCallback = (promise, callback) => promise.then(
 Load a tiddler and invoke the callback with (err,tiddlerFields)
 */
 FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
-    return promiseToCallback(loadTiddler(this.host, title), callback);
+    return promiseToCallback(loadTiddler(Object.assign({tiddler: title}, this.config), callback));
 };
 
 /*
@@ -83,14 +70,15 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	if(this.isReadOnly) {
 		return callback(null);
 	}
-	return request(
-        `${this.host}recipes/default/tiddlers/${encodeURIComponent(tiddler.fields.title)}`,
-        {
-            method: "PUT",
-            body: Object.assign(
-                convertTiddlerToTiddlyWebFormat(tiddler),
-                {revision: this.revisions[tiddler.fields.title]})
-        }).then(
+    const tiddlerID = Object.assign({}, this.config, {
+        tiddler: tiddler.fields.title,
+        revision: this.revisions[tiddler.fields.title],
+        // NOTE: workaround so draft tiddlers aren't written to the bag of the original tiddler (which wont accept them)
+        bag: tiddler.fields['draft.of'] ? undefined : tiddler.fields.bag
+    });
+	return saveTiddler(
+        tiddlerID,
+        tiddler).then(
             ({bag, revision}) => {
                 this.revisions[tiddler.fields.title] = revision;
                 return callback(null, {bag}, revision);
@@ -119,17 +107,19 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 	if(!bag) {
 		return callback(null);
 	}
+    const tiddlerID = Object.assign({}, this.config, {
+        tiddler: title,
+        revision: this.revisions[title],
+        bag
+    });
 	// Issue HTTP request to delete the tiddler
-    return request(
-        `${this.host}bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(title)}?revision=${encodeURIComponent(this.revisions[title])}`,
-        {method: "DELETE"}).then(
+    return deleteTiddler(tiddlerID).then(
             () => callback(null),
             callback);
 };
 
-
 if($tw.browser && document.location.protocol.substr(0,4) === "http" ) {
-	exports.adaptorClass = FirestoreClientAdaptor;
+       exports.adaptorClass = FirestoreClientAdaptor;
 }
 
 })();

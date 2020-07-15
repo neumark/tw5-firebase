@@ -14,7 +14,7 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
-const request = (url, options={}, token) => (token ? Promise.resolve(token) : window._pnwiki.getIdToken()).then(
+const request = (url, options={}, token) => (token ? Promise.resolve(token) : globalThis._pnwiki.getIdToken()).then(
     token => fetch(url, Object.assign(
         {},
         options,
@@ -29,18 +29,16 @@ const request = (url, options={}, token) => (token ? Promise.resolve(token) : wi
 /*
 Convert a tiddler to a field set suitable for PUTting to TiddlyWeb
 */
+const KNOWN_FIELDS = ["bag", "created", "creator", "modified", "modifier", "permissions", "recipe", "revision", "tags", "text", "title", "type", "uri"];
 const convertTiddlerToTiddlyWebFormat = tiddler => {
-	var result = {},
-		knownFields = [
-			"bag", "created", "creator", "modified", "modifier", "permissions", "recipe", "revision", "tags", "text", "title", "type", "uri"
-		];
+	var result = {};
 	if(tiddler) {
 		$tw.utils.each(tiddler.fields,function(fieldValue,fieldName) {
 			var fieldString = fieldName === "tags" ?
 								tiddler.fields.tags :
 								tiddler.getFieldString(fieldName); // Tags must be passed as an array, not a string
 
-			if(knownFields.indexOf(fieldName) !== -1) {
+			if(KNOWN_FIELDS.indexOf(fieldName) !== -1) {
 				// If it's a known field, just copy it across
 				result[fieldName] = fieldString;
 			} else {
@@ -102,9 +100,29 @@ const convertTiddlerFromTiddlyWebFormat = tiddlerFields => {
 	return result;
 };
 
-const loadTiddler = (host, title, token) => request(`${host}recipes/default/tiddlers/${encodeURIComponent(title || "")}`, {}, token).then(
+const getEndpoint = ({host, wiki, recipe, bag, tiddler, revision}) => {
+    const bagOrRecipe = bag ? `bags/${bag}` : `recipes/${recipe || 'default'}`;
+    const maybeRevision = revision ? `?revision=${revision}` : '';
+    return `${host}${wiki}/${bagOrRecipe}/tiddlers/${encodeURIComponent(tiddler || "")}${maybeRevision}`
+}
+
+// tiddlerID is {host, wiki, recipe, bag, tiddler}
+const loadTiddler = (tiddlerID, token) => request(getEndpoint(tiddlerID), {}, token).then(
             data => Array.isArray(data) ? data.map(convertTiddlerFromTiddlyWebFormat) : convertTiddlerFromTiddlyWebFormat(data));
 
-Object.assign(exports, {request, convertTiddlerToTiddlyWebFormat, convertTiddlerFromTiddlyWebFormat, loadTiddler});
+const saveTiddler = (tiddlerID, tiddler, token) => request(
+        // allow tiddlerID to override bag or recipe field of tiddler
+        getEndpoint(tiddlerID),
+        {
+            method: "PUT",
+            body: Object.assign(convertTiddlerToTiddlyWebFormat(tiddler))
+        },
+        token);
+
+const deleteTiddler = (tiddlerID, token) => request(
+        getEndpoint(tiddlerID),
+        {method: "DELETE"});
+
+Object.assign(exports, {loadTiddler, saveTiddler, deleteTiddler});
 
 })();

@@ -1,4 +1,4 @@
-const { personalBag } = require('./tw');
+const { personalBag } = require('./bag');
 const { getConstraintChecker } = require('./tw');
 const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, GLOBAL_RECIPE_BAG, DEFAULT_RECIPE } = require('./constants');
 const { getContentValidatingReader } = require('./persistence');

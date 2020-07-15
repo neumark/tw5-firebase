@@ -160,10 +160,11 @@ var handleSignedInUser = function(user) {
   }
   // start tiddlywiki
   window._pnwiki.getIdToken = () => user.getIdToken();
-  const host = getQueryVariables().host || window._pnwiki.defaultHost;
-  window._pnwiki.adaptorCore.loadTiddler(host).then(tiddlers => {
+  const configOverrides = getQueryVariables();
+  const config = Object.assign({}, window._pnwiki.config, configOverrides);
+  window._pnwiki.adaptorCore.loadTiddler(config).then(tiddlers => {
     window._pnwiki.initialTidders = tiddlers;
-    const data = {
+    const userData = {
       uid: user.uid,
       photo: photoURL,
       name: user.displayName,
@@ -171,11 +172,12 @@ var handleSignedInUser = function(user) {
     };
     window.$tw.preloadTiddlerArray([{
       title: "$:/temp/user",
-      text: JSON.stringify(data)
+      type: "application/json",
+      text: JSON.stringify(userData)
     }, {
-      title: "$:/config/firestore-syncadaptor-client/host",
-      type: "text/plain",
-      text: host
+      title: "$:/config/firestore-syncadaptor-client/config",
+      type: "application/json",
+      text: JSON.stringify(config)
     }, ...tiddlers]);
     window.$tw.boot.boot();
   });
