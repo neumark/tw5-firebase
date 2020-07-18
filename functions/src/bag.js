@@ -46,7 +46,8 @@ const defaultPolicy = bag => {
                 [ACCESS_READ]: [{role: "reader"}],
                 constraints: ["isSystemTiddler", "!isPersonalTiddler"]
             });
-        default: adminOnlyPolicy;
+        default:
+            return adminOnlyPolicy;
     };
 };
 
