@@ -15,16 +15,23 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
 const request = (url, options={}, token) => (token ? Promise.resolve(token) : globalThis._pnwiki.getIdToken()).then(
-    token => fetch(url, Object.assign(
-        {},
-        options,
-        {
-            body: stringifyIfNeeded(options.body),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        }))).then(response => response.json());
+    async token => {
+        const response = await fetch(url, Object.assign(
+            {},
+            options,
+            {
+                body: stringifyIfNeeded(options.body),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            }));
+        const body = await response.json();
+        if (response.status < 200 || response.status > 299) {
+            throw new Error(body.message);
+        }
+        return body;
+    });
 
 /*
 Convert a tiddler to a field set suitable for PUTting to TiddlyWeb
