@@ -30,10 +30,8 @@ firebase.initializeApp(firebaseConfig);
 var CLIENT_ID = null; //'1019270346260-fh2s7fjmige0qlu6nonmm514rvrafbd9.apps.googleusercontent.com';
 
 // this config may be overridden by GET parameters in URL
-globalThis._pnwiki = Object.assign(globalThis._pnwiki || {},  {
-    config: {
-        wiki: 'pn-wiki',
-        recipe: 'default',
-        host: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/"
-    }
-});
+globalThis.wikiConfig = {
+    wiki: 'pn-wiki',
+    recipe: 'default',
+    host: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/"
+};

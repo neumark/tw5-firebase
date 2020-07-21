@@ -26,7 +26,7 @@ function FirestoreClientAdaptor(options) {
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
 	this.isReadOnly = false;
-    this.revisions = Object.fromEntries(globalThis._pnwiki.initialTidders.map(({title, revision}) => [title, revision]));
+    this.revisions = Object.fromEntries($tw._pnwiki.initialTidders.map(({title, revision}) => [title, revision]));
 }
 
 FirestoreClientAdaptor.prototype.name = "firestore";
@@ -53,7 +53,7 @@ const promiseToCallback = (promise, callback) => promise.then(
 Load a tiddler and invoke the callback with (err,tiddlerFields)
 */
 FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
-    return promiseToCallback(loadTiddler(Object.assign({tiddler: title}, this.config), callback));
+    return promiseToCallback(loadTiddler(Object.assign({tiddler: title}, this.config), $tw._pnwiki.getIdToken()), callback);
 };
 
 /*
@@ -78,7 +78,8 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
     });
 	return saveTiddler(
         tiddlerID,
-        tiddler).then(
+        tiddler,
+        $tw._pnwiki.getIdToken()).then(
             ({bag, revision}) => {
                 this.revisions[tiddler.fields.title] = revision;
                 return callback(null, {bag}, revision);
@@ -113,9 +114,9 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
         bag
     });
 	// Issue HTTP request to delete the tiddler
-    return deleteTiddler(tiddlerID).then(
-            () => callback(null),
-            callback);
+    return promiseToCallback(
+        deleteTiddler(tiddlerID, $tw._pnwiki.getIdToken()),
+        callback);
 };
 
 if($tw.browser && document.location.protocol.substr(0,4) === "http" ) {

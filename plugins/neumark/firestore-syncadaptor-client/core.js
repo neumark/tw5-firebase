@@ -14,24 +14,23 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
-const request = (url, options={}, token) => (token ? Promise.resolve(token) : globalThis._pnwiki.getIdToken()).then(
-    async token => {
-        const response = await fetch(url, Object.assign(
-            {},
-            options,
-            {
-                body: stringifyIfNeeded(options.body),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            }));
-        const body = await response.json();
-        if (response.status < 200 || response.status > 299) {
-            throw new Error(body.message);
-        }
-        return body;
-    });
+const request = async (url, options={}, token) => {
+    const response = await fetch(url, Object.assign(
+        {},
+        options,
+        {
+            body: stringifyIfNeeded(options.body),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await token}`
+            }
+        }));
+    const body = await response.json();
+    if (response.status < 200 || response.status > 299) {
+        throw new Error(body.message);
+    }
+    return body;
+};
 
 /*
 Convert a tiddler to a field set suitable for PUTting to TiddlyWeb
@@ -128,7 +127,8 @@ const saveTiddler = (tiddlerID, tiddler, token) => request(
 
 const deleteTiddler = (tiddlerID, token) => request(
         getEndpoint(tiddlerID),
-        {method: "DELETE"});
+        {method: "DELETE"},
+        token);
 
 Object.assign(exports, {loadTiddler, saveTiddler, deleteTiddler});
 
