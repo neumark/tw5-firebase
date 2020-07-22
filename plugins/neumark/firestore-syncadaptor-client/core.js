@@ -15,6 +15,8 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
 const request = async (url, options={}, token) => {
+    // when running under node, this code run in a sandbox without access to the global scope.
+    // prior to calling, $tw._pnwiki.fetch must be set.
     const response = await (globalThis.fetch || globalThis.$tw._pnwiki.fetch)(url, Object.assign(
         {},
         options,

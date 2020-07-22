@@ -47,11 +47,7 @@ const init = async (config, token, argv) => {
 if (require.main === module) {
     const token = process.env.TOKEN;
     const argv = Array.prototype.slice.call(process.argv,2);
-    const config = {
-        wiki: 'pn-wiki',
-        recipe: 'default',
-        host: "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/"
-    };
+    const config = require(path.resolve(ROOT_DIR, 'wiki-config.json'));
     installFetch();
     init(config, token, argv).then(() => process.exit(0));
 }
