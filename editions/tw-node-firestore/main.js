@@ -49,5 +49,5 @@ if (require.main === module) {
     const argv = Array.prototype.slice.call(process.argv,2);
     const config = require(path.resolve(ROOT_DIR, 'wiki-config.json'));
     installFetch();
-    init(config, token, argv).then(() => process.exit(0));
+    init(config, token, argv);
 }
