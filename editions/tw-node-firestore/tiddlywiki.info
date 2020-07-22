@@ -8,12 +8,6 @@
         "tiddlywiki/snowwhite"
     ],
     "build": {
-        "index": [
-            "--rendertiddler",
-            "$:/pn-wiki/save-all",
-            "index.html",
-            "text/plain"
-        ],
         "static": [
             "--rendertiddler",
             "$:/core/save/all",
