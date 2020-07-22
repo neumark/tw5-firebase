@@ -16,12 +16,13 @@ const {loadTiddler, saveTiddler, deleteTiddler} = require('./core');
 
 const CONFIG_TIDDLER = "$:/config/firestore-syncadaptor-client/config";
 const USER_TIDDLER = "$:/temp/user";
+const FALLBACK_USER = JSON.stringify({email: 'unknown'});
 
 function FirestoreClientAdaptor(options) {
     // USER_TIDDLER and CONFIG_TIDDLER must be preloaded into the wiki
     this.wiki = options.wiki;
     this.config = JSON.parse(this.wiki.getTiddlerText(CONFIG_TIDDLER));
-    this.user = JSON.parse(this.wiki.getTiddlerText(USER_TIDDLER));
+    this.user = JSON.parse(this.wiki.getTiddlerText(USER_TIDDLER, FALLBACK_USER));
 	this.hasStatus = false;
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
@@ -119,7 +120,7 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
         callback);
 };
 
-if($tw.browser && document.location.protocol.substr(0,4) === "http" ) {
+if($tw.wiki.tiddlerExists(CONFIG_TIDDLER)) {
        exports.adaptorClass = FirestoreClientAdaptor;
 }
 

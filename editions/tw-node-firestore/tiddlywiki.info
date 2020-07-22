@@ -1,0 +1,24 @@
+{
+    "description": "Basic client-server edition",
+    "plugins": [
+        "neumark/firestore-syncadaptor-client"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ],
+    "build": {
+        "index": [
+            "--rendertiddler",
+            "$:/pn-wiki/save-all",
+            "index.html",
+            "text/plain"
+        ],
+        "static": [
+            "--rendertiddler",
+            "$:/core/save/all",
+            "static.html",
+            "text/plain"
+        ]
+    }
+}
