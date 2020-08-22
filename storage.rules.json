@@ -1,0 +1,10 @@
+rules_version = '2';
+// Access to files through Firebase Storage is completely disallowed.
+// Files may still be accessible through Google App Engine or GCS APIs.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,4 +1,10 @@
 {
+  "storage": {
+    "rules": "storage.rules.json"
+  },
+  "firestore": {
+    "rules": "firestore.rules.json"
+  },
   "hosting": [
     {
       "site": "pn-wiki",
