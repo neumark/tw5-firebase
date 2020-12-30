@@ -12,10 +12,10 @@
     "deploy": "./scripts/build.sh && ./scripts/deploy.sh"
   },
   "devDependencies": {
-    "firebase-admin": "^8.3.0",
-    "firebase-tools": "^8.4.2",
+    "firebase-admin": "^9.4.2",
+    "firebase-tools": "^9.1.0",
     "node-fetch": "^2.6.0",
-    "tiddlywiki": "^5.1.22"
+    "tiddlywiki": "^5.1.23"
   },
   "dependencies": {}
 }
