@@ -14,7 +14,7 @@
 
 // Your web app's Firebase configuration
   var firebaseConfig = {
-    apiKey: "AIzaSyCfGMNk0mtTJIseq9jzGZ6XnYbYVE882AI",
+    apiKey: "AIzaSyCOmUqLxAe2O-elEnk-ykX76P45IAZ5Ouc",
     authDomain: "peterneumark-com.firebaseapp.com",
     databaseURL: "https://peterneumark-com.firebaseio.com",
     projectId: "peterneumark-com",
@@ -30,6 +30,7 @@ firebase.initializeApp(firebaseConfig);
 var CLIENT_ID = null; //'1019270346260-fh2s7fjmige0qlu6nonmm514rvrafbd9.apps.googleusercontent.com';
 
 // this config may be overridden by GET parameters in URL
+// TODO: copy this from etc/config.json so it's not duplicated.
 globalThis.wikiConfig = {
     wiki: 'pn-wiki',
     recipe: 'default',
