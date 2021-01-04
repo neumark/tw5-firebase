@@ -1,5 +1,6 @@
 {
     "wiki": "pn-wiki",
     "recipe": "default",
-    "host": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/"
+    "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
+    "domain": "wiki.peterneumark.com"
 }
