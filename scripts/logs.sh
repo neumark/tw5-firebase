@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 DIR="${BASH_SOURCE%/*}"
-FIREBASE="$DIR/../node_modules/.bin/firebase"
-GOOGLE_APPLICATION_CREDENTIALS="$DIR/../service-account-key.json" node "$FIREBASE" --token "$(cat "$DIR/../keys.json" | jq -r ".firebaseToken")" functions:log
+FIREBASECLI="$DIR/../node_modules/.bin/firebase"
+GOOGLE_APPLICATION_CREDENTIALS="$DIR/../etc/service-account-key.json" node "$FIREBASECLI" --token "$(cat "$DIR/../etc/keys.json" | jq -r ".firebaseToken")" functions:log

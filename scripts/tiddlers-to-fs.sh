@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 DIR="${BASH_SOURCE%/*}"
-MAIN="$DIR/../node_modules/.bin/tiddlywiki"
-TIDDLYWIKI_PLUGIN_PATH="$DIR/../plugins" node $( [[ ${DEBUG} ]] && echo "--inspect-brk" ) $MAIN "$DIR/../editions/tw-local" --verbose --load $1
+TIDDLYWIKI="$DIR/../node_modules/.bin/tiddlywiki"
+FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
+TIDDLYWIKI_PLUGIN_PATH="$DIR/../plugins" node $FLAGS $TIDDLYWIKI "$DIR/../editions/tw-local" --verbose --load $1

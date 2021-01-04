@@ -5,7 +5,7 @@ package-lock.json
 .firebase
 public/index.html
 *.swp
-service-account-key.json
-keys.json
+etc/service-account-key.json
+etc/keys.json
 functions/ui-debug.log
 functions/firebase-debug.log

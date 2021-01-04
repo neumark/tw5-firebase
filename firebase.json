@@ -1,9 +1,9 @@
 {
   "storage": {
-    "rules": "storage.rules.json"
+    "rules": "etc/storage.rules.json"
   },
   "firestore": {
-    "rules": "firestore.rules.json"
+    "rules": "etc/firestore.rules.json"
   },
   "hosting": [
     {
@@ -11,16 +11,8 @@
       "public": "public",
       "rewrites": [
         {
-          "source": "/widget",
-          "destination": "/widget.html"
-        },
-        {
           "source": "**",
           "destination": "/index.html"
-        },
-        {
-          "source":"**",
-          "function":"app"
         }
       ],
       "ignore": [
@@ -29,7 +21,8 @@
         "tw/**",
         "scripts/**",
         "static/**",
-        "**/node_modules/**"
+        "**/node_modules/**",
+        "etc/**"
       ]
     }
   ]
