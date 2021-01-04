@@ -14,6 +14,7 @@
   "devDependencies": {
     "firebase-admin": "^9.4.2",
     "firebase-tools": "^9.1.0",
+    "http-server": "^0.12.3",
     "node-fetch": "^2.6.0",
     "tiddlywiki": "^5.1.23"
   },
