@@ -2,5 +2,6 @@
     "wiki": "pn-wiki",
     "recipe": "default",
     "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
+    "firebaseProject": "peterneumark-com",
     "domain": "wiki.peterneumark.com"
 }

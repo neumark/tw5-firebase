@@ -108,13 +108,13 @@ const convertTiddlerFromTiddlyWebFormat = tiddlerFields => {
 	return result;
 };
 
-const getEndpoint = ({host, wiki, recipe, bag, tiddler, revision}) => {
+const getEndpoint = ({apiEndpoint, wiki, recipe, bag, tiddler, revision}) => {
     const bagOrRecipe = bag ? `bags/${bag}` : `recipes/${recipe || 'default'}`;
     const maybeRevision = revision ? `?revision=${revision}` : '';
-    return `${host}${wiki}/${bagOrRecipe}/tiddlers/${encodeURIComponent(tiddler || "")}${maybeRevision}`
+    return `${apiEndpoint}${wiki}/${bagOrRecipe}/tiddlers/${encodeURIComponent(tiddler || "")}${maybeRevision}`
 }
 
-// tiddlerID is {host, wiki, recipe, bag, tiddler}
+// tiddlerID is {apiEndpoint, wiki, recipe, bag, tiddler}
 const loadTiddler = (tiddlerID, token) => request(getEndpoint(tiddlerID), {}, token).then(
             data => Array.isArray(data) ? data.map(convertTiddlerFromTiddlyWebFormat) : convertTiddlerFromTiddlyWebFormat(data));
 
