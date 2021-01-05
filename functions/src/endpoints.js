@@ -24,7 +24,7 @@ const read = (req, res) => {
       const bags = await (!!req.params.bag ? [req.params.bag] : resolveRecipe(transaction, wiki, req.params.recipe, req.user));
       const role = await getUserRole(transaction, wiki, req.user);
       if (bags.length === 0 || (await bagsWithAccess(transaction, wiki, bags, role, req.user, ACCESS_READ)).length < bags.length) {
-        throw new HTTPError(`no ${ACCESS_READ} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag} ${!!req.params.recipe ? "recipe " + req.params.recipe: "bag " + req.params.bag}${tiddler ? " tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
+        throw new HTTPError(`no ${ACCESS_READ} access granted to ${req.user.email} with role ${role} on wiki ${wiki} ${!!req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag}${title? " tiddler " + JSON.stringify(title) : ""}`, HTTP_FORBIDDEN);
       }
       return title ? readTiddler(transaction, wiki, bags, title) : readBags(transaction, wiki, bags); 
   }).then(
