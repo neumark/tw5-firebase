@@ -9,18 +9,22 @@
     {
       "site": "pn-wiki",
       "public": "public",
-      "rewrites": [
-        {
+      "redirects": [{
+          "source": "/doc/staticimg/:img",
+          "destination": "https://github.com/neumark/tw5-firebase/blob/master/public/:img?raw=true",
+          "type": 301
+      }],
+      "rewrites": [{
           "source": "**",
           "destination": "/index.html"
-        }
-      ],
+      }],
       "ignore": [
         "firebase.json",
         "**/.*",
         "tw/**",
         "scripts/**",
-        "static/**",
+        "editions/**",
+        "doc/**",
         "**/node_modules/**",
         "etc/**"
       ]
