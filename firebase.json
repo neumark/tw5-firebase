@@ -10,8 +10,8 @@
       "site": "pn-wiki",
       "public": "public",
       "redirects": [{
-          "source": "/doc/staticimg/:img",
-          "destination": "https://raw.githubusercontent.com/neumark/tw5-firebase/master/doc/staticimg/:img",
+          "source": "/static/:file",
+          "destination": "https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/:file",
           "type": 301
       }],
       "rewrites": [{

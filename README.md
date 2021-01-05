@@ -4,7 +4,7 @@ This is a Google Firebase-hosted version of <a href="https://tiddlywiki.com/" cl
 
 ## Installation
 
-To create your own free instance of \~TW5-firebase, simply fork <a href="#this%20repo" class="tc-tiddlylink tc-tiddlylink-missing">this repo</a>
+To create your own free instance of \~TW5-firebase, simply fork <a href="https://github.com/neumark/tw5-firebase" class="tc-tiddlylink-external">this repo</a>
 !!
 
     {
@@ -21,8 +21,8 @@ apikey can be downloaded as "Browser Key" on the <a href="https://console.cloud.
 
 refreshToken can be gotten by logging into the wiki, and the running `firebase.auth().currentUser.refreshToken` in the JS console.
 
-<a href="docs/CONTRIBUTING.md" class="tc-tiddlylink-external">Open file</a>
-![](doc/staticimg/gcp_credentials.png "GCP API keys dashboard")
+<a href="doc/setup.md" class="tc-tiddlylink-external">setup</a>
+![](static/img/doc/gcp_credentials.png "GCP API keys dashboard")
 
 deploy:
 
