@@ -11,7 +11,7 @@
       "public": "public",
       "redirects": [{
           "source": "/doc/staticimg/:img",
-          "destination": "https://github.com/neumark/tw5-firebase/blob/master/public/:img?raw=true",
+          "destination": "https://raw.githubusercontent.com/neumark/tw5-firebase/master/doc/staticimg/:img",
           "type": 301
       }],
       "rewrites": [{
@@ -25,6 +25,7 @@
         "scripts/**",
         "editions/**",
         "doc/**",
+        "public/doc/**",
         "**/node_modules/**",
         "etc/**"
       ]

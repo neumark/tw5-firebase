@@ -22,7 +22,7 @@ apikey can be downloaded as "Browser Key" on the <a href="https://console.cloud.
 refreshToken can be gotten by logging into the wiki, and the running `firebase.auth().currentUser.refreshToken` in the JS console.
 
 <a href="docs/CONTRIBUTING.md" class="tc-tiddlylink-external">Open file</a>
-![](public/favicon.png "An explanatory tooltip")
+![](doc/staticimg/gcp_credentials.png "GCP API keys dashboard")
 
 deploy:
 
