@@ -108,10 +108,10 @@ const convertTiddlerFromTiddlyWebFormat = tiddlerFields => {
 	return result;
 };
 
-const getEndpoint = ({apiEndpoint, wiki, recipe, bag, tiddler, revision}) => {
+const getEndpoint = ({apiEndpoint, wikiName, recipe, bag, tiddler, revision}) => {
     const bagOrRecipe = bag ? `bags/${bag}` : `recipes/${recipe || 'default'}`;
     const maybeRevision = revision ? `?revision=${revision}` : '';
-    return `${apiEndpoint}${wiki}/${bagOrRecipe}/tiddlers/${encodeURIComponent(tiddler || "")}${maybeRevision}`
+    return `${apiEndpoint}${wikiName}/${bagOrRecipe}/tiddlers/${encodeURIComponent(tiddler || "")}${maybeRevision}`
 }
 
 // tiddlerID is {apiEndpoint, wiki, recipe, bag, tiddler}

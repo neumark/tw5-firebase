@@ -1,6 +1,6 @@
 {
     "wiki": {
-        "name": "pn-wiki",
+        "wikiName": "pn-wiki",
         "recipe": "default",
         "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
         "domain": "wiki.peterneumark.com"

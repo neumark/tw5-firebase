@@ -159,11 +159,10 @@ var handleSignedInUser = function(user) {
     document.getElementById('photo').style.display = 'none';
   }
   // start tiddlywiki
-  window.$tw = window.$tw || {};
-  window.$tw._pnwiki = window.$tw._pnwiki || {};
+
   window.$tw._pnwiki.getIdToken = () => user.getIdToken();
   const configOverrides = getQueryVariables();
-  const config = Object.assign({}, window.wikiConfig, configOverrides);
+  const config = Object.assign({}, window.$tw._pnwiki.config.wiki, configOverrides);
   window.$tw._pnwiki.adaptorCore.loadTiddler(config, window.$tw._pnwiki.getIdToken()).then(tiddlers => {
     window.$tw._pnwiki.initialTidders = tiddlers;
     const userData = {
