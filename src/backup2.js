@@ -1,7 +1,17 @@
 const fetch = require("node-fetch");
 global.fetch = fetch;
 const { loadTiddler } = require('../plugins/neumark/firestore-syncadaptor-client/core.js');
-const host=process.argv[2];
+const apiEndpoint=process.argv[2];
 const wiki = require('../etc/config.json').wiki;
 const TOKEN=process.argv[3];
-loadTiddler({host, wiki}, TOKEN).then(tiddlers => console.log(JSON.stringify(tiddlers, null, 4)));
+const tiddlerId = {apiEndpoint, wiki};
+// if tiddler names set, get just that one specific tiddler
+if (process.argv.length == 5) {
+    Object.assign(tiddlerId, {
+        recipe: 'default',
+        tiddler: process.argv[4]
+    });
+}
+loadTiddler(tiddlerId, TOKEN).then(tiddlers => {
+    console.log(JSON.stringify(Array.isArray(tiddlers) ? tiddlers : [tiddlers], null, 4));
+});

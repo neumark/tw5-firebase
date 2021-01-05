@@ -15,6 +15,13 @@
             "$:/pn-wiki/save-all",
             "index.html",
             "text/plain"
+        ],
+        "readme": [
+            "--rendertiddler",
+            "TW5-firebase/README",
+            "readme.html",
+            "text/html"
         ]
+
     }
 }

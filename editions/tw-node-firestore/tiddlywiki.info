@@ -13,6 +13,12 @@
             "$:/core/save/all",
             "static.html",
             "text/plain"
+        ],
+        "readme": [
+            "--rendertiddler",
+            "TW5-firebase/README",
+            "readme.html",
+            "text/html"
         ]
     }
 }
