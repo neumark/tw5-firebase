@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
+if (( $# != 1 ))
+then
+  echo "Usage: $0 tiddlers.json"
+  exit 1
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-MAIN="$DIR/../editions/tw-node-firestore/main.js"
-FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
-TOKEN="$($DIR/gettoken.sh)" TIDDLYWIKI_PLUGIN_PATH="$DIR/../plugins" node $FLAGS $MAIN "$DIR/../editions/tw-node-firestore" --verbose --load $1
+# set up env
+. "$DIR/env.sh"
+
+TIDDLYWIKICLI="$DIR/../editions/tw-node-firestore/main.js"
+TOKEN="$($DIR/gettoken.sh)" tiddlywiki_cli "$DIR/../editions/tw-node-firestore" --load $1

@@ -47,7 +47,7 @@ const init = async (config, token, argv) => {
 if (require.main === module) {
     const token = process.env.TOKEN;
     const argv = Array.prototype.slice.call(process.argv,2);
-    const config = require(path.resolve(ROOT_DIR, 'etc', 'config.json'));
+    const config = require(path.resolve(ROOT_DIR, 'etc', 'config.json')).wiki;
     installFetch();
-    init(config, token, argv);
+    init({wiki: config.name, ...config}, token, argv);
 }

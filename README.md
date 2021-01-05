@@ -4,7 +4,7 @@ This is a Google Firebase-hosted version of <a href="https://tiddlywiki.com/" cl
 
 ## Installation
 
-To create your own free instance of ~TW5-firebase, simply fork <a href="#this%20repo" class="tc-tiddlylink tc-tiddlylink-missing">this repo</a>
+To create your own free instance of \~TW5-firebase, simply fork <a href="#this%20repo" class="tc-tiddlylink tc-tiddlylink-missing">this repo</a>
 !!
 
     {

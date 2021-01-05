@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
+
+if (( $# != 1 ))
+then
+  echo "Usage: $0 tiddlers.json"
+  exit 1
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-TIDDLYWIKI="$DIR/../node_modules/.bin/tiddlywiki"
-FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
-TIDDLYWIKI_PLUGIN_PATH="$DIR/../plugins" node $FLAGS $TIDDLYWIKI "$DIR/../editions/tw-local" --verbose --load $1
+# set up env
+. "$DIR/env.sh"
+
+tiddlywiki_cli "$DIR/../editions/tw-local" --load $1

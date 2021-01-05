@@ -8,14 +8,8 @@
         "tiddlywiki/snowwhite"
     ],
     "build": {
-        "static": [
-            "--rendertiddler",
-            "$:/core/save/all",
-            "static.html",
-            "text/plain"
-        ],
         "readme": [
-            "--rendertiddler",
+            "--render",
             "TW5-firebase/README",
             "readme.html",
             "text/html"

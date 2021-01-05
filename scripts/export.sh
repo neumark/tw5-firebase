@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+# set up env
+. "$DIR/env.sh"
+
 ID_TOKEN="$($DIR/gettoken.sh)"
-HOST="$(cat "$DIR/../etc/config.json" | jq -r ".apiEndpoint")"
-node "$DIR/../src/backup2.js" "$HOST" "$ID_TOKEN" $@
+API_ENDPOINT="$(cat "$DIR/../etc/config.json" | jq -r ".wiki.apiEndpoint")"
+node "$DIR/../src/backup2.js" "$API_ENDPOINT" "$ID_TOKEN" $@

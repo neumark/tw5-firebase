@@ -1,7 +1,17 @@
 {
-    "wiki": "pn-wiki",
-    "recipe": "default",
-    "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
-    "firebaseProject": "peterneumark-com",
-    "domain": "wiki.peterneumark.com"
+    "wiki": {
+        "name": "pn-wiki",
+        "recipe": "default",
+        "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
+        "domain": "wiki.peterneumark.com"
+    },
+    "firebase": {
+        "apiKey": "AIzaSyCOmUqLxAe2O-elEnk-ykX76P45IAZ5Ouc",
+        "authDomain": "peterneumark-com.firebaseapp.com",
+        "databaseURL": "https://peterneumark-com.firebaseio.com",
+        "projectId": "peterneumark-com",
+        "storageBucket": "peterneumark-com.appspot.com",
+        "messagingSenderId": "1019270346260",
+        "appId": "1:1019270346260:web:2064fdcb65a50ee1c51901"
+    }
 }
