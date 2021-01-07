@@ -3,16 +3,13 @@
     "plugins": [
         "neumark/firestore-syncadaptor-client"
     ],
+    "includeWikis": [
+		{"path": "../../tw", "read-only": true}
+	],
     "themes": [
         "tiddlywiki/vanilla",
         "tiddlywiki/snowwhite"
     ],
     "build": {
-        "readme": [
-            "--render",
-            "TW5-firebase/README",
-            "readme.html",
-            "text/html"
-        ]
     }
 }

@@ -1,0 +1,59 @@
+created: 20190810094128204
+modified: 20190810210634075
+tags: 
+title: $:/pn-wiki/static/templates/static-style
+type: text/vnd.tiddlywiki
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  line-height: 1.5em;
+  margin-bottom: 180px;
+}
+.navbar a:hover {
+  text-decoration: none;
+}
+a:visited {
+  color: #533599
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  min-height: 100px;
+  color: #673599;
+  background-color: #f5eff7;
+  text-align: center;
+  padding-top: 20px;
+}
+
+.footer .container-fluid {
+  background-color: #f5eff7;
+  background: linear-gradient(135deg, #f1e7f7, #ba99cf);
+}
+
+.footer div {
+ padding-top: 10px;
+}
+
+/* dropdown menu tweaks */
+
+.dropdown-menu {
+  background-color: #f5eff7;
+  border: none;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.dropdown-item {
+  padding: 0.5rem;
+  color: inherit;
+}
+
+section.tc-story-river, div.tc-tiddler-frame {
+width:100%;
+}
