@@ -1,0 +1,24 @@
+created: 20190806112119631
+modified: 20190810205855864
+tags: 
+title: $:/pn-wiki/static/templates/static.readme.html
+type: text/vnd.tiddlywiki
+
+\define tv-wikilink-template() $uri_doubleencoded$.html
+\define tv-config-toolbar-icons() no
+\define tv-config-toolbar-text() no
+\define tv-config-toolbar-class() tc-btn-invisible
+\import [[$:/core/ui/PageMacros]] [all[shadows+tiddlers]tag[$:/tags/Macro]!has[draft.of]]
+`
+<!doctype html>
+<html>
+<head></head>
+<body>
+    <section class="tc-story-river">
+        `
+        <$view tiddler="$:/pn-wiki/static/templates/static-readme-template" format="htmlwikified"/>
+        `
+    </section>
+</body>
+</html>
+`
