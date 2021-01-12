@@ -1,9 +1,9 @@
 tw/output/index.html
 tw/tiddlers/_system/StoryList.tid
 node_modules/
-package-lock.json
 .firebase
 .firebaserc
+firebase_custom.json
 public/index.html
 *.swp
 etc/service-account-key.json
@@ -13,4 +13,3 @@ functions/ui-debug.log
 functions/firebase-debug.log
 functions/config.json
 .DS_Store
-firebase_custom.json
