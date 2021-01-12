@@ -2,6 +2,11 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+FIREBASECONFIGPATH="$DIR/../firebase_custom.json"
+if [ ! -f "$FIREBASECONFIGPATH" ]; then
+  FIREBASECONFIGPATH="$DIR/../firebase_default.json"
+fi
+
 # APIKEY is "Browser Key" at eg: https://console.developers.google.com/apis/credentials?pli=1&project=peterneumark-com&folder=&organizationId=
 APIKEY="$(cat "$DIR/../etc/config.json" | jq -r ".firebase.apiKey")"
 PROJECT="$(cat "$DIR/../etc/config.json" | jq -r ".firebase.projectId")"
@@ -16,7 +21,7 @@ TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"
 NODE_FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
 
 function firebase_cli() {
-    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" node $NODE_FLAGS "$FIREBASECLI" --project "$PROJECT" --token "$TOKEN" $@
+    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" node $NODE_FLAGS "$FIREBASECLI" --config "$FIREBASECONFIGPATH" --project "$PROJECT" --token "$TOKEN" $@
 }
 
 function tiddlywiki_cli() {
