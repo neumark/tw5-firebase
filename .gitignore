@@ -3,11 +3,13 @@ tw/tiddlers/_system/StoryList.tid
 node_modules/
 package-lock.json
 .firebase
+.firebaserc
 public/index.html
 *.swp
 etc/service-account-key.json
 etc/keys.json
 functions/ui-debug.log
 functions/firebase-debug.log
+functions/config.json
 .DS_Store
 firebase_custom.json

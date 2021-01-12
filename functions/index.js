@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const { validateFirebaseIdToken } = require('./src/authentication');
 const { read, write, remove } = require('./src/endpoints');
+const apiRegion = require('./config.json').wiki.apiRegion;
 
 const restapi = express();
 
@@ -38,4 +39,4 @@ restapi.put('/:wiki/recipes/:recipe/tiddlers/:title', write);
 restapi.put('/:wiki/bags/:bag/tiddlers/:title', write);
 restapi.delete('/:wiki/bags/:bag/tiddlers/:title', remove);
 
-exports.wiki = {app: functions.region('europe-west3').https.onRequest(restapi)};
+exports.wiki = {app: functions.region(apiRegion).https.onRequest(restapi)};

@@ -2,7 +2,8 @@
     "wiki": {
         "wikiName": "pn-wiki",
         "recipe": "default",
-        "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/"
+        "apiEndpoint": "https://europe-west3-peterneumark-com.cloudfunctions.net/wiki-app/",
+        "apiRegion": "europe-west3"
     },
     "firebase": {
         "apiKey": "AIzaSyCOmUqLxAe2O-elEnk-ykX76P45IAZ5Ouc",
