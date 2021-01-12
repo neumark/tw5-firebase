@@ -8,7 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const { validateFirebaseIdToken } = require('./src/authentication');
 const { read, write, remove } = require('./src/endpoints');
-const apiRegion = require('./config.json').wiki.apiRegion;
+const apiRegion = require('./config.json').deploy.apiRegion;
 
 const restapi = express();
 
