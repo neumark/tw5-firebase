@@ -7,12 +7,15 @@ if [ ! -f "$FIREBASECONFIGPATH" ]; then
   FIREBASECONFIGPATH="$DIR/../firebase_default.json"
 fi
 
+CONFIGPATH="$DIR/../etc/config.json"
+KEYSPATH="$DIR/../etc/keys.json"
+
 # APIKEY is "Browser Key" at eg: https://console.developers.google.com/apis/credentials?pli=1&project=peterneumark-com&folder=&organizationId=
-APIKEY="$(cat "$DIR/../etc/config.json" | jq -r ".firebase.apiKey")"
-PROJECT="$(cat "$DIR/../etc/config.json" | jq -r ".firebase.projectId")"
-REFERRER="$(cat "$DIR/../etc/config.json" | jq -r ".firebase.authDomain")"
-TOKEN="$(cat "$DIR/../etc/keys.json" | jq -r .firebaseToken)"
-REFRESH_TOKEN="$(cat "$DIR/../etc/keys.json" | jq -r .refreshToken)"
+APIKEY="$(cat "$CONFIGPATH" | jq -r ".firebase.apiKey")"
+PROJECT="$(cat "$CONFIGPATH" | jq -r ".firebase.projectId")"
+REFERRER="$(cat "$CONFIGPATH" | jq -r ".firebase.authDomain")"
+TOKEN="$(cat "$KEYSPATH" | jq -r .firebaseToken)"
+REFRESH_TOKEN="$(cat "$KEYSPATH" | jq -r .refreshToken)"
 SERVICE_ACCOUNT_KEY="$DIR/../etc/service-account-key.json"
 
 FIREBASECLI="$DIR/../node_modules/.bin/firebase"
