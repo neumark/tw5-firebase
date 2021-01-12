@@ -24,7 +24,9 @@ TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"
 NODE_FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
 
 function firebase_cli() {
+    pushd "$DIR/../"
     GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" node $NODE_FLAGS "$FIREBASECLI" --config "$FIREBASECONFIGPATH" --project "$PROJECT" --token "$TOKEN" $@
+    popd
 }
 
 function tiddlywiki_cli() {
