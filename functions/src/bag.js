@@ -48,7 +48,7 @@ const defaultPolicy = bag => {
             });
         default:
             return adminOnlyPolicy;
-    };
+    }
 };
 
 const verifyTiddlerConstraints = (constraints, tiddler) => constraints.map(getConstraintChecker).every(c => c(tiddler));

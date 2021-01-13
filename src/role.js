@@ -21,7 +21,7 @@ const {readRoles} = require('../functions/src/role');
 
 const doGrant = async () => await db.runTransaction(async transaction => {
     const roles = await readRoles(db, transaction, config.wiki.wikiName);
-    console.log(roles);
+    return roles;
 });
 
 doGrant().then(console.log, console.error);

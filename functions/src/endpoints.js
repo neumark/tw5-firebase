@@ -20,10 +20,10 @@ const mkRead = db => (req, res) => {
   const title = req.params.title;
   return db.runTransaction(async transaction => {
       // when reading a recipe, user must have access to all bags (regardless of which bag contains requested tiddler).
-      const bags = await (!!req.params.bag ? [req.params.bag] : resolveRecipe(db, transaction, wiki, req.params.recipe, req.user));
+      const bags = await (req.params.bag ? [req.params.bag] : resolveRecipe(db, transaction, wiki, req.params.recipe, req.user));
       const role = await getUserRole(db, transaction, wiki, req.user);
       if (bags.length === 0 || (await bagsWithAccess(db, transaction, wiki, bags, role, req.user, ACCESS_READ)).length < bags.length) {
-        throw new HTTPError(`no ${ACCESS_READ} access granted to ${req.user.email} with role ${role} on wiki ${wiki} ${!!req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag}${title? " tiddler " + JSON.stringify(title) : ""}`, HTTP_FORBIDDEN);
+        throw new HTTPError(`no ${ACCESS_READ} access granted to ${req.user.email} with role ${role} on wiki ${wiki} ${req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag}${title? " tiddler " + JSON.stringify(title) : ""}`, HTTP_FORBIDDEN);
       }
       return title ? readTiddler(db, transaction, wiki, bags, title) : readBags(db, transaction, wiki, bags); 
   }).then(
@@ -52,11 +52,11 @@ const mkWrite = db => (req, res) => {
     throw new HTTPError(`tiddler's bag attributes (${tiddler.bag}) and bag name in URL (${req.params.bag}) do not match`, HTTP_BAD_REQUEST);
   }
   return db.runTransaction(async transaction => {
-      const bags = await (!!req.params.bag ? [req.params.bag] : resolveRecipe(db, transaction, wiki, req.params.recipe, user));
+      const bags = await (req.params.bag ? [req.params.bag] : resolveRecipe(db, transaction, wiki, req.params.recipe, user));
       const role = await getUserRole(db, transaction, wiki, user);
       const acceptingBags = await bagsWithAccess(db, transaction, wiki, bags, role, user, ACCESS_WRITE, tiddler);
       if (acceptingBags.length < 1) {
-        throw new HTTPError(`no ${ACCESS_WRITE} access granted to ${user.email} with role ${role} on wiki ${wiki} ${!!req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag} ${tiddler ? "tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
+        throw new HTTPError(`no ${ACCESS_WRITE} access granted to ${user.email} with role ${role} on wiki ${wiki} ${req.params.recipe ? "recipe " + req.params.recipe : "bag " + req.params.bag} ${tiddler ? "tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
       }
       const destinationBag = acceptingBags[0];
       const updatedTiddler = await writeTiddler(db, transaction, email, wiki, destinationBag, tiddler);

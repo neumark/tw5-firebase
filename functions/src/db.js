@@ -3,7 +3,9 @@ const getDB = admin => {
     return {
         dateToFirestoreTimestamp: date => admin.firestore.Timestamp.fromDate(date),
         runTransaction: fn => db.runTransaction(fn),
-        collectionRef: path => db.collection(path)
+        collectionRef: path => db.collection(path),
+        // not traditionally considered a database primitive, whatever
+        getTimestamp: () => new Date()
     };
 };
 
