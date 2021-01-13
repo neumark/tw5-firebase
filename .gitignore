@@ -9,7 +9,7 @@ public/index.html
 etc/service-account-key.json
 etc/keys.json
 etc/config.json
-functions/ui-debug.log
-functions/firebase-debug.log
+ui-debug.log
+firebase-debug.log
 functions/config.json
 .DS_Store
