@@ -8,6 +8,6 @@ const defaultRecipe = email => ([personalBag(email), GLOBAL_SYSTEM_BAG, GLOBAL_C
 
 const readRecipe = getContentValidatingReader(recipeSchema);
 
-const resolveRecipe = (transaction, wiki, recipe, user) => recipe === DEFAULT_RECIPE ? defaultRecipe(user.email) : readRecipe(transaction, wiki, GLOBAL_RECIPE_BAG, recipe, []);
+const resolveRecipe = (db, transaction, wiki, recipe, user) => recipe === DEFAULT_RECIPE ? defaultRecipe(user.email) : readRecipe(db, transaction, wiki, GLOBAL_RECIPE_BAG, recipe, []);
 
 module.exports = { resolveRecipe };

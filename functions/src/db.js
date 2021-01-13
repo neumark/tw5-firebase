@@ -1,10 +1,10 @@
-const admin = require('firebase-admin');
-const db = admin.firestore();
+const getDB = admin => {
+    const db = admin.firestore();
+    return {
+        dateToFirestoreTimestamp: date => admin.firestore.Timestamp.fromDate(date),
+        runTransaction: fn => db.runTransaction(fn),
+        collectionRef: path => db.collection(path)
+    };
+};
 
-const dateToFirestoreTimestamp = date => admin.firestore.Timestamp.fromDate(date);
-
-const runTransaction = fn => db.runTransaction(fn);
-
-const collectionRef = path => db.collection(path);
-
-module.exports = { dateToFirestoreTimestamp, runTransaction, collectionRef };
+module.exports = { getDB };

@@ -59,19 +59,19 @@ const verifyUserAuthorized = (acl, role, user) => {
     return acl.some(rule => permittedByRole(rule) || permittedByUser(rule));
 };
 
-const hasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler=null) => {
-    const policy = await readPolicy(transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
+const hasAccess = async (db, transaction, wiki, bag, role, user, accessType, tiddler=null) => {
+    const policy = await readPolicy(db, transaction, wiki, bag, bagPolicyTiddler(bag), defaultPolicy(bag));
     const constraintsCheck = (accessType === "write" && tiddler && policy.constraints) ? verifyTiddlerConstraints : () => true;
     return verifyUserAuthorized(policy[accessType], role, user) && constraintsCheck(policy.constraints, tiddler);
 };
 
-const bagsWithAccess = async (transaction, wiki, bags, role, user, accessType, tiddler=null) => (await Promise.all(
-    bags.map(async bag => [bag, await hasAccess(transaction, wiki, bag, role, user, accessType, tiddler)])))
+const bagsWithAccess = async (db, transaction, wiki, bags, role, user, accessType, tiddler=null) => (await Promise.all(
+    bags.map(async bag => [bag, await hasAccess(db, transaction, wiki, bag, role, user, accessType, tiddler)])))
         .filter(([_bag, hasAccess]) => hasAccess)
         .map(([bag, _hasAccess]) => bag);
 
-const assertHasAccess = async (transaction, wiki, bag, role, user, accessType, tiddler) => {
-    if (!(await hasAccess(transaction, wiki, bag, role, user, accessType, tiddler))) {
+const assertHasAccess = async (db, transaction, wiki, bag, role, user, accessType, tiddler) => {
+    if (!(await hasAccess(db, transaction, wiki, bag, role, user, accessType, tiddler))) {
         throw new HTTPError(`no ${accessType} access granted to ${user.email} with role ${role} on wiki ${wiki} bag ${bag} ${tiddler ? " tiddler " + JSON.stringify(tiddler) : ""}`, HTTP_FORBIDDEN);
     }
 }

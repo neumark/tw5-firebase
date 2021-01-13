@@ -1,6 +1,5 @@
 const { HTTP_CONFLICT, HTTPError } = require('./errors');
 const { stringifyDate, getRevision } = require('./tw');
-const { dateToFirestoreTimestamp, collectionRef } = require('./db');
 const { getTimestamp } = require('./date');
 const { getValidator } = require('./schema');
 
@@ -13,13 +12,13 @@ const fixDates = tiddler => Object.assign({}, tiddler, {
 // Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
 const stringToFirebaseDocName = str => str.replace(/\//g, "_");
 
-const getBagRef = (wiki, bag) => collectionRef(`wikis/${stringToFirebaseDocName(wiki)}/${stringToFirebaseDocName(bag)}`);
+const getBagRef = (db, wiki, bag) => db.collectionRef(`wikis/${stringToFirebaseDocName(wiki)}/${stringToFirebaseDocName(bag)}`);
 
-const getTiddlerRef = (wiki, bag, title) => getBagRef(wiki, bag).doc(stringToFirebaseDocName(title));
+const getTiddlerRef = (db, wiki, bag, title) => getBagRef(db, wiki, bag).doc(stringToFirebaseDocName(title));
 
-const prepareTiddler = (email, doc, tiddler) => {
+const prepareTiddler = (db, email, doc, tiddler) => {
     const timestamp = getTimestamp();
-    const firestoreTS = dateToFirestoreTimestamp(timestamp);
+    const firestoreTS = db.dateToFirestoreTimestamp(timestamp);
     const newRevision = getRevision(email, timestamp);
     const newTiddler = Object.assign({}, tiddler, {
         creator: doc.exists ? doc.data().creator : email,
@@ -40,10 +39,10 @@ const revisionCheck = (doc, revision) => {
 
 const asyncMap = async (list, fn) => await Promise.all(list.map(fn));
 
-const readBags = async (transaction, wiki, bags) => {
+const readBags = async (db, transaction, wiki, bags) => {
     const allTiddlers = [];
     const titles = new Set();
-    (await asyncMap(bags, async bag => ({bag, bagContents: await transaction.get(getBagRef(wiki, bag))}))).forEach(({bag, bagContents}) => {
+    (await asyncMap(bags, async bag => ({bag, bagContents: await transaction.get(getBagRef(db, wiki, bag))}))).forEach(({bag, bagContents}) => {
         bagContents.forEach(doc => {
             const tiddler = doc.data();
             if (!titles.has(tiddler.title)) {
@@ -57,8 +56,8 @@ const readBags = async (transaction, wiki, bags) => {
 
 const firstOrFallback = (list, fallback) => list.length > 0 ? list[0] : fallback;
 
-const readTiddler = async (transaction, wiki, bags, title) => {
-    const maybeDocs = await asyncMap(bags, async bag => ({bag, doc: await transaction.get(getTiddlerRef(wiki, bag, title))}));
+const readTiddler = async (db, transaction, wiki, bags, title) => {
+    const maybeDocs = await asyncMap(bags, async bag => ({bag, doc: await transaction.get(getTiddlerRef(db, wiki, bag, title))}));
     return firstOrFallback(maybeDocs
         // only consider docs which exist in firestore
         .filter(({doc}) => doc.exists)
@@ -71,8 +70,8 @@ const readTiddler = async (transaction, wiki, bags, title) => {
 // validates the "text" field of a tiddler against a schema.
 const getContentValidatingReader = (schema) => {
     const validate = getValidator(schema);
-    return async (transaction, wiki, bag, title, fallbackValue={}) => {
-        const tiddler = await readTiddler(transaction, wiki, [bag], title);
+    return async (db, transaction, wiki, bag, title, fallbackValue={}) => {
+        const tiddler = await readTiddler(db, transaction, wiki, [bag], title);
         const value = (tiddler && tiddler.text) ? JSON.parse(tiddler.text) : fallbackValue;
         const validation = validate(value)
         if (!validation.valid) {
@@ -82,18 +81,18 @@ const getContentValidatingReader = (schema) => {
     };
 };
 
-const writeTiddler = async (transaction, email, wiki, bag, tiddler) => {
+const writeTiddler = async (db, transaction, email, wiki, bag, tiddler) => {
     const revision = tiddler.revision;
-    const tiddlerRef = getTiddlerRef(wiki, bag, tiddler.title);
+    const tiddlerRef = getTiddlerRef(db, wiki, bag, tiddler.title);
     const doc = await transaction.get(tiddlerRef);
     revisionCheck(doc, revision);
-    const updatedTiddler = prepareTiddler(email, doc, tiddler);
+    const updatedTiddler = prepareTiddler(db, email, doc, tiddler);
     await transaction.set(tiddlerRef, updatedTiddler);
     return updatedTiddler;
 };
 
-const removeTiddler = async (transaction, wiki, bag, title, revision) => {
-    const tiddlerRef = getTiddlerRef(wiki, bag, title);
+const removeTiddler = async (db, transaction, wiki, bag, title, revision) => {
+    const tiddlerRef = getTiddlerRef(db, wiki, bag, title);
     const doc = await transaction.get(tiddlerRef);
     revisionCheck(doc, revision);
     await transaction.delete(tiddlerRef);

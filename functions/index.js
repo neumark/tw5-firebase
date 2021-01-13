@@ -6,8 +6,9 @@ admin.initializeApp();
 const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
+const db = require('./src/db').getDB(admin);
 const { validateFirebaseIdToken } = require('./src/authentication');
-const { read, write, remove } = require('./src/endpoints');
+const { read, write, remove } = require('./src/endpoints').getEndpoints(db);
 const apiRegion = require('./config.json').deploy.apiRegion;
 
 const restapi = express();
