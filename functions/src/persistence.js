@@ -95,7 +95,7 @@ const getContentValidatingTransformer = (schema) => {
         if (!transformedValidation.valid) {
             throw new Error(`transformed tiddler text does not conform to schema: ${JSON.stringify(transformedValidation.errors)}`);
         }
-        const transformedTiddler = Object.assign({}, tiddler, {text: JSON.stringify(transformedValue)});
+        const transformedTiddler = Object.assign({}, tiddler, {title, text: JSON.stringify(transformedValue)});
         await writeTiddler(db, transaction, email, wiki, bag, transformedTiddler);
         return transformedTiddler;
     };
