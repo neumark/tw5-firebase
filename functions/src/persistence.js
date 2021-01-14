@@ -80,6 +80,28 @@ const getContentValidatingReader = (schema) => {
     };
 };
 
+// validates the "text" field of a tiddler against a schema.
+const getContentValidatingTransformer = (schema) => {
+    const validate = getValidator(schema);
+    return async (transform, db, transaction, email, wiki, bag, title, fallbackValue={}) => {
+        const tiddler = await readTiddler(db, transaction, wiki, [bag], title);
+        const originalValue = (tiddler && tiddler.text) ? JSON.parse(tiddler.text) : fallbackValue;
+        const originalValidation = validate(originalValue)
+        if (!originalValidation.valid) {
+            throw new Error(`original tiddler text does not conform to schema: ${JSON.stringify(originalValidation.errors)}`);
+        }
+        const transformedValue = await transform(originalValue);
+        const transformedValidation = validate(transformedValue);
+        if (!transformedValidation.valid) {
+            throw new Error(`transformed tiddler text does not conform to schema: ${JSON.stringify(transformedValidation.errors)}`);
+        }
+        const transformedTiddler = Object.assign({}, tiddler, {text: JSON.stringify(transformedValue)});
+        await writeTiddler(db, transaction, email, wiki, bag, transformedTiddler);
+        return transformedTiddler;
+    };
+};
+
+
 const writeTiddler = async (db, transaction, email, wiki, bag, tiddler) => {
     const revision = tiddler.revision;
     const tiddlerRef = getTiddlerRef(db, wiki, bag, tiddler.title);
@@ -97,4 +119,4 @@ const removeTiddler = async (db, transaction, wiki, bag, title, revision) => {
     await transaction.delete(tiddlerRef);
 };
 
-module.exports = {readBags, readTiddler, removeTiddler, writeTiddler, getContentValidatingReader};
+module.exports = {readBags, readTiddler, removeTiddler, writeTiddler, getContentValidatingReader, getContentValidatingTransformer};
