@@ -2,16 +2,15 @@ const Ajv = require('ajv');
 
 const string = {"type": "string"};
 
-const nonEmptyString = Object.assign({minLength: 1}, string);
+const nonEmptyString = {minLength: 1, ...string};
+const user = nonEmptyString;
 
-const user = Object.assign({format: "email"}, string);
-
-const timestamp = Object.assign({pattern: "^[0-9]{17}$"}, string);
+const timestamp = {pattern: "^[0-9]{17}$", ...string};
 
 // NOTE: order matters, role.js uses this array to assign role numbers to each role.
 const roleNames = ['anonymous', 'authenticated', 'reader', 'editor', 'admin'];
 
-const role = {type: "string", "enum": roleNames};
+const role = {"enum": roleNames, ...string};
 
 const tiddlerSchema = {
     type: "object",
