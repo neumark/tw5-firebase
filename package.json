@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "author": "neumark.peter@gmail.com",
-  "license": "UNLICENSED",
+  "license": "BSD",
   "scripts": {
     "clean": "git checkout . && git clean -fd",
     "local": "node ./node_modules/.bin/tiddlywiki editions/tw-local --listen",
