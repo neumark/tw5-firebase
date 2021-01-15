@@ -1,5 +1,7 @@
 # TW5-firebase
 
+![](static/img/tw5-firebase.png)
+
 TW5-firebase is a <a href="https://firebase.google.com/" class="tc-tiddlylink-external">Google Firebase</a>-hosted version of <a href="https://tiddlywiki.com/" class="tc-tiddlylink-external">TiddlyWiki 5</a>. It uses the FireStore database to save tiddlers, Firebase Auth for signon, Firebase hosting for serving static files and Firebase functions for the tiddler IO API.
 
 To create your own personal instance of TW5-firebase,

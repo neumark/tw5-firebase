@@ -1,0 +1,83 @@
+
+<!doctype html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <style>
+    img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 80%;
+    }
+    </style>
+</head>
+<body>
+    <section class="tc-story-river">
+        
+        <p><div class="tc-tiddler-frame tc-tiddler-view-frame tc-tiddler-exists   tc-tagged-TW5-firebase-docs " data-tags="TW5-firebase-docs" data-tiddler-title="first_deploy"><div class="tc-tiddler-body tc-reveal"><h1 class="">First deploy</h1><p>In the <a class="tc-tiddlylink tc-tiddlylink-resolves" href="./firebase_setup.html">previous section</a>, we created the firebase project. Now we need to edit the config files and deploy our code!</p><h2 class="">Dependencies</h2><p>The project uses <code>node</code> with the <code>yarn</code> package manager (<code>npm</code> may also work). The <code>jq</code> command line utility is used extensively in the shell scripts.</p><h2 class="">Checking out the repo.</h2><p>To check out the git repository, from your terminal run:</p><pre><code>git clone https://github.com/neumark/tw5-firebase.git</code></pre><h2 class="">Installing nodejs dependencies</h2><p>If you have <code>nvm</code> installed, it's a good idea to set the node version by running <code>nvm install</code>.
+Install the required node packages with <code>yarn</code>:</p><pre><code>cd tw5-firebase
+yarn install</code></pre><h2 class="">Getting a firebase admin token</h2><p>Firebase provides a CLI tool which can be used to generate a token required to interact with your firebase project. Run:</p><pre><code>yarn run firebase login:ci</code></pre><p>A Google account chooser and permission dialog will be displayed in your browser. Once you have agreed to provide the firebase CLI with the necessary privileges, you should see a token displayed in your terminal.</p><pre><code>yarn run v1.22.5
+$ tw5-firebase/node_modules/.bin/firebase login:ci
+
+Visit this URL on this device to log in:
+https://accounts.google.com/o/oauth2/auth?client_id=563584...24&amp;redirect_uri=http%3A%2F%2Flocalhost%3A9005
+
+Waiting for authentication...
+
+✔  Success! Use this token to login on a CI server:
+
+1//09Oo29t7x9kNkCgYIARAAGAkSNwF-L9Irvff76VolUzmloznZQAfsJQRoG-OnjS-3rsQi_720U-snphSBq5hn8oIogkK6fBlHYQ
+
+Example: firebase deploy --token &quot;$FIREBASE_TOKEN&quot;
+
+✨  Done in 13.66s.</code></pre><h2 class="">Creating <code>keys.json</code></h2><p>Copy the file <code>etc/keys.json.example</code> to <code>etc/keys.json</code>, adding your own firebase token in the <code>firebaseToken</code> field, eg:</p><pre class="json hljs"><code>{
+    <span class="hljs-attr">"firebaseToken"</span>: <span class="hljs-string">"1//09Oo29t7x9kNkCgYIARAAGAkSNwF-L9Irvff76VolUzmloznZQAfsJQRoG-OnjS-3rsQi_720U-snphSBq5hn8oIogkK6fBlHYQ"</span>
+}</code></pre><p>This step is required for the scripts in the <code>scripts</code> directory to work (they all authenticate using the firebase token in <code>keys.json</code>). It's OK if there are additional fields in <code>keys.json</code> which are still just placeholders.</p><h2 class="">Creating <code>config.json</code></h2><p>Non-sensitive firebase-specific configuration is stored in <code>etc/config.json</code>. Copy <code>etc/config.json.example</code> to <code>etc/config.json</code>. Next, we'll copy the firebase app config from the admin UI.</p><p>In the firebase admin, select the <code>testwiki</code> app within the project by clicking on <code>&lt;/&gt; testwiki</code>:</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_app_dashboard.png"></p><p>When a small popup is displayed, click on the cog.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_app_settings.png"></p><p>The <strong>Settings</strong> page for the app will appear. Scroll down and select <strong>Config</strong> from the radio options:</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_app_config.png"></p><p>Copy the fields in <strong>firebaseConfig</strong> into the <strong>firebaseConfig</strong> section of <code>etc/config.json</code>.</p><p>A single firebase project can host several tiddlywiki instances. Let's name our first wiki <code>testwiki</code> just like the firebase project and app. Update the <code>wikiName</code> field in the <code>wiki</code> section of <code>etc/config.json</code>.</p><h2 class="">Downloading the service account key</h2><p>Go to project settings (click on the cog next to <strong>Project Overview</strong>), and select the <strong>Service Accounts</strong> tab. Click on <strong>Generate new private key</strong>. In the confirmation dialog, click <strong>Generate key</strong>.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_service_account_confirm.png"></p><p>Your browser will download a json file. Move this file to <code>etc/service-account-key.json</code>.</p><h2 class="">Running the deploy script</h2><pre><code>yarn run deploy</code></pre><p>The output should look something like this:</p><pre><code>=== Deploying to 'testwiki-87893'...
+
+i  deploying storage, firestore, functions, hosting
+i  firebase.storage: checking etc/storage.rules.json for compilation errors...
+✔  firebase.storage: rules file etc/storage.rules.json compiled successfully
+i  cloud.firestore: checking etc/firestore.rules.json for compilation errors...
+✔  cloud.firestore: rules file etc/firestore.rules.json compiled successfully
+i  functions: ensuring required API cloudfunctions.googleapis.com is enabled...
+i  functions: ensuring required API cloudbuild.googleapis.com is enabled...
+✔  functions: required API cloudbuild.googleapis.com is enabled
+✔  functions: required API cloudfunctions.googleapis.com is enabled
+i  storage: uploading rules etc/storage.rules.json...
+i  firestore: uploading rules etc/firestore.rules.json...
+i  functions: preparing functions directory for uploading...
+i  functions: packaged functions (99.94 KB) for uploading
+✔  functions: functions folder uploaded successfully
+i  hosting[testwiki-87893]: beginning deploy...
+i  hosting[testwiki-87893]: found 20 files in public
+✔  hosting[testwiki-87893]: file upload complete
+✔  storage: released rules etc/storage.rules.json to firebase.storage
+✔  firestore: released rules etc/firestore.rules.json to cloud.firestore
+i  functions: uploading functions in project: wiki-app(europe-west3)
+i  functions: creating Node.js 12 function wiki-app(europe-west3)...
+✔  functions[wiki-app(europe-west3)]: Successful create operation.
+Function URL (wiki-app): https://europe-west3-testwiki-87893.cloudfunctions.net/wiki-app
+i  hosting[testwiki-87893]: finalizing version...
+✔  hosting[testwiki-87893]: version finalized
+i  hosting[testwiki-87893]: releasing new version...
+✔  hosting[testwiki-87893]: release complete
+
+✔  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/testwiki-87893/overview
+Hosting URL: https://testwiki-87893.web.app</code></pre><p>The line starting with <code>Function URL (wiki-app):</code> contains the API endpoint URL. Update the value of <code>wiki.apiEndpoint</code> in <code>etc/config.json</code> with this URL, adding a trailing <code>/</code>. Once the <code>apiEndpoint</code> value is updated, a second deploy is required:</p><pre><code>yarn run deploy</code></pre><p>The <code>Hosting URL:</code> is where the wiki is available: <a class="tc-tiddlylink-external" href="https://testwiki-87893.web.app" rel="noopener noreferrer" target="_blank">https://testwiki-87893.web.app</a></p><p>At this point, you should be able to see a login screen when visiting your hosting URL.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/tw_login.png"></p><p>Next step: <a class="tc-tiddlylink tc-tiddlylink-resolves" href="./authentication_and_permissions.html">Authentication and wiki permissions</a>
+</p></div>
+
+</div>
+
+</p>
+        
+    </section>
+</body>
+</html>
+

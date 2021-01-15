@@ -1,0 +1,33 @@
+
+<!doctype html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <style>
+    img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 80%;
+    }
+    </style>
+</head>
+<body>
+    <section class="tc-story-river">
+        
+        <p><div class="tc-tiddler-frame tc-tiddler-view-frame tc-tiddler-exists   tc-tagged-TW5-firebase-docs " data-tags="TW5-firebase-docs" data-tiddler-title="firebase_setup"><div class="tc-tiddler-body tc-reveal"><h1 class="">Firebase project setup</h1><h2 class="">Open the firebase console</h2><p>Go to <a class="tc-tiddlylink-external" href="https://console.firebase.google.com/" rel="noopener noreferrer" target="_blank">https://console.firebase.google.com/</a> and sign in with your google account.
+<img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_console_login.png"></p><h2 class="">Create the firebase project</h2><p>Click the <strong>Create a project</strong> button. Choose whatever name you like. In this tutorial, we'll use <code>testwiki</code>. Be sure to tick the &quot;I accept ...&quot; box before trying to set the project name. Click <strong>Continue</strong>.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_setup.png"></p><p>Click <strong>Continue</strong> again on the <em>Google Analytics
+for your Firebase project</em> and <em>Configure Google Analytics</em> screens. Tick any checkboxes required to proceed. Finally, your project will be ready.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_project_ready.png"></p><h2 class="">Create a web app within your project</h2><p>After clicking <strong>Continue</strong> once the project has been created, you will be taken to the firebase admin.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_admin.png"></p><p>Click on the round white button labaled <code>&lt;/&gt;</code> to create the web app.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_create_webapp.png"></p><p>Let's call the web app <code>testwiki</code> as well. Be sure to tick <em>Also set up Firebase Hosting for this app.</em> Click on <strong>Register app</strong>. Throughout the wizard, code samples and example commands are shown, these can be safely ignored. Click <strong>Next</strong> and <strong>Continue to console</strong> to finish the app creation process.</p><p>Next step: <a class="tc-tiddlylink tc-tiddlylink-missing" href="./preparing-the-config-files.html">Preparing the config files</a></p><h2 class="">Upgrade to the Blaze plan</h2><p>Firebase has a free tier (called the <code>Spark</code>) plan, but in order to use Firebase Functions (required by the backend), the &quot;pay as you go&quot; <code>Blaze</code> plan is required. Blaze still has a generous free usage quota, which is plenty for a personal notebook, but the upgrade does require you to set up a billing account (which in turn requires you to authorize your credit card). Click on the <strong>Upgrade</strong> button to the right to upgrade from <strong>Spark</strong> to <strong>Blaze</strong></p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_plan_spark_upgrade.png"></p><p>When asked to confirm the upgrade, select <strong>Purchase</strong>.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_plan_spark_confirm.png"></p><p>If the upgrade was successful, we should see the <strong>Blaze</strong> plan appear at the bottom left of the admin screen:</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_plan_blaze.png"></p><h2 class="">Setting the default project location</h2><p>Firebase entities like the firestore storage instance or firebase functions are hosted from a particular GCP data center. We must set the default GCP resource location. To do so, click on the cog icon to the right of <strong>Project Overview</strong> near the top left of the screen, then select <strong>Project Settings</strong>. Finally, click the pencil icon to the right of <em>Default GCP resource location: not yet selected</em>.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_project_settings.png"></p><p>The default region is <code>europe-west3</code>, be sure to update <code>wiki.apiRegion</code> in <code>etc/config.json</code> if you're using something different.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_project_region.png"></p><h2 class="">Enabling Cloud Firestore</h2><p>The database needs to be enabled before we can use it. Click on <strong>Cloud Firestore</strong> in the firebase admin. Then, click on <strong>Create database</strong>.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_firestore_enable.png"></p><p>A wizard should appear. In the first step, leave the default settings.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_firestore_create_1.png"></p><p>In the second step, verify that the GCP region hosting the database is the same region specified in <code>etc/config.json</code> property <code>deploy.apiRegion</code>. It should be filled in for you. Click <strong>Enable</strong> to complete the process.</p><p><img src="https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/img/doc/fb_firestore_create_2.png"></p><p>Next step: <a class="tc-tiddlylink tc-tiddlylink-resolves" href="./first_deploy.html">First deploy</a>!</p></div>
+
+</div>
+
+</p>
+        
+    </section>
+</body>
+</html>
+
