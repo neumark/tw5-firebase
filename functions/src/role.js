@@ -1,25 +1,32 @@
-const { getContentValidatingReader } = require('./persistence'); 
-const { roleNames, rolesSchema } = require('./schema');
+const { roleNames } = require('./schema');
 const { ROLES_TIDDLER, GLOBAL_SYSTEM_BAG} = require('./constants'); 
-
+const NONE_ROLE = "none";
 const ROLES = {};
+
+// '_' prefix to claim servers to distinguish from standard JWT fields
+const customClaimKey = wiki => `_${wiki}`;
 
 for (const [index, element] of roleNames.entries()) {
   ROLES[element] = index;
 }
 
-const computeRole = (email, usersToRolls) => Math.max(ROLES.authenticated, ...(Object.entries(usersToRolls).map(([role, users]) => users.includes(email) ? (ROLES[role] || 0) : ROLES.authenticated)));
-
-const roleReader = getContentValidatingReader(rolesSchema);
-
-const readRoles = async (db, transaction, wiki) => await roleReader (db, transaction, wiki, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER);
-
-const getUserRole = async (db, transaction, wiki, user) => {
-    if (user.isAuthenticated) {
-        const roles = await readRoles(db, transaction, wiki);
-        return computeRole(user.email, roles);
+const getUserRole = (wiki, claims) => {
+    const key = customClaimKey(wiki);
+    if (!claims || !claims.hasOwnProperty(key)) {
+        return ROLES.anonymous;
     }
-    return ROLES.anonymous;
+    return claims[key];
 };
 
-module.exports = { ROLES, getUserRole, readRoles };
+const setUserRole = async (admin, wiki, user, newRole) => {
+    const key = customClaimKey(wiki);
+    const newClaims = Object.assign({}, user.customClaims);
+    if (newRole === NONE_ROLE) {
+        delete newClaims[key];
+    } else {
+        newClaims[key] = ROLES[newRole];
+    }
+    return await admin.auth().setCustomUserClaims(user.uid, newClaims);
+};
+
+module.exports = { ROLES, NONE_ROLE, getUserRole, setUserRole };

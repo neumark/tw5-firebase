@@ -1,6 +1,8 @@
 const { HTTP_CONFLICT, HTTPError } = require('./errors');
 const { stringifyDate, getRevision } = require('./tw');
 const { getValidator } = require('./schema');
+const { username } = require('./authentication');
+
 
 // converts firestore dates to string timestamps in tiddler fields
 const fixDates = tiddler => Object.assign({}, tiddler, {
@@ -15,13 +17,14 @@ const getBagRef = (db, wiki, bag) => db.collectionRef(`wikis/${stringToFirebaseD
 
 const getTiddlerRef = (db, wiki, bag, title) => getBagRef(db, wiki, bag).doc(stringToFirebaseDocName(title));
 
-const prepareTiddler = (db, email, doc, tiddler) => {
+const prepareTiddler = (db, user, doc, tiddler) => {
     const timestamp = db.getTimestamp();
     const firestoreTS = db.dateToFirestoreTimestamp(timestamp);
-    const newRevision = getRevision(email, timestamp);
+    const newRevision = getRevision(user, timestamp);
+    const modifier = username(user);
     const newTiddler = Object.assign({}, tiddler, {
-        creator: doc.exists ? doc.data().creator : email,
-        modifier: email,
+        creator: doc.exists ? doc.data().creator : modifier,
+        modifier,
         created: doc.exists ? doc.data().created : firestoreTS,
         modified: firestoreTS,
         revision: newRevision
@@ -83,7 +86,7 @@ const getContentValidatingReader = (schema) => {
 // validates the "text" field of a tiddler against a schema.
 const getContentValidatingTransformer = (schema) => {
     const validate = getValidator(schema);
-    return async (transform, db, transaction, email, wiki, bag, title, fallbackValue={}) => {
+    return async (transform, db, transaction, user, wiki, bag, title, fallbackValue={}) => {
         const tiddler = await readTiddler(db, transaction, wiki, [bag], title);
         const originalValue = (tiddler && tiddler.text) ? JSON.parse(tiddler.text) : fallbackValue;
         const originalValidation = validate(originalValue)
@@ -96,18 +99,18 @@ const getContentValidatingTransformer = (schema) => {
             throw new Error(`transformed tiddler text does not conform to schema: ${JSON.stringify(transformedValidation.errors)}`);
         }
         const transformedTiddler = Object.assign({}, tiddler, {title, text: JSON.stringify(transformedValue)});
-        await writeTiddler(db, transaction, email, wiki, bag, transformedTiddler);
+        await writeTiddler(db, transaction, user, wiki, bag, transformedTiddler);
         return transformedTiddler;
     };
 };
 
 
-const writeTiddler = async (db, transaction, email, wiki, bag, tiddler) => {
+const writeTiddler = async (db, transaction, user, wiki, bag, tiddler) => {
     const revision = tiddler.revision;
     const tiddlerRef = getTiddlerRef(db, wiki, bag, tiddler.title);
     const doc = await transaction.get(tiddlerRef);
     revisionCheck(doc, revision);
-    const updatedTiddler = prepareTiddler(db, email, doc, tiddler);
+    const updatedTiddler = prepareTiddler(db, user, doc, tiddler);
     await transaction.set(tiddlerRef, updatedTiddler);
     return updatedTiddler;
 };

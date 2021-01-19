@@ -4,9 +4,27 @@ const { sendErr } = require('./errors');
 // The Firebase ID token needs to be passed as a Bearer token in the Authorization HTTP header like this:
 // `Authorization: Bearer <Firebase ID Token>`.
 // when decoded successfully, the ID Token content will be added as `req.user`.
+
+/*
+ *
+ * User fields:
+ {
+    "name": "Foo Bar",
+    "picture": "https://lh3.googleusercontent.com/a-/AOh14GjazfRwxtyRgNvFfFljmPGWAZ99gtxFavpANCPUIIc",
+    "email": "foo.bar@gmail.com",
+    "email_verified": true,
+    "uid": "bMLcoJSRrBZBDSgm7DjTnXzO5up1"
+    // custom claims declaring roles on different wikis
+    "pn-wiki": 4,
+ }
+ */ 
+
 const ANONYMOUS_VISITOR = {
-    uid: 0,
+    uid: '-anonymous-',
     email: null,
+    email_verified: false,
+    name: null,
+    picture: null,
     isAuthenticated: false
 }
 
@@ -38,4 +56,6 @@ const validateFirebaseIdToken = admin => async (req, res, next) => {
   }
 };
 
-module.exports = { validateFirebaseIdToken };
+const username = user => user.name || user.uid;
+
+module.exports = { validateFirebaseIdToken, username };

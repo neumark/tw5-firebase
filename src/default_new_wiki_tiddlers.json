@@ -1,0 +1,25 @@
+[
+  {
+    "bag": "content",
+    "created": "20200607115915605",
+    "creator": "Peter Neumark",
+    "modified": "20200609182904512",
+    "modifier": "Peter Neumark",
+    "revision": "20200609182904512:x",
+    "text": "[list[$:/StoryList]]",
+    "title": "$:/DefaultTiddlers",
+    "type": "text/vnd.tiddlywiki"
+  },
+  {
+    "bag": "content",
+    "created": "20200607100221517",
+    "creator": "Peter Neumark",
+    "list": "Welcome",
+    "modified": "20210117175900374",
+    "modifier": "Peter Neumark",
+    "revision": "20210117175900374:x",
+    "text": "",
+    "title": "$:/StoryList",
+    "type": "text/vnd.tiddlywiki"
+  }
+]

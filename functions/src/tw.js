@@ -28,7 +28,7 @@ const stringifyDate = value => value.getUTCFullYear() +
 			pad(value.getUTCSeconds()) +
 			pad(value.getUTCMilliseconds(),3);
 
-const getRevision = (email, timestamp) => `${stringifyDate(timestamp)}:${email}`
+const getRevision = (user, timestamp) => `${stringifyDate(timestamp)}:${user.uid}`
 
 const hasField = (tiddler, field, value=null) => tiddler && tiddler.fields && tiddler.fields.hasOwnProperty(field) && (value != null ? tiddler.fields[tag] === value : true);
 

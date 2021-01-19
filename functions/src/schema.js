@@ -7,7 +7,7 @@ const user = nonEmptyString;
 
 const timestamp = {pattern: "^[0-9]{17}$", ...string};
 
-// NOTE: order matters, role.js uses this array to assign role numbers to each role.
+// NOTE: order matters, role.js uses this array to assign role numbers to each role. DO NOT EXTEND ARRAY!
 const roleNames = ['anonymous', 'authenticated', 'reader', 'editor', 'admin'];
 
 const role = {"enum": roleNames, ...string};
@@ -46,26 +46,9 @@ const getValidator = (schema) => {
     }
 };
 
-/* Roles tiddler example:
- * {
-     "admin": ["neumark.peter@gmail.com"],
-     "editor": ["peter@jetfabric.com"],
-     "reader": ["peter.neumark.jetfabric@gmail.com"]
-   }
- *
- */
-
-const rolesSchema = {
-    type: "object",
-    additionalProperties: {
-        type: "array",
-        items: user
-    },
-};
-
 /* Bag policy example:
  * {
- *  "write": [{"user": "j@j.com"}, {"role": "admin"}],
+ *  "write": [{"email": "j@j.com"}, {"role": "admin"}],
  *  "read": [{"role": "anonymous"}],
  *  "constraints": ["systemTiddler", "!isDraft"]
  * }
@@ -75,9 +58,15 @@ const grantee = {
     anyOf: [
         {
             type: 'object',
-            properties: {user},
+            properties: {userId: nonEmptyString},
             additionalProperties: false,
-            required: ["user"]
+            required: ["userId"]
+        },
+        {
+            type: 'object',
+            properties: {email: nonEmptyString},
+            additionalProperties: false,
+            required: ["email"]
         },
         {
             type: 'object',
@@ -103,4 +92,4 @@ const recipeSchema = {type: 'array', items: nonEmptyString};
 
 const validateTiddler = getValidator(tiddlerSchema);
 
-module.exports = {validateTiddler, getValidator, tiddlerSchema, rolesSchema, bagPolicySchema, recipeSchema, roleNames};
+module.exports = {validateTiddler, getValidator, tiddlerSchema, bagPolicySchema, recipeSchema, roleNames};

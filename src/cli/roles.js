@@ -1,8 +1,6 @@
 const fs = require('fs');
 const { roleNames } = require('../../functions/src/schema');
-const { ROLES } = require('../../functions/src/role');
-
-const NONE_ROLE = "none";
+const { ROLES, NONE_ROLE, getUserRole, setUserRole } = require('../../functions/src/role');
 
 const RE_UID = /^[a-zA-Z0-9]+$/;
 
@@ -30,17 +28,22 @@ module.exports = admin => {
             },
             handler: async ({role, userid, wiki}) => {
                 const user = await getUser(admin, userid);
-                if (user.customClaims && user.customClaims.hasOwnProperty(wiki)) {
-                    console.log(`User ${user.email} previously had role ${roleNames[user.customClaims[wiki]]} on wiki ${wiki}, setting new role to ${role}.`);
+                const oldRole = getUserRole(wiki, user.customClaims);
+                if (oldRole > 0) {
+                    console.log(`User ${user.email} previously had role ${roleNames[oldRole]} on wiki ${wiki}, setting new role to ${role}.`);
                 }
-                const newClaims = Object.assign({}, user.customClaims);
-                if (role === NONE_ROLE) {
-                    delete newClaims[wiki];
-                } else {
-                    newClaims[wiki] = ROLES[role];
-                }
-                await admin.auth().setCustomUserClaims(user.uid,newClaims);
+                await setUserRole(admin, wiki, user, role);
             }
+        },
+        getuser: {
+            command: 'getuser <userid|email>',
+            desc: 'prints information about user',
+            builder: yargs => { yargs
+                .positional('userid', {
+                describe: 'User id or email address',
+                type: 'string'});
+            },
+            handler: async ({userid}) => await getUser(admin, userid)
         },
         getrole: {
             command: 'getrole <userid|email>',
@@ -50,14 +53,14 @@ module.exports = admin => {
                 describe: 'User id or email address',
                 type: 'string'});
             },
-            handler: async ({role, userid, wiki}) => {
+            handler: async ({userid, wiki}) => {
                 const user = await getUser(admin, userid);
-                if (user.customClaims && user.customClaims.hasOwnProperty(wiki)) {
-                    console.log(`User ${user.email} has role ${roleNames[user.customClaims[wiki]]} on wiki ${wiki}`);
+                const role = getUserRole(wiki, user.customClaims);
+                if (role > 0) {
+                    console.log(`User ${user.email} has role ${roleNames[role]} on wiki ${wiki}`);
                 } else {
                     console.log(`User ${user.email} has no explicit role on wiki ${wiki} (in effect, the role is 'authenticated')`);
                 }
-                await admin.auth().setCustomUserClaims(user.uid, Object.assign({}, user.customClaims, {[wiki]: ROLES[role]}));
             }
         }
     };
