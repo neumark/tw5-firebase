@@ -34,4 +34,5 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
         // node process hangs without this, see: https://stackoverflow.com/a/46177431
         await admin.app().delete();
     })
+    .demandCommand()
     .argv;
