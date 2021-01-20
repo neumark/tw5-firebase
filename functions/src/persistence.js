@@ -56,17 +56,19 @@ const readBags = async (db, transaction, wiki, bags) => {
     return allTiddlers;
 };
 
-const firstOrFallback = (list, fallback) => list.length > 0 ? list[0] : fallback;
+const firstOrFallback = (list, fallback=null) => list.length > 0 ? list[0] : fallback;
 
 const readTiddler = async (db, transaction, wiki, bags, title) => {
-    const maybeDocs = await asyncMap(bags, async bag => ({bag, doc: await transaction.get(getTiddlerRef(db, wiki, bag, title))}));
+    const maybeDocs = await transaction.getAll(
+        ...bags.map(bag => getTiddlerRef(db, wiki, bag, title)));
     return firstOrFallback(maybeDocs
+        .map((doc, ix) => ({doc, bag:bags[ix]}))
         // only consider docs which exist in firestore
         .filter(({doc}) => doc.exists)
         // we only need the first one
         .slice(0,1)
         // make it into a serializable tiddler
-        .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})), null);
+        .map(({bag, doc}) => Object.assign(fixDates(doc.data()), {bag})));
 };
 
 // validates the "text" field of a tiddler against a schema.
