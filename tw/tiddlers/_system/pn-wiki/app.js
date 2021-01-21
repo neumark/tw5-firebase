@@ -1,3 +1,10 @@
+/*\
+title: $:/pn-wiki/app.js
+type: application/javascript
+\*/
+
+
+
 /*
  * Copyright 2016 Google Inc. All Rights Reserved.
  *
@@ -19,6 +26,7 @@
 /**
  * @return {!Object} The FirebaseUI config.
  */
+
 function getUiConfig() {
   return {
     'callbacks': {
@@ -128,7 +136,10 @@ var handleSignedInUser = function(user) {
     const parsed = {};
     for (var i = 0; i < vars.length; i++) {
         var pair = vars[i].split('=');
-        parsed[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+        var key = decodeURIComponent(pair[0]);
+        if (key.length > 0) {
+            parsed[key] = decodeURIComponent(pair[1]);
+        }
     }
     return parsed;
   };
@@ -158,6 +169,11 @@ var handleSignedInUser = function(user) {
 
   window.$tw._pnwiki.getIdToken = () => user.getIdToken();
   const configOverrides = getQueryVariables();
+  const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
+  const wikiNameInPath = window.location.pathname.match(RE_WIKI_NAME);
+  if (wikiNameInPath) {
+    configOverrides.wikiName = wikiNameInPath[1];
+  }
   const config = Object.assign({}, window.$tw._pnwiki.config.wiki, configOverrides);
   window.$tw._pnwiki.adaptorCore.loadTiddler(config, window.$tw._pnwiki.getIdToken()).then(tiddlers => {
     window.$tw._pnwiki.initialTidders = tiddlers;
@@ -234,6 +250,42 @@ function handleConfigChange() {
   ui.start('#firebaseui-container', getUiConfig());
 }
 
+function getRecaptchaMode() {
+  var config = parseQueryString(location.hash);
+  return config['recaptcha'] === 'invisible' ?
+      'invisible' : 'normal';
+}
+
+
+/**
+ * @return {string} The email signInMethod from the configuration.
+ */
+function getEmailSignInMethod() {
+  var config = parseQueryString(location.hash);
+  return config['emailSignInMethod'] === 'password' ?
+      'password' : 'emailLink';
+}
+
+/**
+ * @param {string} queryString The full query string.
+ * @return {!Object<string, string>} The parsed query parameters.
+ */
+function parseQueryString(queryString) {
+  // Remove first character if it is ? or #.
+  if (queryString.length &&
+      (queryString.charAt(0) == '#' || queryString.charAt(0) == '?')) {
+    queryString = queryString.substring(1);
+  }
+  var config = {};
+  var pairs = queryString.split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i].split('=');
+    if (pair.length == 2) {
+      config[pair[0]] = pair[1];
+    }
+  }
+  return config;
+}
 
 /**
  * Initializes the app.

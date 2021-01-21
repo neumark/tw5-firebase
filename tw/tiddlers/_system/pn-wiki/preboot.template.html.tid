@@ -64,6 +64,5 @@ window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
           </div>
         </div>
       </div>
-    </div>
-    <script src="app.js"></script>
-`
+    </div>`
+    {{ $:/pn-wiki/app.js ||$:/core/templates/javascript-tiddler}}
