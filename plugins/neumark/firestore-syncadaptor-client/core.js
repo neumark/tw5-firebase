@@ -12,6 +12,14 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 /*global $tw: false */
 "use strict";
 
+class NetworkError extends Error {
+  constructor(message, response) {
+    super(message);
+    this.name = 'NetworkError';
+    this.response = response;
+  }
+}
+
 const stringifyIfNeeded = value => (typeof value === 'object') ? JSON.stringify(value) : value;
 
 const request = async (url, options={}, token) => {
@@ -29,7 +37,7 @@ const request = async (url, options={}, token) => {
         }));
     const body = await response.json();
     if (response.status < 200 || response.status > 299) {
-        throw new Error(body.message);
+        throw new NetworkError(body.message, response);
     }
     return body;
 };

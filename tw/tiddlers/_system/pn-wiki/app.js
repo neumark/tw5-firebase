@@ -53,6 +53,7 @@ function getUiConfig() {
         // Required to enable this provider in One-Tap Sign-up.
         authMethod: 'https://accounts.google.com',
       },
+      /*
       {
         provider: firebase.auth.FacebookAuthProvider.PROVIDER_ID,
         scopes :[
@@ -62,7 +63,8 @@ function getUiConfig() {
           'user_friends'
         ]
       },
-      firebase.auth.TwitterAuthProvider.PROVIDER_ID,
+      */
+      //firebase.auth.TwitterAuthProvider.PROVIDER_ID,
       firebase.auth.GithubAuthProvider.PROVIDER_ID,
       {
         provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
@@ -76,19 +78,19 @@ function getUiConfig() {
           size: getRecaptchaMode()
         }
       },
-      {
+      /*{
         provider: 'microsoft.com',
         loginHintKey: 'login_hint'
       },
       {
         provider: 'apple.com',
       },
-      firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID
+      firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID*/
     ],
     // Terms of service url.
-    'tosUrl': 'https://www.google.com',
+    'tosUrl': '/tos.html',
     // Privacy policy url.
-    'privacyPolicyUrl': 'https://www.google.com',
+    'privacyPolicyUrl': '/privacy.html',
     'credentialHelper': firebaseui.auth.CredentialHelper.ACCOUNT_CHOOSER_COM
   };
 }
@@ -123,12 +125,17 @@ var signInWithPopup = function() {
   window.open(getWidgetUrl(), 'Sign In', 'width=985,height=735');
 };
 
+const getAuthTokenData = async user => {
+    const idTokenResult = await /*firebase.auth().currentUser*/user.getIdTokenResult(true);
+    return idTokenResult;
+};
+
 
 /**
  * Displays the UI for a signed in user.
  * @param {!firebase.User} user
  */
-var handleSignedInUser = function(user) {
+var handleSignedInUser = async function(user) {
 
   const getQueryVariables = () => {
     var query = window.location.search.substring(1);
@@ -142,6 +149,17 @@ var handleSignedInUser = function(user) {
         }
     }
     return parsed;
+  };
+
+  const getConfig = () => {
+    const configOverrides = getQueryVariables();
+    const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
+    const wikiNameInPath = window.location.pathname.match(RE_WIKI_NAME);
+    if (wikiNameInPath) {
+      configOverrides.wikiName = wikiNameInPath[1];
+    }
+    const config = Object.assign({}, window.$tw._pnwiki.config.wiki, configOverrides);
+    return config;
   };
   
   document.getElementById('user-signed-in').style.display = 'block';
@@ -165,35 +183,49 @@ var handleSignedInUser = function(user) {
   } else {
     document.getElementById('photo').style.display = 'none';
   }
-  // start tiddlywiki
-
+  // --- start tiddlywiki ---
+  // set getIdToken function used by syncadaptor (required for token refresh to automatically work).
   window.$tw._pnwiki.getIdToken = () => user.getIdToken();
-  const configOverrides = getQueryVariables();
-  const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
-  const wikiNameInPath = window.location.pathname.match(RE_WIKI_NAME);
-  if (wikiNameInPath) {
-    configOverrides.wikiName = wikiNameInPath[1];
+  // get first fb auth id token
+  const firebaseAuthTokenData = await getAuthTokenData(user);
+  const config = getConfig();
+  // TODO: handle loadTiddler error
+  let tiddlers;
+  try {
+    tiddlers = await window.$tw._pnwiki.adaptorCore.loadTiddler(
+      config,
+      window.$tw._pnwiki.getIdToken());
+  } catch (err) {
+      const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+config.wikiName) || firebaseAuthTokenData.claims["_"+config.wikiName] < 2);
+      if (lacksPermission) {
+          // This is a terrible hack: abuse the TW5 built in error popup to notify the user of lack of permissions
+          $tw.language = {getString: label => label === "Buttons/Close/Caption" ? "close" : ""};
+          $tw.utils.error(`Hi ${user.displayName}! It seems like you do not have sufficient permissions to access wiki ${config.wikiName}. If this is your first time logging in or you have recently been given access, try reloading the page.`);
+      } else {
+        $tw.utils.error(err.message);
+      }
+      return;
   }
-  const config = Object.assign({}, window.$tw._pnwiki.config.wiki, configOverrides);
-  window.$tw._pnwiki.adaptorCore.loadTiddler(config, window.$tw._pnwiki.getIdToken()).then(tiddlers => {
-    window.$tw._pnwiki.initialTidders = tiddlers;
-    const userData = {
-      uid: user.uid,
-      photo: photoURL,
-      name: user.displayName,
-      email: user.email
-    };
-    window.$tw.preloadTiddlerArray([{
-      title: "$:/temp/user",
-      type: "application/json",
-      text: JSON.stringify(userData)
-    }, {
-      title: "$:/config/firestore-syncadaptor-client/config",
-      type: "application/json",
-      text: JSON.stringify(config)
-    }, ...tiddlers]);
-    window.$tw.boot.boot();
-  });
+  // save tiddlers for direct access from synacadapter
+  window.$tw._pnwiki.initialTidders = tiddlers;
+  const userData = {
+    uid: user.uid,
+    photo: photoURL,
+    name: user.displayName,
+    email: user.email,
+    claims: firebaseAuthTokenData.claims
+  };
+  window.$tw.preloadTiddlerArray([{
+    title: "$:/temp/user",
+    type: "application/json",
+    text: JSON.stringify(userData)
+  }, {
+    title: "$:/config/firestore-syncadaptor-client/config",
+    type: "application/json",
+    text: JSON.stringify(config)
+  }, ...tiddlers]);
+  // boot tiddlywiki5
+  window.$tw.boot.boot();
 };
 
 

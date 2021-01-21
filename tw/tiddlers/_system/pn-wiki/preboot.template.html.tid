@@ -6,7 +6,6 @@ window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
     adaptorCore: `{{{ $:/plugins/neumark/firestore-syncadaptor-client/core.js || $:/pn-wiki/export-javascript-tiddler}}}`});
 </script>
 <div id="container">
-      <h3>FirebaseUI Demo</h3>
       <div id="loading">Loading...</div>
       <div id="loaded" class="hidden">
         <div id="main">
@@ -26,10 +25,10 @@ window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
               <button id="delete-account">Delete account</button>
             </p>
           </div>
-          <div id="user-signed-out" class="hidden">
+          <div id="user-signed-out">
             <h4>You are signed out.</h4>
-            <fieldset>
-              <div style="">
+            <fieldset class="hidden">
+              <div>
               <legend>Configuration</legend>
               reCAPTCHA mode for Phone Auth:
               <label for="recaptcha-normal">
@@ -52,13 +51,13 @@ window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
                 Email Link
               </label>
             </fieldset>
-            <p>
+            <p class="hidden">
             <button id="sign-in-with-redirect">Sign In with Redirect</button>
               <button id="sign-in-with-popup">Sign In with Popup</button>
             </p>
             <div>
             <div id="firebaseui-spa">
-              <h5>Single Page Application mode:</h5>
+              <h5>Please choose a way to log in:</h5>
               <div id="firebaseui-container"></div>
             </div>
           </div>
