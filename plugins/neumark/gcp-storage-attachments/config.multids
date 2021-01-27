@@ -1,0 +1,6 @@
+title: $:/config/GCPStorageAttachments/
+
+Enable: yes
+UseAbsoluteForDescendents: no
+UseAbsoluteForNonDescendents: no
+

@@ -1,9 +1,9 @@
 {
   "storage": {
-    "rules": "etc/storage.rules.json"
+    "rules": "etc/storage.rules"
   },
   "firestore": {
-    "rules": "etc/firestore.rules.json"
+    "rules": "etc/firestore.rules"
   },
   "hosting": {
     "public": "public",

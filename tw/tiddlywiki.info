@@ -2,6 +2,7 @@
     "description": "Basic client-server edition",
     "plugins": [
         "neumark/firestore-syncadaptor-client",
+        "neumark/gcp-storage-attachments",
         "tiddlywiki/highlight",
         "tiddlywiki/internals",
         "tiddlywiki/menubar",

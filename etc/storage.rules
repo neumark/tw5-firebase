@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+    match /b/{bucket}/o {
+        // Files look like: "/wiki/<wikiName>/user/<UID>/<random>/file.txt"
+        match /wiki/{wikiName}/user/{userId}/{allPaths=**} {
+            function getRole() {
+                let claimKey = '_' + wikiName;
+                return request.auth.token[claimKey];
+            }
+            // True if the user is signed in or the requested data is 'public'
+            function hasReadAccess() {
+              let READER_ROLE = 2;
+                return (request.auth.uid != null && getRole() >= READER_ROLE) || resource.metadata.access == 'public';
+            }
+            // Function for determining if write is OK:
+            function hasWriteAccess() {
+                let EDITOR_ROLE = 3;
+                let MAX_SIZE = 10 * 1024 * 1024; // in bytes
+                // let VALID_CONTENT_TYPE = 'image/.*';
+                return request.auth.uid != null && request.auth.uid == userId && getRole() >= EDITOR_ROLE && request.resource.size < MAX_SIZE; // && request.resource.contentType.matches(VALID_CONTENT_TYPE);
+            }
+            allow get, list: if hasReadAccess();
+            allow create, update, delete: if hasWriteAccess();
+        }
+    }
+}
