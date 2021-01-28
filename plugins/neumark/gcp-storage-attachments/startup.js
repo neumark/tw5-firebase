@@ -11,9 +11,8 @@ Startup initialisation
 /*jslint node: true, browser: true */
 /*global $tw: false */
 "use strict";
-var ENABLE_EXTERNAL_ATTACHMENTS_TITLE = "$:/config/GCPStorageAttachments/Enable",
-	USE_ABSOLUTE_FOR_DESCENDENTS_TITLE = "$:/config/GCPStorageAttachments/UseAbsoluteForDescendents",
-	USE_ABSOLUTE_FOR_NON_DESCENDENTS_TITLE = "$:/config/GCPStorageAttachments/UseAbsoluteForNonDescendents";
+const ENABLE_EXTERNAL_ATTACHMENTS_TITLE = "$:/config/GCPStorageAttachments/Enable";
+const MAX_SIZE = 1048487; // max size of firestore document field in bytes, according to https://firebase.google.com/docs/firestore/quotas#collections_documents_and_fields
 
 // Export name and synchronous status
 exports.name = "external-attachments";
@@ -24,7 +23,6 @@ exports.synchronous = true;
 const getUid = () => JSON.parse($tw.wiki.getTiddlerText('$:/temp/user')).uid;
 
 const getWikiName = () => JSON.parse($tw.wiki.getTiddlerText('$:/config/WikiConfig')).wiki.wikiName;
-
 
 // from: https://stackoverflow.com/a/1349426
 const randomString = length => {
@@ -41,12 +39,7 @@ const uploadFile = (file, type) => {
     const destination = `/wiki/${getWikiName()}/user/${getUid()}/${randomString(8)}/${file.name}`;
     // based on https://firebase.google.com/docs/storage/web/upload-files#upload_files
     const ref = firebase.storage().ref().child(destination);
-    const metadata = {
-        contentType: type,
-        customMetadata: {
-            access: 'private'
-        }
-    }
+    const metadata = {contentType: type}
     // 'file' comes from the Blob or File API
     const uploadTask = ref.put(file, metadata);
     // upload monitoring based on https://firebase.google.com/docs/storage/web/upload-files#upload_files
@@ -76,6 +69,8 @@ const uploadFile = (file, type) => {
     return uploadTask;
 };
 
+const shouldUploadToStorage = info => $tw.wiki.getTiddlerText(ENABLE_EXTERNAL_ATTACHMENTS_TITLE,"") === "yes" && (info.isBinary || info.file.size > MAX_SIZE);
+
 exports.startup = function() {
 	// test_makePathRelative();
 	$tw.hooks.addHook("th-importing-file",function(info) {
@@ -91,7 +86,7 @@ exports.startup = function() {
              isBinary: false,
              type: "application/json"
            } */
-		if(info.isBinary && $tw.wiki.getTiddlerText(ENABLE_EXTERNAL_ATTACHMENTS_TITLE,"") === "yes") {
+		if(shouldUploadToStorage(info)) {
             uploadFile(info.file, info.type).then(async snapshot => {
                 const url = await snapshot.ref.getDownloadURL();
                 const metadata = await snapshot.ref.getMetadata();
@@ -99,6 +94,7 @@ exports.startup = function() {
 				{
 					title: info.file.name,
 					type: info.type,
+                    tags: ['gcpStorage'],
                     lastModified: info.file.lastModified,
                     gcpStorage: JSON.stringify(metadata), 
 					"_canonical_uri": url
