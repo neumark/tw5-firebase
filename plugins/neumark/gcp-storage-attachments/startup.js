@@ -36,7 +36,8 @@ const randomString = length => {
 };
 
 const uploadFile = (file, type) => {
-    const destination = `/wiki/${getWikiName()}/user/${getUid()}/${randomString(8)}/${file.name}`;
+    const secret = randomString(16);
+    const destination = `/wiki/${getWikiName()}/user/${getUid()}/${secret}/${file.name}`;
     // based on https://firebase.google.com/docs/storage/web/upload-files#upload_files
     const ref = firebase.storage().ref().child(destination);
     const metadata = {contentType: type}
@@ -71,6 +72,8 @@ const uploadFile = (file, type) => {
 
 const shouldUploadToStorage = info => $tw.wiki.getTiddlerText(ENABLE_EXTERNAL_ATTACHMENTS_TITLE,"") === "yes" && (info.isBinary || info.file.size > MAX_SIZE);
 
+const getURL = metadata => `https://firebasestorage.googleapis.com/v0/b/${metadata.bucket}/o/${encodeURIComponent(metadata.fullPath)}?alt=media`;
+
 exports.startup = function() {
 	// test_makePathRelative();
 	$tw.hooks.addHook("th-importing-file",function(info) {
@@ -88,15 +91,19 @@ exports.startup = function() {
            } */
 		if(shouldUploadToStorage(info)) {
             uploadFile(info.file, info.type).then(async snapshot => {
-                const url = await snapshot.ref.getDownloadURL();
                 const metadata = await snapshot.ref.getMetadata();
+                // We don't need the download token since storage rules allow reads to anyone.
+                // Don't use ref.getDownloadURL() to avoid the 'token' parameter in the URL.
+                const url = getURL(metadata);
                 info.callback([
 				{
 					title: info.file.name,
 					type: info.type,
                     tags: ['gcpStorage'],
-                    lastModified: info.file.lastModified,
-                    gcpStorage: JSON.stringify(metadata), 
+                    lastModified: String(info.file.lastModified),
+                    gcpStorageSize: String(metadata.size),
+                    gcpStorageBucket: metadata.bucket,
+                    gcpStorageFullPath: metadata.fullPath,
 					"_canonical_uri": url
 				}]);
             });

@@ -27,8 +27,15 @@ service firebase.storage {
                 let ADMIN_ROLE = 4;
                 return getRole() >= ADMIN_ROLE;
             }
-            allow get, list: if hasReadAccess();
-            allow create, update: if isOwner() && fileOK();
+            // anyone can read the files if the know the URL
+            allow get: if true;
+            // get file lists if they have read access
+            allow list: if hasReadAccess();
+            // don't allow updates:
+            allow update: if false;
+            // only owner can upload and only if the file is legit.
+            allow create: if isOwner() && fileOK();
+            // owner or admin can delete
             allow delete: if isOwner() || isAdmin();
         }
     }
