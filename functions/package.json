@@ -2,19 +2,19 @@
   "name": "authorized-https-endpoint-functions",
   "description": "restrict HTTPS functions to Firebase users",
   "dependencies": {
-    "ajv": "^6.12.6",
+    "ajv": "^7.0.3",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "firebase-admin": "^9.3.0",
+    "firebase-admin": "^9.4.2",
     "firebase-functions": "^3.13.1"
   },
   "devDependencies": {
     "@firebase/testing": "^0.20.11",
     "ava": "^3.14.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.18.0",
     "eslint-plugin-promise": "^4.2.1",
     "firebase-functions-test": "^0.2.3",
-    "sinon": "^9.2.2"
+    "sinon": "^9.2.4"
   },
   "scripts": {
     "lint": "./node_modules/.bin/eslint --max-warnings=0 .",
