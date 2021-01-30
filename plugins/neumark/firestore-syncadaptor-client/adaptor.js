@@ -14,9 +14,9 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 
 const {loadTiddler, saveTiddler, deleteTiddler} = require('./core');
 
-const CONFIG_TIDDLER = "$:/config/firestore-syncadaptor-client/config";
+const CONFIG_TIDDLER = "$:/config/WikiConfig";
 const USER_TIDDLER = "$:/temp/user";
-const FALLBACK_USER = JSON.stringify({email: 'unknown'});
+const FALLBACK_USER = JSON.stringify({name: 'unknown'});
 
 function FirestoreClientAdaptor(options) {
     // USER_TIDDLER and CONFIG_TIDDLER must be preloaded into the wiki
@@ -54,7 +54,13 @@ const promiseToCallback = (promise, callback) => promise.then(
 Load a tiddler and invoke the callback with (err,tiddlerFields)
 */
 FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
-    return promiseToCallback(loadTiddler(Object.assign({tiddler: title}, this.config), $tw._pnwiki.getIdToken()), callback);
+    return promiseToCallback(loadTiddler(Object.assign({tiddler: title}, this.config.wiki), $tw._pnwiki.getIdToken()), callback);
+};
+
+const EDITOR_ROLE = 3;
+const isReadOnly = (wikiName, user) => {
+    const key = `_${wikiName}`;
+    return (typeof user.claims[key] === 'number') && user.claims[key] < EDITOR_ROLE;
 };
 
 /*
@@ -62,7 +68,13 @@ Get the current status of the TiddlyWeb connection
 */
 // TODO: set the anonymous and readOnly fields according to the roles
 // callback(null,self.isLoggedIn,json.username,self.isReadOnly,self.isAnonymous);
-FirestoreClientAdaptor.prototype.getStatus = function(callback) { return callback(null,true,this.user.email,false,false); };
+FirestoreClientAdaptor.prototype.getStatus = function(callback) { return callback(
+    null,
+    true, // isLoggedIn
+    this.user.name || this.user.uid,
+    isReadOnly(this.config.wiki.wikiName, this.user), // isReadOnly
+    false // isAnonymous
+); };
 
 /*
 Save a tiddler and invoke the callback with (err,adaptorInfo,revision)
@@ -71,7 +83,7 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	if(this.isReadOnly) {
 		return callback(null);
 	}
-    const tiddlerID = Object.assign({}, this.config, {
+    const tiddlerID = Object.assign({}, this.config.wiki, {
         tiddler: tiddler.fields.title,
         revision: this.revisions[tiddler.fields.title],
         // NOTE: workaround so draft tiddlers aren't written to the bag of the original tiddler (which wont accept them)
@@ -109,7 +121,7 @@ FirestoreClientAdaptor.prototype.deleteTiddler = function(title,callback,options
 	if(!bag) {
 		return callback(null);
 	}
-    const tiddlerID = Object.assign({}, this.config, {
+    const tiddlerID = Object.assign({}, this.config.wiki, {
         tiddler: title,
         revision: this.revisions[title],
         bag

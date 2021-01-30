@@ -158,7 +158,8 @@ var handleSignedInUser = async function(user) {
     if (wikiNameInPath) {
       configOverrides.wikiName = wikiNameInPath[1];
     }
-    const config = Object.assign({}, window.$tw._pnwiki.config.wiki, configOverrides);
+    const config = window.$tw._pnwiki.config;
+    Object.assign(config.wiki, configOverrides);
     return config;
   };
   
@@ -192,15 +193,13 @@ var handleSignedInUser = async function(user) {
   // TODO: handle loadTiddler error
   let tiddlers;
   try {
-    tiddlers = await window.$tw._pnwiki.adaptorCore.loadTiddler(
-      config,
-      window.$tw._pnwiki.getIdToken());
+    tiddlers = await window.$tw._pnwiki.adaptorCore.loadTiddler(config.wiki, firebaseAuthTokenData.token);
   } catch (err) {
-      const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+config.wikiName) || firebaseAuthTokenData.claims["_"+config.wikiName] < 2);
+      const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+config.wikiName) || firebaseAuthTokenData.claims["_"+config.wiki.wikiName] < 2);
       if (lacksPermission) {
           // This is a terrible hack: abuse the TW5 built in error popup to notify the user of lack of permissions
           $tw.language = {getString: label => label === "Buttons/Close/Caption" ? "close" : ""};
-          $tw.utils.error(`Hi ${user.displayName}! It seems like you do not have sufficient permissions to access wiki ${config.wikiName}. If this is your first time logging in or you have recently been given access, try reloading the page.`);
+          $tw.utils.error(`Hi ${user.displayName}! It seems like you do not have sufficient permissions to access wiki ${config.wiki.wikiName}. If this is your first time logging in or you have recently been given access, try reloading the page.`);
       } else {
         $tw.utils.error(err.message);
       }
@@ -220,7 +219,7 @@ var handleSignedInUser = async function(user) {
     type: "application/json",
     text: JSON.stringify(userData)
   }, {
-    title: "$:/config/firestore-syncadaptor-client/config",
+    title: "$:/config/WikiConfig",
     type: "application/json",
     text: JSON.stringify(config)
   }, ...tiddlers]);
