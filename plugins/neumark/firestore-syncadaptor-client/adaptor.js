@@ -87,7 +87,7 @@ FirestoreClientAdaptor.prototype.saveTiddler = function(tiddler,callback) {
         tiddler: tiddler.fields.title,
         revision: this.revisions[tiddler.fields.title],
         // NOTE: workaround so draft tiddlers aren't written to the bag of the original tiddler (which wont accept them)
-        bag: tiddler.fields['draft.of'] ? undefined : tiddler.fields.bag
+        bag: tiddler.fields['draft.of'] ? undefined : (tiddler.fields.bag || this.config.wiki.bag)
     });
 	return saveTiddler(
         tiddlerID,
