@@ -216,8 +216,7 @@ var handleSignedInUser = async function(user) {
   };
   window.$tw.preloadTiddlerArray([{
     title: "$:/temp/user",
-    type: "application/json",
-    text: JSON.stringify(userData)
+    ...userData
   }, {
     title: "$:/config/WikiConfig",
     type: "application/json",

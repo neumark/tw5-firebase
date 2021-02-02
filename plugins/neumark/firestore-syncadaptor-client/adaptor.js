@@ -22,7 +22,7 @@ function FirestoreClientAdaptor(options) {
     // USER_TIDDLER and CONFIG_TIDDLER must be preloaded into the wiki
     this.wiki = options.wiki;
     this.config = JSON.parse(this.wiki.getTiddlerText(CONFIG_TIDDLER));
-    this.user = JSON.parse(this.wiki.getTiddlerText(USER_TIDDLER, FALLBACK_USER));
+    this.user = this.wiki.getTiddler("$:/temp/user").fields;
 	this.hasStatus = false;
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
