@@ -1,13 +1,13 @@
 {
-    "description": "Basic client-server edition",
+    "description": "edition for building documentation",
     "plugins": [
         "tiddlywiki/highlight",
-        "tiddlywiki/tiddlyweb",
-        "tiddlywiki/filesystem"
+        "neumark/firestore-syncadaptor-client"
     ],
     "themes": [
         "tiddlywiki/vanilla",
         "tiddlywiki/snowwhite"
     ],
-    "build": {}
+    "build": {
+    }
 }

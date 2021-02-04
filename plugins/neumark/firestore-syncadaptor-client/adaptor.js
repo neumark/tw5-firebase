@@ -22,7 +22,7 @@ function FirestoreClientAdaptor(options) {
     // USER_TIDDLER and CONFIG_TIDDLER must be preloaded into the wiki
     this.wiki = options.wiki;
     this.config = JSON.parse(this.wiki.getTiddlerText(CONFIG_TIDDLER));
-    this.user = this.wiki.getTiddler("$:/temp/user").fields;
+    this.user = (this.wiki.getTiddler("$:/temp/user") || {}).fields || {};
 	this.hasStatus = false;
 	this.logger = new $tw.utils.Logger("FirestoreClientAdaptor");
 	this.isLoggedIn = false;
@@ -60,7 +60,7 @@ FirestoreClientAdaptor.prototype.loadTiddler = function(title,callback) {
 const EDITOR_ROLE = 3;
 const isReadOnly = (wikiName, user) => {
     const key = `_${wikiName}`;
-    return (typeof user.claims[key] === 'number') && user.claims[key] < EDITOR_ROLE;
+    return (user && user.claims && typeof user.claims[key] === 'number') && user.claims[key] < EDITOR_ROLE;
 };
 
 /*

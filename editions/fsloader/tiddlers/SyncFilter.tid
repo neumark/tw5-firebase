@@ -1,0 +1,3 @@
+title: $:/config/SyncFilter
+
+[is[tiddler]] -[[$:/core]] -[[$:/library/sjcl.js]] -[prefix[$:/boot/]] -[[$:/StoryList]] -[prefix[$:/HistoryList]] -[[$:/config/SyncFilter]] -[[$:/config/FileSystemPaths]] -[status[pending]plugin-type[import]] -[[$:/isEncrypted]] -[prefix[$:/status/]] -[prefix[$:/state/]] -[prefix[$:/temp/]]

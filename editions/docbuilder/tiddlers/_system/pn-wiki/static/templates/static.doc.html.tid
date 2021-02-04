@@ -1,0 +1,39 @@
+created: 20190806112119631
+modified: 20190810205855864
+tags: 
+title: $:/pn-wiki/static/templates/static.doc.html
+type: text/vnd.tiddlywiki
+
+\define tv-wikilink-template() $uri_doubleencoded$.html
+\define tv-get-export-image-link(src) https://raw.githubusercontent.com/neumark/tw5-firebase/master/$src$
+\define tv-config-toolbar-icons() no
+\define tv-config-toolbar-text() no
+\define tv-config-toolbar-class() tc-btn-invisible
+\import [[$:/core/ui/PageMacros]] [all[shadows+tiddlers]tag[$:/tags/Macro]!has[draft.of]]
+`
+<!doctype html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <style>
+    img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 80%;
+    }
+    </style>
+</head>
+<body>
+    <section class="tc-story-river">
+        `
+        <$view tiddler="$:/pn-wiki/static/templates/static-doc-template" format="htmlwikified"/>
+        `
+    </section>
+</body>
+</html>
+`

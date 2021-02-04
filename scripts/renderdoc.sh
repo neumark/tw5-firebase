@@ -8,16 +8,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 . "$DIR/env.sh"
 
 TMPDIR="$(mktemp -d)"
-TIDDLYWIKICLI="$DIR/../editions/tw-node-firestore/main.js"
 ID_TOKEN="$($DIR/gettoken.sh)"
 
 # export README as HTML
-TOKEN="$ID_TOKEN" tiddlywiki_cli "$DIR/../editions/tw-node-firestore" \
+TOKEN="$ID_TOKEN" tiddlywiki_cli "$DIR/../editions/docbuilder" \
     --output "$TMPDIR" \
     --render "TW5-firebase/README" "[is[tiddler]addsuffix[.html]]" "text/plain" "$:/pn-wiki/static/templates/static.readme.html"
 
 # export docs as HTML
-TOKEN="$ID_TOKEN" tiddlywiki_cli "$DIR/../editions/tw-node-firestore" \
+TOKEN="$ID_TOKEN" tiddlywiki_cli "$DIR/../editions/docbuilder" \
     --output "$TMPDIR" \
     --render "[tag[TW5-firebase-docs]]" "[is[tiddler]addsuffix[.html]]" "text/plain" "$:/pn-wiki/static/templates/static.doc.html"
 

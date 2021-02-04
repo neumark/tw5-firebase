@@ -19,7 +19,7 @@ REFRESH_TOKEN="$(cat "$KEYSPATH" | jq -r .refreshToken)"
 SERVICE_ACCOUNT_KEY="$DIR/../etc/service-account-key.json"
 
 FIREBASECLI="$DIR/../node_modules/.bin/firebase"
-TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"
+TIDDLYWIKICLI="$DIR/../src/preloader.js"
 
 NODE_FLAGS="$( [[ ${DEBUG} ]] && echo "--inspect-brk" )"
 
