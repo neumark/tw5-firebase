@@ -20,7 +20,7 @@ exports.platforms = ["browser"];
 exports.after = ["startup"];
 exports.synchronous = true;
 
-const getUid = () => JSON.parse($tw.wiki.getTiddlerText('$:/temp/user')).uid;
+const getUid = () => $tw.wiki.getTiddler('$:/temp/user').fields.uid
 
 const getWikiName = () => JSON.parse($tw.wiki.getTiddlerText('$:/config/WikiConfig')).wiki.wikiName;
 
