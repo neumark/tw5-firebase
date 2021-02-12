@@ -5,7 +5,6 @@
         "neumark/gcp-storage-attachments",
         "tiddlywiki/highlight",
         "tiddlywiki/internals",
-        "tiddlywiki/menubar",
         "tiddlywiki/codemirror",
         "tiddlywiki/codemirror-closebrackets",
         "tiddlywiki/codemirror-closetag",
