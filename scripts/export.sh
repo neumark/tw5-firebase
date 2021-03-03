@@ -6,4 +6,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 ID_TOKEN="$($DIR/gettoken.sh)"
 API_ENDPOINT="$(cat "$DIR/../etc/config.json" | jq -r ".wiki.apiEndpoint")"
-node "$DIR/../src/backup2.js" "$API_ENDPOINT" "$ID_TOKEN" $@
+node $NODE_FLAGS "$DIR/../src/backup2.js" "$API_ENDPOINT" "$ID_TOKEN" $@
