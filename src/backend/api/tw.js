@@ -1,4 +1,4 @@
-const {PERSONAL_TIDDLERS, PERSONAL_TAG, GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, TIDDLER_TYPE, SYSTEM_TITLE_PREFIX} = require('./constants');
+const {PERSONAL_TIDDLERS, PERSONAL_TAG, GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, CONTENT_TIDDLER_TYPES, SYSTEM_TITLE_PREFIX} = require('./constants');
 
 const isDate = value => Object.prototype.toString.call(value) === "[object Date]";
 
@@ -36,9 +36,13 @@ const hasTag = (tiddler, tag) => tiddler && tiddler.tags && tiddler.tags.include
 
 const isDraftTiddler = tiddler => hasField(tiddler, 'draft.of');
 
-const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.includes(tiddler.title) || isDraftTiddler(tiddler) || hasTag(tiddler, PERSONAL_TAG);
+const isPlugin = tiddler => hasField(tiddler, 'plugin-type');
 
-const isSystemTiddler = tiddler => tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) || (tiddler.type && tiddler.type !== TIDDLER_TYPE);
+const isContentTiddler = tiddler => CONTENT_TIDDLER_TYPES.has(tiddler.type) && !isPlugin(tiddler);
+
+const isPersonalTiddler = tiddler => PERSONAL_TIDDLERS.has(tiddler.title) || isDraftTiddler(tiddler) || hasTag(tiddler, PERSONAL_TAG);
+
+const isSystemTiddler = tiddler => tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) || !isContentTiddler(tiddler);
 
 const CONSTRAINTS = {isDraftTiddler, isPersonalTiddler, isSystemTiddler};
 

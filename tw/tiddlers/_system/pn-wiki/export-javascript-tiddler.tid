@@ -1,9 +1,0 @@
-title: $:/pn-wiki/export-javascript-tiddler
-
-`
-(function() {
-    const exports = {};
-    `<$view field="text" format="text" />`
-    return exports;
-})()
-`

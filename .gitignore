@@ -1,5 +1,3 @@
-tw/output/index.html
-tw/tiddlers/_system/StoryList.tid
 node_modules/
 .firebase
 .firebaserc
@@ -11,5 +9,7 @@ etc/keys.json
 etc/config.json
 ui-debug.log
 firebase-debug.log
-functions/config.json
+functions/index.js*
+functions/node_modules
 .DS_Store
+dist/

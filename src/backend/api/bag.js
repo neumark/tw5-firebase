@@ -1,4 +1,4 @@
-const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER, ACCESS_READ, ACCESS_WRITE } = require('./constants'); 
+const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER, ACCESS_READ, ACCESS_WRITE, POLICY_TIDDLER } = require('./constants'); 
 const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
 const { ROLES } = require('./role');
 const { isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker } = require('./tw');
@@ -9,8 +9,6 @@ const { username } = require('./authentication');
 const personalBag = user => `user:${user.uid}`;
 
 const readPolicy = getContentValidatingReader(bagPolicySchema);
-
-const bagPolicyTiddler = `policy`;
 
 const adminOnlyPolicy = {
     [ACCESS_WRITE]: [{role: "admin"}],
@@ -52,7 +50,7 @@ const verifyUserAuthorized = (acl, role, user) => {
 };
 
 const hasAccess = async (db, transaction, wiki, bag, role, user, accessType, tiddler=null) => {
-    const policy = await readPolicy(db, transaction, wiki, bag, bagPolicyTiddler, defaultPolicy(user, bag));
+    const policy = await readPolicy(db, transaction, wiki, bag, POLICY_TIDDLER, defaultPolicy(user, bag));
     if (verifyUserAuthorized(policy[accessType], role, user)) {
         if (accessType === "write" && tiddler && policy.constraints) {
             const constraintsOK = verifyTiddlerConstraints(policy.constraints, tiddler);

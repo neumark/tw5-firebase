@@ -6,25 +6,10 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "firebase-admin": "^9.4.2",
-    "firebase-functions": "^3.13.1"
+    "firebase-functions": "^3.13.2"
   },
-  "devDependencies": {
-    "@firebase/testing": "^0.20.11",
-    "ava": "^3.14.0",
-    "eslint": "^7.18.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "firebase-functions-test": "^0.2.3",
-    "sinon": "^9.2.4"
-  },
+  "devDependencies": {},
   "scripts": {
-    "lint": "./node_modules/.bin/eslint --max-warnings=0 .",
-    "serve": "../node_modules/.bin/firebase serve --only functions",
-    "shell": "../node_modules/.bin/firebase experimental:functions:shell",
-    "start": "npm run shell",
-    "deploy": "../node_modules/.bin/firebase deploy --only functions",
-    "logs": "../node_modules/.bin/firebase functions:log",
-    "test": "./node_modules/.bin/ava tests/*.spec.js",
-    "debugtest": "./node_modules/.bin/ava --timeout 400000 --node-arguments=--inspect-brk tests/*.spec.js"
   },
   "engines": {
     "node": "12"

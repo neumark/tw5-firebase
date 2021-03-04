@@ -1,9 +1,0 @@
-created: 20190810085410228
-modified: 20190811145031508
-tags: 
-title: $:/pn-wiki/static/static-html-head-imports
-type: text/vnd.tiddlywiki
-
-`
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-`

@@ -1,9 +1,0 @@
-created: 20190810124852335
-modified: 20190810125333352
-tags: 
-title: $:/config/FileSystemPaths
-type: text/vnd.tiddlywiki
-
-[is[system]removeprefix[$:/]addprefix[_system/]]
-[tag[Entry]addprefix[entries/]]
-[!has[draft.of]]

@@ -6,10 +6,10 @@ admin.initializeApp();
 const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
-const db = require('./src/db').getDB(admin);
-const { validateFirebaseIdToken } = require('./src/authentication');
-const { read, write, remove } = require('./src/endpoints').getEndpoints(db);
-const config = require('./config.json');
+const db = require('./api/db').getDB(admin);
+const { validateFirebaseIdToken } = require('./api/authentication');
+const { read, write, remove } = require('./api/endpoints').getEndpoints(db);
+const config = require('../../etc/config.json');
 const apiRegion = config.deploy.apiRegion;
 
 const restapi = express();
@@ -40,5 +40,6 @@ restapi.get('/:wiki/bags/:bag/tiddlers/:title?', read);
 restapi.put('/:wiki/recipes/:recipe/tiddlers/:title', write);
 restapi.put('/:wiki/bags/:bag/tiddlers/:title', write);
 restapi.delete('/:wiki/bags/:bag/tiddlers/:title', remove);
-
-exports.wiki = {app: functions.region(apiRegion).https.onRequest(restapi)};
+module.exports = {
+    wiki: functions.region(apiRegion).https.onRequest(restapi)
+}

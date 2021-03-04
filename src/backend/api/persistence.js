@@ -108,6 +108,7 @@ const getContentValidatingTransformer = (schema) => {
 
 
 const writeTiddler = async (db, transaction, user, wiki, bag, tiddler) => {
+    console.log("writeTiddler", tiddler);
     const revision = tiddler.revision;
     const tiddlerRef = getTiddlerRef(db, wiki, bag, tiddler.title);
     const doc = await transaction.get(tiddlerRef);

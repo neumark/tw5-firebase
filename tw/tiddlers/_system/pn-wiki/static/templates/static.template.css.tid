@@ -1,9 +1,0 @@
-created: 20190809203021846
-modified: 20190810115939045
-tags: 
-title: $:/pn-wiki/static/templates/static.template.css
-type: text/vnd.tiddlywiki
-
-{{$:/boot/boot.css||$:/core/templates/plain-text-tiddler}}
-{{$:/core/ui/PageStylesheet||$:/core/templates/wikified-tiddler}}
-{{$:/pn-wiki/static/templates/static-style||$:/core/templates/plain-text-tiddler}}
