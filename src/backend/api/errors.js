@@ -1,3 +1,7 @@
+
+const functions = require("firebase-functions");
+
+
 class HTTPError extends Error {
     constructor(message, statusCode = 500) {
         super(message)
@@ -11,7 +15,7 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 
 const sendErr = (res, err, statusCode) => {
-    console.log(err.stack);
+    functions.logger.error(err.message, err.stack);
     return res.status(err.statusCode || statusCode || 500).json({message: err.message, stack: err.stack});
 }
 

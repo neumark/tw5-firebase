@@ -1,5 +1,7 @@
 'use strict';
 
+require('source-map-support').install();
+
 const admin = require('firebase-admin');
 admin.initializeApp();
 

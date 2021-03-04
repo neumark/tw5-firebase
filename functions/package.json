@@ -6,11 +6,11 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "firebase-admin": "^9.4.2",
-    "firebase-functions": "^3.13.2"
+    "firebase-functions": "^3.13.2",
+    "source-map-support": "^0.5.19"
   },
   "devDependencies": {},
-  "scripts": {
-  },
+  "scripts": {},
   "engines": {
     "node": "12"
   },
