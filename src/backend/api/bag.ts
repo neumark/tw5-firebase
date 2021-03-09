@@ -1,47 +1,51 @@
-const { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER, ACCESS_READ, ACCESS_WRITE, POLICY_TIDDLER } = require('./constants'); 
-const { HTTPError, HTTP_FORBIDDEN } = require('./errors');
-const { ROLES } = require('./role');
-const { isDraftTiddler, isPersonalTiddler, isSystemTiddler, getConstraintChecker } = require('./tw');
-const { getContentValidatingReader } = require('./persistence'); 
-const { bagPolicySchema } = require('./schema');
-const { username } = require('./authentication');
+import { GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, ROLES_TIDDLER, POLICY_TIDDLER } from './constants';
+import { HTTPError, HTTP_FORBIDDEN } from './errors';
+import { getConstraintChecker } from './tw';
+import { getContentValidatingReader } from './persistence';
+import { bagPolicySchema } from '../common/schema';
+import { username } from './authentication';
+import { User } from './user';
+import { BagPolicy, Grantee } from 'src/model/bag-policy';
+import { Tiddler } from 'src/model/tiddler';
+import { RoleName, ROLES } from 'src/model/roles';
 
-const personalBag = user => `user:${user.uid}`;
+const personalBag = (user:User) => `user:${user.uid}`;
 
 const readPolicy = getContentValidatingReader(bagPolicySchema);
 
-const adminOnlyPolicy = {
-    [ACCESS_WRITE]: [{role: "admin"}],
-    [ACCESS_READ]: [{role: "admin"}],
+const adminOnlyPolicy:BagPolicy = {
+    write: [{role: "admin"}],
+    read: [{role: "admin"}],
 };
 
-const defaultPolicy = (user, bag) => {
+const defaultPolicy = (user:User, bag:string):BagPolicy => {
     switch (bag) {
         case personalBag(user):
             return {
-                [ACCESS_WRITE]: [{userId: user.uid}],
-                [ACCESS_READ]: [{userId: user.uid}],
+                write: [{userId: user.uid}],
+                read: [{userId: user.uid}],
                 constraints: ["isPersonalTiddler"]
             };
         case GLOBAL_CONTENT_BAG:
             return {
-                [ACCESS_WRITE]: [{role: "editor"}],
-                [ACCESS_READ]: [{role: "reader"}],
+                write: [{role: "editor"}],
+                read: [{role: "reader"}],
                 constraints: ["!isSystemTiddler", "!isPersonalTiddler"]
             };
         case GLOBAL_SYSTEM_BAG:
-            return Object.assign({}, adminOnlyPolicy, {
-                [ACCESS_READ]: [{role: "reader"}],
+            return {
+                write: adminOnlyPolicy.write,
+                read: [{role: "reader"}],
                 constraints: ["isSystemTiddler", "!isPersonalTiddler"]
-            });
+            };
         default:
             return adminOnlyPolicy;
     }
 };
 
-const verifyTiddlerConstraints = (constraints, tiddler) => constraints.map(getConstraintChecker).every(c => c(tiddler));
+const verifyTiddlerConstraints = (constraints:string[], tiddler:Tiddler) => constraints.map(getConstraintChecker).every(c => c(tiddler));
 
-const verifyUserAuthorized = (acl, role, user) => {
+const verifyUserAuthorized = (acl:Grantee[], role:RoleName, user:User) => {
     const permittedByRole = rule => rule.hasOwnProperty("role") && ROLES.hasOwnProperty(rule.role) && ROLES[rule.role] <= role;
     const permittedByUserId = rule => rule.hasOwnProperty("userId") && rule.userId === user.uid;
     const permittedByEmail = rule => rule.hasOwnProperty("email") && rule.email === user.email;

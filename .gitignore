@@ -10,6 +10,8 @@ firebase-debug.log
 firebase_custom.json
 functions/index.js*
 functions/node_modules
+functions/package.json
 node_modules/
 public/index.html
 ui-debug.log
+generated/jsonschema/*

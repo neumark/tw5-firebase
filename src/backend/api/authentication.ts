@@ -1,3 +1,6 @@
+import * as admin from 'firebase-admin';
+import * as express from 'express';
+import { User } from './user';
 const { sendErr } = require('./errors');
 
 // Express middleware that validates Firebase ID Tokens passed in the Authorization HTTP header.
@@ -17,7 +20,8 @@ const { sendErr } = require('./errors');
     // custom claims declaring roles on different wikis
     "pn-wiki": 4,
  }
- */ 
+ */
+
 
 const ANONYMOUS_VISITOR = {
     uid: '-anonymous-',
@@ -26,9 +30,9 @@ const ANONYMOUS_VISITOR = {
     name: null,
     picture: null,
     isAuthenticated: false
-}
+} as any as User;
 
-const getUserFromToken = async (admin, req) => {
+const getUserFromToken = async (auth:(typeof admin.auth), req:express.Request) => {
   // No bearer token means we have an anonymous visitor
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
       return ANONYMOUS_VISITOR;
@@ -41,13 +45,13 @@ const getUserFromToken = async (admin, req) => {
   return user;
 }
 
-const validateFirebaseIdToken = admin => async (req, res, next) => {
+export const validateFirebaseIdToken = (auth:(typeof admin.auth)) => async (req:express.Request, res:express.Response, next:express.NextFunction) => {
 
   // Read the ID Token from the Authorization header.
-  const idToken = req.headers.authorization.split('Bearer ')[1];
+  const idToken = req?.headers?.authorization?.split('Bearer ')[1];
 
   try {
-    req.user = await getUserFromToken(admin, req);
+    req.user = await getUserFromToken(auth, req);
     next();
     return;
   } catch (error) {
@@ -56,6 +60,4 @@ const validateFirebaseIdToken = admin => async (req, res, next) => {
   }
 };
 
-const username = user => user.name || user.uid;
-
-module.exports = { validateFirebaseIdToken, username };
+export const username = (user:admin.auth.DecodedIdToken) => user.name || user.uid;

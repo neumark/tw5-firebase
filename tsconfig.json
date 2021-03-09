@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "typeRoots": ["node_modules/@types"],
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "target": "esnext",
+    "lib": [
+      "es2019"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "stripInternal": true,
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "dist/types",
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "plugins": []
+  },
+  "include": ["src", "generated"],
+  "compileOnSave": false
+}
