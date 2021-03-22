@@ -1,9 +1,8 @@
-import * as admin from 'firebase-admin';
+import { Modify } from '../util/modify';
 
 export type TiddlerFields = { [key: string]: string };
 
-// from: https://stackoverflow.com/a/55032655
-type Modify<T, R> = Omit<T, keyof R> & R;
+export type Revision=string;
 
 // Standard internal representation
 export interface Tiddler {
@@ -11,7 +10,7 @@ export interface Tiddler {
   creator: string;
   modified: Date;
   modifier: string;
-  revision?: string;
+  revision?: Revision;
   tags?: string[];
   text?: string;
   title: string;
@@ -30,8 +29,7 @@ export type HTTPSerializedTiddler = Modify <Tiddler, {
   bag?: string;
 }>;
 
-// Override Date fields as strings and remove bag field in DB serialized version
-export type FirestoreSerializedTiddler = Modify <Tiddler, {
-  created: admin.firestore.Timestamp;
-  modified: admin.firestore.Timestamp;
-}>;
+export interface TiddlerNamespace {
+  wiki: string,
+  bag: string
+}

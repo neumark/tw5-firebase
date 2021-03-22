@@ -1,6 +1,6 @@
 import { Tiddler } from '../../model/tiddler';
-import {PERSONAL_TIDDLERS, PERSONAL_TAG, GLOBAL_CONTENT_BAG, GLOBAL_SYSTEM_BAG, CONTENT_TIDDLER_TYPES, SYSTEM_TITLE_PREFIX} from './constants';
-import { User } from './user';
+import {PERSONAL_TIDDLERS, PERSONAL_TAG, BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, CONTENT_TIDDLER_TYPES, SYSTEM_TITLE_PREFIX} from '../../constants';
+import { User } from '../../model/user';
 
 export function isDate(value:any):value is Date {
   return Object.prototype.toString.call(value) === "[object Date]";

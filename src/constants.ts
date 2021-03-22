@@ -1,25 +1,28 @@
 export const ROLES_TIDDLER = "$:/roles";
+export const RECIPES_TIDDLER = "$:/recipes";
 export const POLICY_TIDDLER = "policy";
+
 export const PERSONAL_TIDDLERS = new Set(['$:/StoryList', '$:/HistoryList', '$:/DefaultTiddlers']);
 export const PERSONAL_TAG = "personal";
+export const PERSONAL_BAG_PREFIX = "user:";
 
-export const GLOBAL_CONTENT_BAG = "content";
-export const GLOBAL_SYSTEM_BAG = "system";
-export const GLOBAL_RECIPE_BAG = "recipes";
+export const BUILTIN_BAG_CONTENT = "content";
+export const BUILTIN_BAG_SYSTEM = "system";
 
 export const DEFAULT_RECIPE = "default";
 
 export const DEFAULT_TIDDLER_TYPE = "text/vnd.tiddlywiki";
+export const JSON_TIDDLER_TYPE = "application/json";
 
 export const CONTENT_TIDDLER_TYPES = new Set([
         DEFAULT_TIDDLER_TYPE,
+        JSON_TIDDLER_TYPE,
         "text/markdown",
         "text/x-markdown",
         "application/x-tiddler",
         "application/x-tiddlers",
         "text/plain",
         "text/css",
-        "application/json",
         "image/jpeg",
         "image/jpg",
         "image/png",
@@ -31,3 +34,5 @@ export const CONTENT_TIDDLER_TYPES = new Set([
         "image/x-icon"]);
 
 export const SYSTEM_TITLE_PREFIX = "$:/";
+
+export const VARIABLE_PERSONAL_BAG = "PERSONAL_BAG";

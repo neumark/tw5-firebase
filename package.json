@@ -36,6 +36,8 @@
     "firebase-admin": "^9.4.2",
     "firebase-functions": "^3.13.2",
     "helmet": "^4.4.1",
+    "inversify": "^5.0.5",
+    "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19"
   }
 }
