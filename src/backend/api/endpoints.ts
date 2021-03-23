@@ -20,6 +20,7 @@ import cors from "cors";
 import * as express from "express";
 import helmet from "helmet";
 import { inject, injectable } from "inversify";
+import { Logger } from "../../util/logger";
 import { Revision } from "../../model/revision";
 import { Tiddler } from "../../model/tiddler";
 import { Modify } from "../../util/modify";
@@ -53,6 +54,7 @@ const asResponse = (namespacedTiddlers:NamespacedTiddler|NamespacedTiddler[]):HT
 export class APIEndpointFactory {
   private authenticatorMiddleware: AuthenticatorMiddleware;
   private tiddlerStore: TiddlerStore;
+  private logger: Logger;
 
   private async read(req: express.Request) {
     const wiki = req.params["wiki"];
@@ -80,17 +82,19 @@ export class APIEndpointFactory {
     return (req: express.Request, res: express.Response, next:any) => {
       return Promise.resolve(boundFn(req))
         .then(body => res.json(body))
-        .catch(err => sendErr(err, res));
+        .catch(err => sendErr(err, this.logger, res));
     };
   }
 
   constructor(
     @inject(Component.AuthenticatorMiddleware)
     authenticatorMiddleware: AuthenticatorMiddleware,
-    @inject(Component.TiddlerStore) tiddlerStore: TiddlerStore
+    @inject(Component.TiddlerStore) tiddlerStore: TiddlerStore,
+    @inject(Component.Logger) logger:Logger
   ) {
     this.authenticatorMiddleware = authenticatorMiddleware;
     this.tiddlerStore = tiddlerStore;
+    this.logger = logger;
   }
 
   createAPI() {

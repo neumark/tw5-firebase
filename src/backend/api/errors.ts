@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions';
 import * as express from 'express';
+import { Logger } from '../../util/logger';
 
 export class HTTPError extends Error {
     statusCode:number;
@@ -19,8 +19,8 @@ export const HTTP_FORBIDDEN = 403;
 export const HTTP_NOT_FOUND = 404;
 export const HTTP_CONFLICT = 409;
 
-export const sendErr = (err:Error, res:express.Response) => {
-    functions.logger.error(err.message, err.stack);
+export const sendErr = (err:Error, logger:Logger, res:express.Response) => {
+    logger.error(err.message, err.stack);
     let statusCode = 500;
     if (isHTTPError(err)) {
       statusCode = err.statusCode;

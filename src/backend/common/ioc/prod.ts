@@ -4,6 +4,8 @@ import { FirestoreTransactionRunner } from "../persistence/firestore-persistence
 import { TransactionRunner } from "../persistence/interfaces";
 import { Component } from "./components";
 import { getTimestamp } from "../../../util/time";
+import { Logger } from "../../../util/logger";
+import { FirebaseLogger } from "../../../backend/api/firebase-logger";
 
 export const productionComponents = (app: admin.app.App) =>
   new ContainerModule((bind: interfaces.Bind) => {
@@ -19,4 +21,5 @@ export const productionComponents = (app: admin.app.App) =>
     );
     // utilities
     bind<typeof getTimestamp>(Component.getTimestamp).toFunction(getTimestamp);
+    bind<Logger>(Component.Logger).to(FirebaseLogger);
   });

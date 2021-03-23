@@ -13,7 +13,8 @@ export const enum Component {
   PolicyChecker = "PolicyChecker",
   AuthenticatorMiddleware = "AuthenticatorMiddleware",
   APIEndpointFactory = "APIEndpointFactory",
-  RecipeResolver = "RecipeResolver"
+  RecipeResolver = "RecipeResolver",
+  Logger = "Logger"
 }
 
 export const getContainer = () => {
