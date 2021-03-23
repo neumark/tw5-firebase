@@ -10,14 +10,22 @@ export class HTTPError extends Error {
     }
 }
 
+function isHTTPError(err:Error): err is HTTPError {
+  return 'statusCode' in err;
+}
+
 export const HTTP_BAD_REQUEST = 400;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_NOT_FOUND = 404;
 export const HTTP_CONFLICT = 409;
 
-export const sendErr = (res:express.Response, err:HTTPError, statusCode?:number) => {
+export const sendErr = (err:Error, res:express.Response) => {
     functions.logger.error(err.message, err.stack);
-    return res.status(err.statusCode || statusCode || 500).json({message: err.message, stack: err.stack});
+    let statusCode = 500;
+    if (isHTTPError(err)) {
+      statusCode = err.statusCode;
+    }
+    return res.status(statusCode).json({message: err.message, stack: err.stack});
 }
 
 module.exports = {HTTPError, HTTP_CONFLICT, HTTP_FORBIDDEN, HTTP_BAD_REQUEST, sendErr};

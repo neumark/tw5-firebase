@@ -1,3 +1,5 @@
+export const JWT_ROLE_CLAIM_PREFIX = "_";
+
 export const ROLES_TIDDLER = "$:/roles";
 export const RECIPES_TIDDLER = "$:/recipes";
 export const POLICY_TIDDLER = "policy";

@@ -1,10 +1,9 @@
 import { inject, injectable } from "inversify";
-import { Component } from "./ioc/components";
-import { getTimestamp as _getTimestamp } from "../../util/time";
-import { getRevision } from "../../util/revision";
-import { Tiddler } from "src/model/tiddler";
-import { User, username } from "src/model/user";
+import { Tiddler } from "../../model/tiddler";
+import { User, username } from "../../model/user";
 import { DEFAULT_TIDDLER_TYPE } from "../../constants";
+import { getTimestamp as _getTimestamp } from "../../util/time";
+import { Component } from "./ioc/components";
 
 @injectable()
 export class TiddlerFactory {
@@ -18,7 +17,7 @@ export class TiddlerFactory {
   createTiddler(
     creator: User,
     title: string,
-    type = DEFAULT_TIDDLER_TYPE
+    type?: string
   ): Tiddler {
     const date = this.getTimestamp();
     return {
@@ -26,11 +25,10 @@ export class TiddlerFactory {
       creator: username(creator),
       modified: date,
       modifier: username(creator),
-      revision: getRevision(creator, date),
       tags: [],
       text: undefined,
       title,
-      type,
+      type: type || DEFAULT_TIDDLER_TYPE,
       fields: {},
     };
   }

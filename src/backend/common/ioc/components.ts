@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { Container} from 'inversify';
 
 export const enum Component {
@@ -10,8 +9,10 @@ export const enum Component {
   getTimestamp = "getTimestamp",
   TiddlerFactory = "TiddlerFactory",
   TiddlerValidatorFactory = "TiddlerValidatorFactory",
+  TiddlerStore = "TiddlerStore",
   PolicyChecker = "PolicyChecker",
   AuthenticatorMiddleware = "AuthenticatorMiddleware",
+  APIEndpointFactory = "APIEndpointFactory",
   RecipeResolver = "RecipeResolver"
 }
 

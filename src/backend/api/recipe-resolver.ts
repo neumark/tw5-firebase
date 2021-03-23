@@ -1,6 +1,6 @@
 import { inject, injectable } from "inversify";
 import { User } from "../../model/user";
-import { DEFAULT_RECIPE, RECIPES_TIDDLER, VARIABLE_PERSONAL_BAG } from "../../constants";
+import { BUILTIN_BAG_SYSTEM, DEFAULT_RECIPE, RECIPES_TIDDLER, VARIABLE_PERSONAL_BAG } from "../../constants";
 import { defaultRecipe, Recipe, Recipes, NamespacedRecipe } from "../../model/recipe";
 import { Component } from "../common/ioc/components";
 import { StandardTiddlerPersistence } from "../common/persistence/interfaces";
@@ -19,13 +19,27 @@ export class RecipeResolver {
       return defaultRecipe;
     }
     const recipes = await this.recipesValidator.read(persistence, [{
-      namespace: {wiki: namespacedRecipe.wiki, bag: GLOBAL_SYSTEM_BAG},
+      namespace: {wiki: namespacedRecipe.wiki, bag: BUILTIN_BAG_SYSTEM},
       key: RECIPES_TIDDLER
     }]);
     if (recipes.length > 0 && recipes[0].value) {
       return recipes[0].value?.[namespacedRecipe.recipe];
     }
     return undefined;
+  }
+
+  private resolveRecipe(user: User, accessType: AccessType, recipe: Recipe): string[] {
+    return recipe[accessType].map(recipeItem => {
+      if ('bag' in recipeItem) {
+        return recipeItem.bag;
+      }
+      switch(recipeItem.variable) {
+        case VARIABLE_PERSONAL_BAG:
+          return personalBag(user);
+        default:
+          throw new Error(`Unexpected recipe variable: ${JSON.stringify(recipeItem)}`);
+      }
+    })
   }
 
   constructor(
@@ -41,18 +55,5 @@ export class RecipeResolver {
       return this.resolveRecipe(user, accessType, recipe);
     }
     return undefined;
-  }
-  resolveRecipe(user: User, accessType: AccessType, recipe: Recipe): string[] {
-    return recipe[accessType].map(recipeItem => {
-      if ('bag' in recipeItem) {
-        return recipeItem.bag;
-      }
-      switch(recipeItem.variable) {
-        case VARIABLE_PERSONAL_BAG:
-          return personalBag(user);
-        default:
-          throw new Error(`Unexpected recipe variable: ${JSON.stringify(recipeItem)}`);
-      }
-    })
   }
 }

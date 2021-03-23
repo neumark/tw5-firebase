@@ -5,6 +5,7 @@ import { ROLE } from '../../model/roles';
 import { inject, injectable } from 'inversify';
 import { Component } from '../common/ioc/components';
 import * as admin from "firebase-admin";
+import { JWT_ROLE_CLAIM_PREFIX } from '../../constants';
 
 // Express middleware that validates Firebase ID Tokens passed in the Authorization HTTP header.
 // The Firebase ID token needs to be passed as a Bearer token in the Authorization HTTP header like this:
@@ -53,9 +54,11 @@ export class AuthenticatorMiddleware {
       email_verified: decodedToken.email_verified,
       name: decodedToken['name'],
       picture: decodedToken.picture,
-      roles: Object.entries(decodedToken['claims'] as WikiRoles || {}).reduce((acc:WikiRoles, [wiki, role]:[string, ROLE]) => {
+      roles: Object.entries(decodedToken as WikiRoles || {}).reduce((acc:WikiRoles, [maybeWiki, role]:[string, ROLE]) => {
         // remove '_' prefix from name of wiki to avoid clash with reserved claims
-        acc[wiki.substr(1)] = role;
+        if (maybeWiki.startsWith(JWT_ROLE_CLAIM_PREFIX)) {
+          acc[maybeWiki.substr(JWT_ROLE_CLAIM_PREFIX.length)] = role;
+        }
         return acc;
       }, {} as WikiRoles)
     };
@@ -68,14 +71,7 @@ export class AuthenticatorMiddleware {
   }
 
   async authenticate (req:express.Request, res:express.Response, next:express.NextFunction):Promise<void> {
-    try {
       req.user = await this.getUserFromToken(req);
       next();
-      return;
-    } catch (error) {
-      sendErr(res, error, 403);
-      return;
-    }
   }
 }
-

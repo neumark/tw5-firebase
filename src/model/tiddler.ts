@@ -1,33 +1,25 @@
-import { Modify } from '../util/modify';
+import { Revision } from './revision';
 
 export type TiddlerFields = { [key: string]: string };
 
-export type Revision=string;
+export interface TiddlerData {
+  tags: string[];
+  text: string;
+  type: string;
+  fields: TiddlerFields;
+}
 
-// Standard internal representation
-export interface Tiddler {
+export type PartialTiddlerData = Partial<TiddlerData>
+
+export interface TiddlerMetadata {
   created: Date;
   creator: string;
   modified: Date;
   modifier: string;
-  revision?: Revision;
-  tags?: string[];
-  text?: string;
-  title: string;
-  type: string;
-  fields?: TiddlerFields;
 }
 
-// Override Date fields as strings in serialized version
-export type HTTPSerializedTiddler = Modify <Tiddler, {
-  // Fields considered mandatory in Tiddler are optional over the wire:
-  created?: string;
-  modified?: string;
-  creator?: string;
-  modifier?: string;
-  type?: string;
-  bag?: string;
-}>;
+// Standard internal representation
+export type Tiddler = {title: string} & PartialTiddlerData & TiddlerMetadata
 
 export interface TiddlerNamespace {
   wiki: string,

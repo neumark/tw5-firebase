@@ -1,8 +1,8 @@
 import { Schema } from "ajv";
 import { inject, injectable } from "inversify";
-import { JSON_TIDDLER_TYPE } from "src/constants";
-import { Tiddler, TiddlerNamespace } from "src/model/tiddler";
-import { User } from "src/model/user";
+import { Tiddler, TiddlerNamespace } from "../../../model/tiddler";
+import { User } from "../../../model/user";
+import { JSON_TIDDLER_TYPE } from ".././../../constants";
 import { Component } from "../ioc/components";
 import { TiddlerFactory } from "../tiddler-factory";
 import { getValidator } from "../validator";
@@ -46,7 +46,7 @@ export class TiddlerValidator<T> {
     await persistence.updateDoc(
       namespace,
       key,
-      async (tiddler?:Tiddler):Promise<Tiddler> => {
+      async (tiddler?:Tiddler):Promise<Tiddler|undefined> => {
         let originalValue = fallbackValue;
         if (tiddler && tiddler.text) {
           originalValue = this.validate(namespace, key, JSON.parse(tiddler.text) as T, 'PRE-UPDATE');

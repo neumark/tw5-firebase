@@ -4,45 +4,41 @@ import {
   PERSONAL_TIDDLERS,
   SYSTEM_TITLE_PREFIX,
 } from "../../constants";
-import { Tiddler } from "../../model/tiddler";
+import { PartialTiddlerData } from "../../model/tiddler";
 
-type TiddlerConstraint = (tiddler: Tiddler) => boolean;
+type TiddlerDataConstraint = (title: string, tiddlerData: PartialTiddlerData) => boolean;
 
-const hasField = (tiddler: Tiddler, field: string, value = null) =>
-  !!(
-    tiddler &&
-    tiddler.fields &&
-    tiddler.fields.hasOwnProperty(field) &&
-    (value != null ? tiddler.fields[field] === value : true)
-  );
+const hasField = (tiddlerData: PartialTiddlerData, field: string, value = null) =>
+    tiddlerData.fields !== undefined &&
+    tiddlerData.fields.hasOwnProperty(field) &&
+    (value != null ? tiddlerData.fields[field] === value : true);
 
-const hasTag = (tiddler: Tiddler, tag: string) =>
-  !!(tiddler && tiddler.tags && tiddler.tags.includes(tag));
+const hasTag = (tiddlerData: PartialTiddlerData, tag: string) => tiddlerData.tags !== undefined && tiddlerData.tags.includes(tag);
 
-const isDraftTiddler = (tiddler: Tiddler) => hasField(tiddler, "draft.of");
+const isDraftTiddler = (tiddlerData: PartialTiddlerData) => hasField(tiddlerData, "draft.of");
 
-const isPlugin = (tiddler: Tiddler) => hasField(tiddler, "plugin-type");
+const isPlugin = (tiddlerData: PartialTiddlerData) => hasField(tiddlerData, "plugin-type");
 
-const tiddlerConstraints: { [key: string]: TiddlerConstraint } = {
-  isContentTiddler: (tiddler: Tiddler) =>
-    CONTENT_TIDDLER_TYPES.has(tiddler.type) && !isPlugin(tiddler),
+const tiddlerConstraints: { [key: string]: TiddlerDataConstraint } = {
+  isContentTiddler: (title: string, tiddlerData: PartialTiddlerData) => tiddlerData.type !== undefined && CONTENT_TIDDLER_TYPES.has(tiddlerData.type) && !isPlugin(tiddlerData),
 
-  isPersonalTiddler: (tiddler: Tiddler) =>
-    PERSONAL_TIDDLERS.has(tiddler.title) ||
-    isDraftTiddler(tiddler) ||
-    hasTag(tiddler, PERSONAL_TAG),
+  isPersonalTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
+    PERSONAL_TIDDLERS.has(title) ||
+    isDraftTiddler(tiddlerData) ||
+    hasTag(tiddlerData, PERSONAL_TAG),
 
-  isSystemTiddler: (tiddler: Tiddler) =>
-    tiddler.title.startsWith(SYSTEM_TITLE_PREFIX) ||
-    !tiddlerConstraints.isContentTiddler(tiddler),
+  isSystemTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
+    title.startsWith(SYSTEM_TITLE_PREFIX) ||
+    !tiddlerConstraints.isContentTiddler(title, tiddlerData),
 };
 
-const negateConstraint = (fn: TiddlerConstraint) => (tiddler: Tiddler) =>
-  !fn(tiddler);
+const negateConstraint = (fn: TiddlerDataConstraint) => (title:string, tiddlerData: PartialTiddlerData) =>
+  !fn(title, tiddlerData);
 
 export const checkConstraint = (
   constraint: string,
-  tiddler: Tiddler
+  title: string,
+  tiddlerData: PartialTiddlerData
 ): boolean => {
   const trimmed = constraint.trim();
   const negate = trimmed.startsWith("!");
@@ -50,8 +46,8 @@ export const checkConstraint = (
   if (!(name in tiddlerConstraints)) {
     throw new Error(`Unknown tiddler constraint: "${name}"`);
   }
-  const fn: TiddlerConstraint = negate
+  const fn: TiddlerDataConstraint = negate
     ? negateConstraint(tiddlerConstraints[name])
     : tiddlerConstraints[name];
-  return fn(tiddler);
+  return fn(title, tiddlerData);
 };
