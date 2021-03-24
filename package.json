@@ -14,8 +14,14 @@
     "bin": "./scripts"
   },
   "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/plugin-transform-runtime": "^7.13.10",
+    "@babel/preset-env": "^7.13.12",
+    "@babel/runtime-corejs3": "^7.13.10",
     "@types/cors": "^2.8.10",
     "@types/express": "^4.17.11",
+    "babel-loader": "^8.2.2",
+    "core-js": "^3.9.1",
     "firebase-tools": "^9.6.1",
     "http-server": "^0.12.3",
     "node-fetch": "^2.6.0",

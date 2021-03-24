@@ -30,7 +30,7 @@ const getConfigBuilder = ({
         use: [{
             loader: 'ts-loader',
             options: {
-                // configFile: path.resolve(__dirname, 'tsconfig.json')
+                configFile: path.resolve(__dirname, 'tsconfig-node.json')
             }
         }],
         exclude: /node_modules/,
