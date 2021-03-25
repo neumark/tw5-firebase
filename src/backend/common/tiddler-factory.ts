@@ -1,8 +1,8 @@
 import { inject, injectable } from "inversify";
-import { Tiddler } from "../../model/tiddler";
-import { User, username } from "../../model/user";
+import { Tiddler } from "../../shared/model/tiddler";
+import { User, username } from "../../shared/model/user";
 import { DEFAULT_TIDDLER_TYPE } from "../../constants";
-import { getTimestamp as _getTimestamp } from "../../util/time";
+import { getTimestamp as _getTimestamp } from "../../shared/util/time";
 import { Component } from "./ioc/components";
 
 @injectable()

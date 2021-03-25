@@ -4,7 +4,7 @@ import 'source-map-support/register'
 import * as functions from 'firebase-functions';
 import { productionStartup } from './common/startup';
 import { Component } from './common/ioc/components';
-import { Config } from 'src/util/config';
+import { Config } from '../shared/util/config';
 import { APIEndpointFactory } from './api/endpoints';
 
 const container = productionStartup();

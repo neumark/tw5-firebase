@@ -1,5 +1,5 @@
-import { TiddlerNamespace } from "../../../model/tiddler";
-import { Revision } from "../../../model/revision";
+import { TiddlerNamespace } from "../../../shared/model/tiddler";
+import { Revision } from "../../../shared/model/revision";
 import { MaybePromise, Persistence } from "./interfaces";
 
 export class TransformingTiddlerPersistence<OuterTiddlerFormat, InnerTiddlerFormat> implements Persistence<string, Revision, OuterTiddlerFormat, TiddlerNamespace> {

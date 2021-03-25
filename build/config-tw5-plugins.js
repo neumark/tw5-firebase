@@ -3,8 +3,7 @@ const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 const path = require('path');
 const supportedBrowsers = require('./supported_browsers.json');
-
-const getBanner = () => "BANNER (TODO)"
+const fs = require('fs');
 
 const babelLoader = {
   loader: "babel-loader",
@@ -34,63 +33,83 @@ const getConfigBuilder = ({
     outputFilename,
     outputDir = 'dist',
     modulesDir = path.resolve(__dirname, '..', 'node_modules')
-}) => (_, webpackArgv) => ({
-  mode: webpackArgv.mode,
-  entry: path.resolve(__dirname, '..', input),
-  devtool: 'source-map',
-  output: {
-    library: {
-        name: path.basename(input, '.ts'),
-        type: 'commonjs',
-    },
-    path: path.resolve(__dirname, '..', outputDir),
-    filename: outputFilename
-  },
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: [
-          babelLoader,
+}) => (_, webpackArgv) => {
+  const entry = path.resolve(__dirname, '..', input);
+  const getBanner = () => {
+      let banner = "";
+      const bannerFile = `${entry}.meta`;
+      if (fs.existsSync(bannerFile)) {
+        banner = fs.readFileSync(bannerFile, {encoding: 'utf-8'});
+      }
+      return `/*\\
+${banner}\\*/`;
+  };
+  const isProduction = webpackArgv.mode === 'production';
+  return {
+      mode: webpackArgv.mode,
+      entry,
+      devtool: 'source-map',
+      output: {
+        library: {
+            name: path.basename(input, '.ts'),
+            type: 'commonjs',
+        },
+        path: path.resolve(__dirname, '..', outputDir),
+        filename: outputFilename
+      },
+      module: {
+        rules: [
           {
-            loader: 'ts-loader',
-            options: {
-                configFile: path.resolve(__dirname, 'tsconfig-browser.json')
-            }
+            test: /\.tsx?$/,
+            use: [
+              babelLoader,
+              {
+                loader: 'ts-loader',
+                options: {
+                    configFile: path.resolve(__dirname, 'tsconfig-browser.json')
+                }
+              },
+            ],
+            exclude: /node_modules/,
+          },
+          {
+            test: /\.(jsx?)$/,
+            exclude: /node_modules/,
+            use: babelLoader,
           },
         ],
-        exclude: /node_modules/,
       },
-      {
-        test: /\.(jsx?)$/,
-        exclude: /node_modules/,
-        use: babelLoader,
+      resolve: {
+        modules: [modulesDir],
+        extensions: ['.json', '.js', '.tsx', '.ts']
       },
-    ],
-  },
-  resolve: {
-    modules: [modulesDir],
-    extensions: ['.json', '.js', '.tsx', '.ts']
-  },
-  plugins: [
-    new webpack.BannerPlugin({
-      banner: getBanner
-    })
-  ],
-  optimization: webpackArgv.mode === 'production' ? {
-    minimize: true,
-    minimizer: [
-      new TerserPlugin({
-        terserOptions: {
-          output: {
-            preamble: `/*${getBanner()}*/`,
-            comments: false,
-          },
-        },
-        extractComments: false
-      }),
-    ],
-  } : {minimize: false}
-});
+      plugins: [].concat(
+        isProduction ? [] : [
+            // only used by dev builds, in prod builds, these are stripped out by terser
+            new webpack.BannerPlugin({
+               banner: getBanner(),
+               raw: true
+            })],
+        isProduction ? [
+          new webpack.SourceMapDevToolPlugin({
+            publicPath: 'https://wiki.peterneumark.com/',
+            filename: 'sourcemaps/[file].map'})] : []
+      ),
+      optimization: isProduction ? {
+        minimize: true,
+        minimizer: [
+          new TerserPlugin({
+            terserOptions: {
+              output: {
+                preamble: getBanner(),
+                comments: false,
+              },
+            },
+            extractComments: false
+          }),
+        ],
+      } : {minimize: false}
+    };
+  };
 
 module.exports = {getConfigBuilder};

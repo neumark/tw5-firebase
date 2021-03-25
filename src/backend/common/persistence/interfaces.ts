@@ -1,6 +1,6 @@
-import { Tiddler, TiddlerNamespace } from "../../../model/tiddler";
-import { Revision } from "../../../model/revision";
-import { User } from "../../../model/user";
+import { Tiddler, TiddlerNamespace } from "../../../shared/model/tiddler";
+import { Revision } from "../../../shared/model/revision";
+import { User } from "../../../shared/model/user";
 
 
 export type MaybePromise<T> = T|Promise<T>

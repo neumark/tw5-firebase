@@ -2,7 +2,7 @@ import { ContainerModule, interfaces } from "inversify";
 import { TiddlerValidatorFactory } from "../persistence/tiddler-validator-factory";
 import { TiddlerFactory } from "../tiddler-factory";
 import { Component } from "./components";
-import { config, Config } from "../../../util/config";
+import { config, Config } from "../../../shared/util/config";
 import { PolicyChecker } from "../../../backend/api/policy-checker";
 import { AuthenticatorMiddleware } from "../../../backend/api/authentication";
 import { RecipeResolver } from "../../../backend/api/recipe-resolver";

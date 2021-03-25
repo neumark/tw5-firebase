@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions';
 import { injectable } from 'inversify';
-import { Logger } from '../../util/logger';
+import { Logger } from '../../shared/util/logger';
 
 @injectable()
 export class FirebaseLogger implements Logger {

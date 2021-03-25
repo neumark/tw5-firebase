@@ -1,8 +1,8 @@
 import { inject, injectable } from "inversify";
-import { Tiddler, TiddlerData, TiddlerNamespace } from "../../model/tiddler";
-import { NamespacedRecipe } from "../../model/recipe";
-import { getRevision, Revision } from "../../model/revision";
-import { User } from "../../model/user";
+import { Tiddler, TiddlerData, TiddlerNamespace } from "../../shared/model/tiddler";
+import { NamespacedRecipe } from "../../shared/model/recipe";
+import { getRevision, Revision } from "../../shared/model/revision";
+import { User } from "../../shared/model/user";
 import { Component } from "../common/ioc/components";
 import {
   MaybePromise,
@@ -12,7 +12,7 @@ import {
 import { HTTPError, HTTP_FORBIDDEN, HTTP_NOT_FOUND } from "./errors";
 import { PolicyChecker } from "./policy-checker";
 import { RecipeResolver } from "./recipe-resolver";
-import { getTimestamp as _getTimestamp } from "../../util/time";
+import { getTimestamp as _getTimestamp } from "../../shared/util/time";
 import { TiddlerFactory } from "../common/tiddler-factory";
 
 export type NamespacedTiddler = {

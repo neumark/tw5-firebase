@@ -1,5 +1,5 @@
 import * as express from 'express';
-import { Logger } from '../../util/logger';
+import { Logger } from '../../shared/util/logger';
 
 export class HTTPError extends Error {
     statusCode:number;

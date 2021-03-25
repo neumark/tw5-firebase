@@ -4,7 +4,7 @@ import {
   PERSONAL_TIDDLERS,
   SYSTEM_TITLE_PREFIX,
 } from "../../constants";
-import { PartialTiddlerData } from "../../model/tiddler";
+import { PartialTiddlerData } from "../../shared/model/tiddler";
 
 type TiddlerDataConstraint = (title: string, tiddlerData: PartialTiddlerData) => boolean;
 

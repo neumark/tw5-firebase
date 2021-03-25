@@ -7,11 +7,11 @@ import {
   Grantee,
   isPersonalBag,
   standardPolicies,
-} from "../../model/bag-policy";
+} from "../../shared/model/bag-policy";
 import { PERSONAL_BAG_PREFIX, POLICY_TIDDLER } from "../../constants";
-import { ROLE } from "../../model/roles";
-import { TiddlerData } from "../../model/tiddler";
-import { User } from "../../model/user";
+import { ROLE } from "../../shared/model/roles";
+import { TiddlerData } from "../../shared/model/tiddler";
+import { User } from "../../shared/model/user";
 import { Component } from "../common/ioc/components";
 import { StandardTiddlerPersistence } from "../common/persistence/interfaces";
 import {

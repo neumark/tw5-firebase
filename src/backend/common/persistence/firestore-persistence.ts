@@ -1,8 +1,8 @@
 import * as admin from "firebase-admin";
 import { inject, injectable } from "inversify";
-import { getRevision, Revision } from "../../../model/revision";
-import { Tiddler, TiddlerNamespace } from "../../../model/tiddler";
-import { Modify } from "../../../util/modify";
+import { getRevision, Revision } from "../../../shared/model/revision";
+import { Tiddler, TiddlerNamespace } from "../../../shared/model/tiddler";
+import { Modify } from "../../../shared/util/modify";
 import { HTTPError, HTTP_CONFLICT } from "../../api/errors";
 import { Component } from "../ioc/components";
 import {
@@ -14,8 +14,8 @@ import {
 import { TransformingTiddlerPersistence } from "./transforming-persistence";
 import {
   getTimestamp as _getTimestamp,
-} from "../../../util/time";
-import { User } from "../../../model/user";
+} from "../../../shared/util/time";
+import { User } from "../../../shared/model/user";
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;

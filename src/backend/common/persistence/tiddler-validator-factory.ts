@@ -1,7 +1,7 @@
 import { Schema } from "ajv";
 import { inject, injectable } from "inversify";
-import { Tiddler, TiddlerNamespace } from "../../../model/tiddler";
-import { User } from "../../../model/user";
+import { Tiddler, TiddlerNamespace } from "../../../shared/model/tiddler";
+import { User } from "../../../shared/model/user";
 import { JSON_TIDDLER_TYPE } from ".././../../constants";
 import { Component } from "../ioc/components";
 import { TiddlerFactory } from "../tiddler-factory";

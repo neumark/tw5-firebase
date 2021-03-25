@@ -1,8 +1,9 @@
 import 'source-map-support/register'
 import * as admin from 'firebase-admin';
+import { Container } from 'inversify';
 import { productionComponents } from './ioc/prod';
 import { getContainer } from './ioc/components';
-import { Container } from 'inversify';
+
 import { baseComponents } from './ioc/base';
 
 export const productionStartup = ():Container => {

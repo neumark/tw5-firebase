@@ -1,7 +1,7 @@
 import * as express from 'express';
 import { sendErr } from './errors';
-import { User, WikiRoles } from '../../model/user';
-import { ROLE } from '../../model/roles';
+import { User, WikiRoles } from '../../shared/model/user';
+import { ROLE } from '../../shared/model/roles';
 import { inject, injectable } from 'inversify';
 import { Component } from '../common/ioc/components';
 import * as admin from "firebase-admin";

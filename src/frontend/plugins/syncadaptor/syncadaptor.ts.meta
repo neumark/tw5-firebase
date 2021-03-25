@@ -1,0 +1,5 @@
+title: $:/plugins/tw5-firebase/syncadaptor/syncadaptor.js
+type: application/javascript
+module-type: syncadaptor
+
+A sync adaptor module for synchronising with the tw5-firebase backend.

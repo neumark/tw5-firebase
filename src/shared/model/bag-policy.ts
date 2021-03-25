@@ -1,4 +1,4 @@
-import { BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, PERSONAL_BAG_PREFIX } from "../constants";
+import { BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, PERSONAL_BAG_PREFIX } from "../../constants";
 import { UserId, ROLE } from "./roles";
 import { User } from "./user";
 

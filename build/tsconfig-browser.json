@@ -1,7 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "lib": [ "dom", "es2018" ]
+    "lib": [ "dom", "es2020" ]
   },
-  "exclude": ["node_modules", "../src/backend/**/*"]
+  "exclude": ["../src/backend/**/*"]
 }

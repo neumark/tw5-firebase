@@ -1,12 +1,12 @@
 import { inject, injectable } from "inversify";
-import { User } from "../../model/user";
+import { User } from "../../shared/model/user";
 import { BUILTIN_BAG_SYSTEM, DEFAULT_RECIPE, RECIPES_TIDDLER, VARIABLE_PERSONAL_BAG } from "../../constants";
-import { defaultRecipe, Recipe, Recipes, NamespacedRecipe } from "../../model/recipe";
+import { defaultRecipe, Recipe, Recipes, NamespacedRecipe } from "../../shared/model/recipe";
 import { Component } from "../common/ioc/components";
 import { StandardTiddlerPersistence } from "../common/persistence/interfaces";
 import { TiddlerValidator, TiddlerValidatorFactory } from "../common/persistence/tiddler-validator-factory";
 import { recipesSchema } from "../common/schema";
-import { AccessType, personalBag } from "../../model/bag-policy";
+import { AccessType, personalBag } from "../../shared/model/bag-policy";
 
 @injectable()
 export class RecipeResolver {

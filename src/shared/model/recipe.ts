@@ -1,5 +1,5 @@
 import { AccessType } from "./bag-policy";
-import {BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, VARIABLE_PERSONAL_BAG} from '../constants';
+import {BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, VARIABLE_PERSONAL_BAG} from '../../constants';
 
 type RecipeItem = {bag: string}|{variable: string};
 

@@ -1,4 +1,3 @@
-import { Revision } from './revision';
 
 export type TiddlerFields = { [key: string]: string };
 

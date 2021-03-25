@@ -3,8 +3,8 @@ import { ContainerModule, interfaces } from "inversify";
 import { FirestoreTransactionRunner } from "../persistence/firestore-persistence";
 import { TransactionRunner } from "../persistence/interfaces";
 import { Component } from "./components";
-import { getTimestamp } from "../../../util/time";
-import { Logger } from "../../../util/logger";
+import { getTimestamp } from "../../../shared/util/time";
+import { Logger } from "../../../shared/util/logger";
 import { FirebaseLogger } from "../../../backend/api/firebase-logger";
 
 export const productionComponents = (app: admin.app.App) =>
