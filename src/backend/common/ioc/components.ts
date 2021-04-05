@@ -9,7 +9,8 @@ export const enum Component {
   getTimestamp = "getTimestamp",
   TiddlerFactory = "TiddlerFactory",
   TiddlerValidatorFactory = "TiddlerValidatorFactory",
-  TiddlerStore = "TiddlerStore",
+  GlobalTiddlerStore = "GlobalTiddlerStore",
+  BoundTiddlerStoreFactory = "BoundTiddlerStoreFactory",
   PolicyChecker = "PolicyChecker",
   AuthenticatorMiddleware = "AuthenticatorMiddleware",
   APIEndpointFactory = "APIEndpointFactory",
@@ -18,5 +19,5 @@ export const enum Component {
 }
 
 export const getContainer = () => {
-  return new Container();
+  return new Container({defaultScope: 'Singleton'});
 }

@@ -14,6 +14,9 @@
     /recipes/{recipe_name}/tiddlers/{tiddler_title}/revisions
     /recipes/{recipe_name}/tiddlers/{tiddler_title}/revisions/{revision}
     /search
+
+    Since the HTTP JSON is different from tiddlyweb's, having the same URLs is not such a big win,
+    but there's no reason to diverge.
  */
 
 import cors from "cors";
@@ -22,54 +25,95 @@ import helmet from "helmet";
 import { inject, injectable } from "inversify";
 import { Logger } from "../../shared/util/logger";
 import { Revision } from "../../shared/model/revision";
-import { Tiddler } from "../../shared/model/tiddler";
+import { HTTPNamespacedTiddler, HTTPTiddler, PartialTiddlerData, Tiddler, TiddlerData } from "../../shared/model/tiddler";
 import { Modify } from "../../shared/util/modify";
 import { Component } from "../common/ioc/components";
 import { AuthenticatorMiddleware } from "./authentication";
 import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";
-import { NamespacedTiddler, TiddlerStore } from "./tiddler-store";
+import { BoundTiddlerStoreFactory} from "./tiddler-store";
+import { mapOrApply } from "../../shared/util/map";
+import { SingleWikiNamespacedTiddler, TiddlerUpdateOrCreate } from "../../shared/model/store";
+import { getValidator } from "../common/validator";
+import { tiddlerDataSchema } from "../common/schema";
 
-export type HTTPTiddler = Modify<Tiddler, {
-  created: string,
-  modified: string
-}>
 
-export interface HTTPNamespacedTiddler {bag: string, revision: Revision, tiddler:HTTPTiddler};
-
-const toHTTP = (tiddler:Tiddler):HTTPTiddler => ({
-  ...tiddler,
-  modified: tiddler.modified.toISOString(),
-  created: tiddler.created.toISOString()
-});
-
-const asResponse = (namespacedTiddlers:NamespacedTiddler|NamespacedTiddler[]):HTTPNamespacedTiddler|HTTPNamespacedTiddler[] => {
-  const convert:(nst:NamespacedTiddler)=>HTTPNamespacedTiddler = ({value, namespace: {bag}, revision}) => ({revision, bag, tiddler: toHTTP(value)});
-  if (Array.isArray(namespacedTiddlers)) {
-    return namespacedTiddlers.map(convert);
+const toHTTPNamespacedTiddler = (namespacedTiddler:SingleWikiNamespacedTiddler):HTTPNamespacedTiddler => ({
+  bag: namespacedTiddler.bag,
+  revision: namespacedTiddler.revision,
+  tiddler: {
+    ...namespacedTiddler.tiddler,
+    modified: namespacedTiddler.tiddler.modified.toISOString(),
+    created: namespacedTiddler.tiddler.created.toISOString()
   }
-  return convert(namespacedTiddlers);
-}
+});
 
 @injectable()
 export class APIEndpointFactory {
   private authenticatorMiddleware: AuthenticatorMiddleware;
-  private tiddlerStore: TiddlerStore;
+  private boundTiddlerStoreFactory: BoundTiddlerStoreFactory;
   private logger: Logger;
+  private tiddlerDataValidator = getValidator(tiddlerDataSchema);
 
   private async read(req: express.Request) {
     const wiki = req.params["wiki"];
     const bag = req.params["bag"];
     const recipe = req.params["recipe"];
-    const tiddler = req.params["tiddler"];
-    if (wiki && bag) {
-      return asResponse(await this.tiddlerStore.readFromBag(req.user, { wiki, bag }, tiddler));
+    const title = req.params["tiddler"];
+    if (!wiki) {
+      throw new HTTPError(
+        `invalid wiki: ${wiki}`,
+        HTTP_BAD_REQUEST);
     }
-    if (wiki && recipe) {
-      return asResponse(await this.tiddlerStore.readFromRecipe(
-        req.user,
-        { wiki, recipe },
-        tiddler
-      ));
+    const store = this.boundTiddlerStoreFactory(req.user, wiki);
+    if (bag) {
+      return mapOrApply(toHTTPNamespacedTiddler, await store.readFromBag( bag, title));
+    }
+    if (recipe) {
+      return mapOrApply(toHTTPNamespacedTiddler, await store.readFromRecipe(recipe, title));
+    }
+    throw new HTTPError(
+      `read() got weird request parameters: ${JSON.stringify(req.params)}`,
+      HTTP_BAD_REQUEST
+    );
+  }
+
+  private async write(req: express.Request) {
+    const wiki = req.params["wiki"];
+    const bag = req.params["bag"];
+    const recipe = req.params["recipe"];
+    const title = req.params["tiddler"];
+    if (!wiki) {
+      throw new HTTPError(
+        `invalid wiki: ${wiki}`,
+        HTTP_BAD_REQUEST);
+    }
+    const tiddlerValidation = this.tiddlerDataValidator(req.body);
+    if (!tiddlerValidation.valid) {
+      throw new HTTPError(`write() got invalid tiddler data. Validation errors: ${JSON.stringify(tiddlerValidation.errors)}`);
+    }
+    const body = req.body as PartialTiddlerData;
+    const updateOrCreate:TiddlerUpdateOrCreate = req.params['expectedRevision'] ? {create: body} : {update:body, expectedRevision:req.params['expectedRevision'] } ;
+    const store = this.boundTiddlerStoreFactory(req.user, wiki);
+    if (bag) {
+      return toHTTPNamespacedTiddler(await store.writeToBag(bag, title, updateOrCreate));
+    }
+    if (recipe) {
+      return toHTTPNamespacedTiddler(await store.writeToRecipe(recipe, title, updateOrCreate));
+    }
+    throw new HTTPError(
+      `read() got weird request parameters: ${JSON.stringify(req.params)}`,
+      HTTP_BAD_REQUEST
+    );
+  }
+
+  private async remove(req: express.Request) {
+    const wiki = req.params["wiki"];
+    const bag = req.params["bag"];
+    const title = req.params["tiddler"];
+    const expectedRevision = req.params["expectedRevision"];
+    if (wiki && bag && title && expectedRevision) {
+      const store = this.boundTiddlerStoreFactory(req.user, wiki);
+      return store.removeFromBag(bag, title, expectedRevision);
     }
     throw new HTTPError(
       `read() got weird request parameters: ${JSON.stringify(req.params)}`,
@@ -89,11 +133,11 @@ export class APIEndpointFactory {
   constructor(
     @inject(Component.AuthenticatorMiddleware)
     authenticatorMiddleware: AuthenticatorMiddleware,
-    @inject(Component.TiddlerStore) tiddlerStore: TiddlerStore,
+    @inject(Component.BoundTiddlerStoreFactory) boundTiddlerStoreFactory: BoundTiddlerStoreFactory,
     @inject(Component.Logger) logger:Logger
   ) {
     this.authenticatorMiddleware = authenticatorMiddleware;
-    this.tiddlerStore = tiddlerStore;
+    this.boundTiddlerStoreFactory = boundTiddlerStoreFactory;
     this.logger = logger;
   }
 
@@ -106,11 +150,15 @@ export class APIEndpointFactory {
         this.authenticatorMiddleware
       )
     );
-    api.get("/:wiki/recipes/:recipe/tiddlers/:tiddler?", this.bindAndSerialize(this.read));
-    api.get("/:wiki/bags/:bag/tiddlers/:tiddler?", this.read.bind(this));
-    //api.put('/:wiki/recipes/:recipe/tiddlers/:title', write as any);
-    //api.put('/:wiki/bags/:bag/tiddlers/:title', write as any);
-    //api.delete('/:wiki/bags/:bag/tiddlers/:title', remove as any);
+    const read = this.bindAndSerialize(this.read);
+    const write = this.bindAndSerialize(this.write);
+    api.get("/:wiki/recipes/:recipe/tiddlers/:tiddler?", read);
+    api.get("/:wiki/bags/:bag/tiddlers/:tiddler?", read);
+    api.put('/:wiki/recipes/:recipe/tiddlers/:title', write); // create
+    api.put('/:wiki/recipes/:recipe/tiddlers/:title/revisions/:revision', write); // update
+    api.put('/:wiki/bags/:bag/tiddlers/:title', write); // create
+    api.put('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', write); // update
+    api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', this.bindAndSerialize(this.remove));
     return api;
   }
 }

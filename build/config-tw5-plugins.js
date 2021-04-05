@@ -52,7 +52,7 @@ ${banner}\\*/`;
       output: {
         library: {
             name: path.basename(input, '.ts'),
-            type: 'commonjs',
+            type: 'commonjs2',
         },
         path: path.resolve(__dirname, '..', outputDir),
         filename: outputFilename

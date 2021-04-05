@@ -1,3 +1,5 @@
+import { Modify } from "../util/modify";
+import { Revision } from "./revision";
 
 export type TiddlerFields = { [key: string]: string };
 
@@ -24,3 +26,10 @@ export interface TiddlerNamespace {
   wiki: string,
   bag: string
 }
+
+export type HTTPTiddler = Modify<Tiddler, {
+  created: string,
+  modified: string
+}>
+
+export interface HTTPNamespacedTiddler {bag: string, revision: Revision, tiddler:HTTPTiddler};
