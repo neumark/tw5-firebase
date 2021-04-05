@@ -1,6 +1,7 @@
 import firebase from "firebase";
 import * as firebaseui from 'firebaseui'
 import 'firebaseui/dist/firebaseui.css'
+import { Config } from "../../shared/util/config";
 import {} from '../tw5/tw5-types';
 
 
@@ -8,8 +9,8 @@ function getUiConfig() {
   return {
     'callbacks': {
       // Called when the user has been successfully signed in.
-      // TODO: authResult type
-      'signInSuccessWithAuthResult': function(authResult:any, redirectUrl:string) {
+      // Note: types in node_modules/firebaseui/dist/index.d.ts
+      signInSuccessWithAuthResult: function(authResult:any, redirectUrl:string) {
         if (authResult.user) {
           handleSignedInUser(authResult.user);
         }
@@ -20,13 +21,16 @@ function getUiConfig() {
         }
         // Do not redirect.
         return false;
+      },
+      signInFailure: (error: firebaseui.auth.AuthUIError): Promise<void>|void => {
+        // TODO: provide proper error msg on login error
+        console.log("auth error", error)
       }
     },
     // Opens IDP Providers sign-in flow in a popup.
     // TODO: change this to 'redirect'
     'signInFlow': 'popup',
     'signInOptions': [
-      // TODO(developer): Remove the providers you don't need for your app.
       {
         provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
         // get this from GCP Credentials page
@@ -67,9 +71,9 @@ function getUiConfig() {
       },
       firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID*/
     ],
-    // Terms of service url.
+    // TODO: Terms of service url.
     'tosUrl': '/tos.html',
-    // Privacy policy url.
+    // TODO: Privacy policy url.
     'privacyPolicyUrl': '/privacy.html',
     'credentialHelper':  firebaseui.auth.CredentialHelper.GOOGLE_YOLO
   };
@@ -105,7 +109,7 @@ var signInWithPopup = function() {
   window.open(getWidgetUrl(), 'Sign In', 'width=985,height=735');
 };
 
-const getAuthTokenData = async user => {
+const getAuthTokenData = async (user:firebase.User) => {
     const idTokenResult = await /*firebase.auth().currentUser*/user.getIdTokenResult(true);
     return idTokenResult;
 };
@@ -115,17 +119,17 @@ const getAuthTokenData = async user => {
  * Displays the UI for a signed in user.
  * @param {!firebase.User} user
  */
-var handleSignedInUser = async function(user) {
+var handleSignedInUser = async function(user:firebase.User) {
 
-  const getQueryVariables = () => {
+  const getQueryVariables = ():Partial<Config['wiki']> => {
     var query = window.location.search.substring(1);
     var vars = query.split('&');
-    const parsed = {};
+    const parsed:Partial<Config['wiki']> = {};
     for (var i = 0; i < vars.length; i++) {
         var pair = vars[i].split('=');
         var key = decodeURIComponent(pair[0]);
         if (key.length > 0) {
-            parsed[key] = decodeURIComponent(pair[1]);
+            parsed[key as keyof Config['wiki']] = decodeURIComponent(pair[1]);
         }
     }
     return parsed;
@@ -138,16 +142,16 @@ var handleSignedInUser = async function(user) {
     if (wikiNameInPath) {
       configOverrides.wikiName = wikiNameInPath[1];
     }
-    const config = window.$tw._pnwiki.config;
+    const config = ($tw as any)._pnwiki.config;
     Object.assign(config.wiki, configOverrides);
     return config;
   };
 
-  document.getElementById('user-signed-in').style.display = 'block';
-  document.getElementById('user-signed-out').style.display = 'none';
-  document.getElementById('name').textContent = user.displayName;
-  document.getElementById('email').textContent = user.email;
-  document.getElementById('phone').textContent = user.phoneNumber;
+  (document.getElementById('user-signed-in') as any).style.display = 'block';
+  (document.getElementById('user-signed-out') as any).style.display = 'none';
+  (document.getElementById('name') as any).textContent = user.displayName;
+  (document.getElementById('email') as any).textContent = user.email;
+  (document.getElementById('phone') as any).textContent = user.phoneNumber;
   let photoURL
   if (user.photoURL) {
     photoURL = user.photoURL;
@@ -157,12 +161,12 @@ var handleSignedInUser = async function(user) {
     if ((photoURL.indexOf('googleusercontent.com') != -1) ||
         (photoURL.indexOf('ggpht.com') != -1)) {
       photoURL = photoURL + '?sz=' +
-          document.getElementById('photo').clientHeight;
+          document.getElementById('photo')?.clientHeight;
     }
-    document.getElementById('photo').src = photoURL;
-    document.getElementById('photo').style.display = 'block';
+    (document.getElementById('photo') as any).src = photoURL;
+    (document.getElementById('photo') as any).style.display = 'block';
   } else {
-    document.getElementById('photo').style.display = 'none';
+    (document.getElementById('photo') as any).style.display = 'none';
   }
   // --- start tiddlywiki ---
   // set getIdToken function used by syncadaptor (required for token refresh to automatically work).
@@ -218,10 +222,10 @@ var handleSignedOutUser = function() {
 
 // Listen to change in auth state so it displays the correct UI for when
 // the user is signed in or not.
-firebase.auth().onAuthStateChanged(function(user) {
+firebase.auth().onAuthStateChanged(function(user:firebase.User|null) {
   (document.getElementById('loading') as any).style.display = 'none';
   (document.getElementById('loaded') as any).style.display = 'block';
-  user ? handleSignedInUser(user) : handleSignedOutUser();
+  user ? handleSignedInUser(user!) : handleSignedOutUser();
 });
 
 /**

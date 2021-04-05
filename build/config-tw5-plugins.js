@@ -55,7 +55,9 @@ ${banner}\\*/`;
             type: 'commonjs2',
         },
         path: path.resolve(__dirname, '..', outputDir),
-        filename: outputFilename
+        filename: outputFilename,
+        globalObject: 'globalThis',
+        umdNamedDefine: true
       },
       module: {
         rules: [
@@ -77,7 +79,16 @@ ${banner}\\*/`;
             exclude: /node_modules/,
             use: babelLoader,
           },
+          {
+            test: /\.css$/i,
+            use: ['style-loader', 'css-loader']
+          }
         ],
+      },
+      externals: {
+          // make firebase and firebase-ui external
+          firebase: 'firebase',
+          firebaseui: 'firebaseui'
       },
       resolve: {
         modules: [modulesDir],
