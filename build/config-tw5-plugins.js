@@ -101,10 +101,11 @@ ${banner}\\*/`;
                banner: getBanner(),
                raw: true
             })],
-        isProduction ? [
-          new webpack.SourceMapDevToolPlugin({
-            publicPath: 'https://wiki.peterneumark.com/',
-            filename: 'sourcemaps/[file].map'})] : []
+          [new webpack.SourceMapDevToolPlugin({
+              filename: '[file].map',
+              publicPath: '/sourcemaps/',
+              //fileContext: 'dist',
+          })]
       ),
       optimization: isProduction ? {
         minimize: true,

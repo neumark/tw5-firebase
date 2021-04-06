@@ -6,8 +6,11 @@ import { Tiddler } from "../../shared/model/tiddler";
 
 export type CallbackFn = (err:any, ...data:any[]) => void;
 
+// standard tiddler definition, but every field except title is optional, allowing any custom field
+export type TW5TiddlerFields = {title: string} & Partial<Omit<Tiddler, 'fields'>> & {[fieldName:string]:any};
+
 export interface TW5Tiddler {
-  fields: Omit<Tiddler, 'fields'> & {[fieldName:string]:any};
+  fields: TW5TiddlerFields;
   /* tiddler methods
   getFieldDay: ƒ (field)
   getFieldList: ƒ (field)
@@ -85,7 +88,7 @@ export interface TW {
   }
   wiki: TW5Wiki,
   Tiddler: TW5TiddlerConstructor,
-  preloadTiddlerArray: (tiddlers:TW5Tiddler[])=>void;
+  preloadTiddlerArray: (tiddlerFields:TW5TiddlerFields[])=>void;
   language?: TW5Translator
 }
 

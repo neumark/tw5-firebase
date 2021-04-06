@@ -30,5 +30,5 @@ function firebase_cli() {
 }
 
 function tiddlywiki_cli() {
-    TIDDLYWIKI_PLUGIN_PATH="$DIR/../plugins" node $NODE_FLAGS "$TIDDLYWIKICLI" $@ --verbose 
+    TIDDLYWIKI_PLUGIN_PATH="$DIR/../dist/plugins" node $NODE_FLAGS "$TIDDLYWIKICLI" $@ --verbose 
 }

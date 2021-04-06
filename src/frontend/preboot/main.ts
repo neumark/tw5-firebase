@@ -1,9 +1,13 @@
 import firebase from "firebase";
 import * as firebaseui from 'firebaseui'
 import 'firebaseui/dist/firebaseui.css'
-import { Config } from "../../shared/util/config";
-import {} from '../tw5/tw5-types';
+import { config, Config } from "../../shared/util/config";
+import { TW5TiddlerFields } from '../tw5/tw5-types';
+import {FetchHTTPTransport} from '../../shared/apiclient/fetch-http-transport';
+import {HTTPStoreClient} from '../../shared/apiclient/http-store-client';
+import { mapOrApply } from "../../shared/util/map";
 
+let ui:firebaseui.auth.AuthUI;
 
 function getUiConfig() {
   return {
@@ -79,11 +83,6 @@ function getUiConfig() {
   };
 }
 
-// Initialize the FirebaseUI Widget using Firebase.
-var ui = new firebaseui.auth.AuthUI(firebase.auth());
-// Disable auto-sign in.
-ui.disableAutoSignIn();
-
 
 /**
  * @return {string} The URL of the FirebaseUI standalone widget.
@@ -135,16 +134,14 @@ var handleSignedInUser = async function(user:firebase.User) {
     return parsed;
   };
 
-  const getConfig = () => {
+  const getConfig = ():Config['wiki'] => {
     const configOverrides = getQueryVariables();
     const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
     const wikiNameInPath = window.location.pathname.match(RE_WIKI_NAME);
     if (wikiNameInPath) {
       configOverrides.wikiName = wikiNameInPath[1];
     }
-    const config = ($tw as any)._pnwiki.config;
-    Object.assign(config.wiki, configOverrides);
-    return config;
+    return Object.assign({}, config.wiki, configOverrides);
   };
 
   (document.getElementById('user-signed-in') as any).style.display = 'block';
@@ -170,20 +167,27 @@ var handleSignedInUser = async function(user:firebase.User) {
   }
   // --- start tiddlywiki ---
   // set getIdToken function used by syncadaptor (required for token refresh to automatically work).
-  ($tw as any)._pnwiki.getIdToken = () => user.getIdToken();
+  ($tw as any)._pnwiki = {
+    getIdToken: () => user.getIdToken()
+  }
   // get first fb auth id token
   const firebaseAuthTokenData = await getAuthTokenData(user);
-  const config = getConfig();
+  const effectiveConfig = getConfig();
   // TODO: handle loadTiddler error
+  let namespacedTiddlers;
   let tiddlers;
   try {
-    tiddlers = await ($tw as any)._pnwiki.adaptorCore.loadTiddler(config.wiki, firebaseAuthTokenData.token);
+    let client = new HTTPStoreClient(
+      effectiveConfig.wikiName,
+      new FetchHTTPTransport(effectiveConfig.apiEndpoint, () => user.getIdToken()));
+    namespacedTiddlers = await client.readFromRecipe(effectiveConfig.recipe);
+    tiddlers = mapOrApply(namespacedTiddler => namespacedTiddler.tiddler.fields, namespacedTiddlers) as TW5TiddlerFields[];
   } catch (err) {
-      const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+config.wikiName) || firebaseAuthTokenData.claims["_"+config.wiki.wikiName] < 2);
+      const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+effectiveConfig.wikiName) || firebaseAuthTokenData.claims["_"+effectiveConfig.wikiName] < 2);
       if (lacksPermission) {
           // This is a terrible hack: abuse the TW5 built in error popup to notify the user of lack of permissions
           $tw.language = {getString: label => label === "Buttons/Close/Caption" ? "close" : ""};
-          $tw.utils.error(`Hi ${user.displayName}! It seems like you do not have sufficient permissions to access wiki ${config.wiki.wikiName}. If this is your first time logging in or you have recently been given access, try reloading the page.`);
+          $tw.utils.error(`Hi ${user.displayName}! It seems like you do not have sufficient permissions to access wiki ${effectiveConfig.wikiName}. If this is your first time logging in or you have recently been given access, try reloading the page.`);
       } else {
         $tw.utils.error(err.message);
       }
@@ -204,7 +208,7 @@ var handleSignedInUser = async function(user:firebase.User) {
   }, {
     title: "$:/config/WikiConfig",
     type: "application/json",
-    text: JSON.stringify(config)
+    text: JSON.stringify(effectiveConfig)
   }, ...tiddlers]);
   // boot tiddlywiki5
   $tw.boot.boot();
@@ -219,14 +223,6 @@ var handleSignedOutUser = function() {
   (document.getElementById('user-signed-out') as any).style.display = 'block';
   ui.start('#firebaseui-container', getUiConfig());
 };
-
-// Listen to change in auth state so it displays the correct UI for when
-// the user is signed in or not.
-firebase.auth().onAuthStateChanged(function(user:firebase.User|null) {
-  (document.getElementById('loading') as any).style.display = 'none';
-  (document.getElementById('loaded') as any).style.display = 'block';
-  user ? handleSignedInUser(user!) : handleSignedOutUser();
-});
 
 /**
  * Deletes the user's account.
@@ -305,6 +301,18 @@ function parseQueryString(queryString:string):{[key:string]:string} {
  * Initializes the app.
  */
 const initApp = () => {
+  firebase.initializeApp(config.firebase);
+  // Listen to change in auth state so it displays the correct UI for when
+  // the user is signed in or not.
+  firebase.auth().onAuthStateChanged(function(user:firebase.User|null) {
+    (document.getElementById('loading') as any).style.display = 'none';
+    (document.getElementById('loaded') as any).style.display = 'block';
+    user ? handleSignedInUser(user!) : handleSignedOutUser();
+  });
+  // Initialize the FirebaseUI Widget using Firebase.
+  ui = new firebaseui.auth.AuthUI(firebase.auth());
+  // Disable auto-sign in.
+  ui.disableAutoSignIn();
   // document.getElementById('sign-in-with-redirect').addEventListener( 'click', signInWithRedirect);
   document.getElementById('sign-in-with-popup')?.addEventListener('click', signInWithPopup);
   document.getElementById('sign-out')?.addEventListener('click', () => firebase.auth().signOut());
