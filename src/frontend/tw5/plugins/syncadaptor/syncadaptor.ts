@@ -1,17 +1,18 @@
-import firebase from "firebase";
+import { tiddlerDataSchema } from "../../../../backend/common/schema";
+import { TiddlerFactory } from "../../../../backend/common/tiddler-factory";
+import { HTTPStoreClient } from "../../../../shared/apiclient/http-store-client";
 import { Revision } from "../../../../shared/model/revision";
+import { TiddlerData } from "../../../../shared/model/tiddler";
 import { User, username } from "../../../../shared/model/user";
 import { Config } from "../../../../shared/util/config";
-import { TW5Transport } from "../tw5-transport";
 import {
   CallbackFn,
   TW5SyncAdaptor,
   TW5SyncAdaptorTiddlerInfo,
   TW5Tiddler,
-  TW5Wiki,
+  TW5Wiki
 } from "../../tw5-types";
-import { HTTPStoreClient } from "../../../../shared/apiclient/http-store-client";
-import { SingleWikiNamespacedTiddler } from "../../../../shared/model/store";
+import { TW5Transport } from "../tw5-transport";
 
 const CONFIG_TIDDLER = "$:/config/WikiConfig";
 const USER_TIDDLER = "$:/temp/user";
@@ -20,7 +21,12 @@ const asyncToCallback = (fn: ()=>Promise<any[]>, callback:CallbackFn) => fn().th
   data => callback(null, ...data),
   callback);
 
-export class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
+const toTiddlerData = (tiddler:TW5Tiddler):Partial<TiddlerData> => {
+  const {text, tags, type, title, ...fields} = tiddler.fields;
+  return {text, tags, type, fields};
+};
+
+class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
   private wiki: TW5Wiki;
   private transport: TW5Transport;
   private tiddlerInfo: { [title: string]: TW5SyncAdaptorTiddlerInfo } = {};
@@ -28,7 +34,7 @@ export class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
 
   name = "TW5FirebaseSyncAdaptor";
   supportsLazyLoading = false;
-  config: Config;
+  config: Config['wiki'];
   user: User;
   store: HTTPStoreClient;
 
@@ -37,14 +43,14 @@ export class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
     this.wiki = options.wiki;
     this.config = JSON.parse(
       this.wiki.getTiddlerText(CONFIG_TIDDLER)!
-    ) as Config;
+    ) as Config['wiki'];
     this.user = (this.wiki.getTiddler(USER_TIDDLER)!.fields as any) as User;
     this.transport = new TW5Transport(
-      this.config.wiki.apiEndpoint,
+      this.config.apiEndpoint,
       // TODO: temporary hack to get plugin working, remove this asap:
       ($tw as any)._pnwiki.getIdToken
     );
-    this.store = new HTTPStoreClient(this.config.wiki.wikiName, this.transport);
+    this.store = new HTTPStoreClient(this.config.wikiName, this.transport);
   }
 
   isReady() {
@@ -76,13 +82,14 @@ export class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
       const title = tiddler.fields.title;
       const originalBag = this.tiddlerInfo[title]?.bag;
       const expectedRevision = this.tiddlerRevision[title];
+      const tiddlerData = toTiddlerData(tiddler);
       // TODO1: support writes to bag directly in addition to through recipe
       const writeResult = await this.store.writeToRecipe(
-        this.config.wiki.recipe,
+        this.config.recipe,
         title,
         expectedRevision
-          ? { update: tiddler.fields, expectedRevision }
-          : { create: tiddler.fields }
+          ? { update: tiddlerData, expectedRevision }
+          : { create: tiddlerData }
       );
       if (writeResult.bag !== originalBag) {
         // log only for now
@@ -118,3 +125,6 @@ export class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
     }, callback);
   }
 }
+
+// Only export adaptorClass if config tiddler is set (otherwise the syncadaptor can't work)
+export const adaptorClass = $tw.wiki.tiddlerExists(CONFIG_TIDDLER) ? TW5FirebaseSyncAdaptor : null;

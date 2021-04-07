@@ -18,7 +18,7 @@ export class HTTPStoreClient implements BoundTiddlerStore {
   private httpTransport: HTTPTransport;
 
   private getWriteRequest(collectionType:string, collectionName:string, key:string, updateOrCreate: TiddlerUpdateOrCreate):HTTPAPIRequest {
-    let urlPath = `${this.wiki}/${collectionType}s/${collectionName}/tiddlers/${key}`;
+    let urlPath = `${this.wiki}/${collectionType}s/${collectionName}/tiddlers/${encodeURIComponent(key)}`;
     const expectedRevision = getExpectedRevision(updateOrCreate);
     if (expectedRevision) {
       urlPath += `/revisions/${expectedRevision}`;
@@ -33,7 +33,7 @@ export class HTTPStoreClient implements BoundTiddlerStore {
   private getReadRequest(collectionType:string, collectionName:string, key?:string):HTTPAPIRequest {
     let urlPath = `${this.wiki}/${collectionType}s/${collectionName}/tiddlers/`;
     if (key) {
-      urlPath += `${key}`;
+      urlPath += encodeURIComponent(key);
     }
     return {
       urlPath,

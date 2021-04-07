@@ -21,7 +21,9 @@ const getConfigBuilder = ({
   output: {
     path: path.resolve(__dirname, '..', outputDir),
     filename: outputFilename,
-    libraryTarget: 'this'
+    libraryTarget: 'this',
+    globalObject: 'globalThis',
+    umdNamedDefine: true
   },
   module: {
     rules: [

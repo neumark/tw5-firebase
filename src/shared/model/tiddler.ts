@@ -1,7 +1,7 @@
 import { Modify } from "../util/modify";
 import { Revision } from "./revision";
 
-export type TiddlerFields = { [key: string]: string };
+export type TiddlerFields = { [key: string]: any };
 
 export interface TiddlerData {
   tags: string[];

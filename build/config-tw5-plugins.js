@@ -51,13 +51,13 @@ ${banner}\\*/`;
       devtool: 'source-map',
       output: {
         library: {
-            name: path.basename(input, '.ts'),
-            type: 'commonjs2',
+            // name: 'adaptorClass', //path.basename(input, '.ts'),
+            type: 'commonjs',
         },
         path: path.resolve(__dirname, '..', outputDir),
         filename: outputFilename,
-        globalObject: 'globalThis',
-        umdNamedDefine: true
+        globalObject: 'globalThis'
+        //umdNamedDefine: true
       },
       module: {
         rules: [

@@ -1,5 +1,9 @@
 import { inject, injectable, interfaces } from "inversify";
-import { Tiddler, TiddlerData, TiddlerNamespace } from "../../shared/model/tiddler";
+import {
+  Tiddler,
+  TiddlerData,
+  TiddlerNamespace,
+} from "../../shared/model/tiddler";
 import { NamespacedRecipe } from "../../shared/model/recipe";
 import { getRevision, Revision } from "../../shared/model/revision";
 import { User } from "../../shared/model/user";
@@ -15,7 +19,14 @@ import { RecipeResolver } from "./recipe-resolver";
 import { getTimestamp as _getTimestamp } from "../../shared/util/time";
 import { TiddlerFactory } from "../common/tiddler-factory";
 import { mapOrApply } from "../../shared/util/map";
-import { NamespacedTiddler, SingleWikiNamespacedTiddler, TiddlerUpdateOrCreate, BoundTiddlerStore, getTiddlerData, getExpectedRevision } from "../../shared/model/store";
+import {
+  NamespacedTiddler,
+  SingleWikiNamespacedTiddler,
+  TiddlerUpdateOrCreate,
+  BoundTiddlerStore,
+  getTiddlerData,
+  getExpectedRevision,
+} from "../../shared/model/store";
 
 @injectable()
 export class GlobalTiddlerStore {
@@ -79,16 +90,17 @@ export class GlobalTiddlerStore {
     updateOrCreate: TiddlerUpdateOrCreate
   ) {
     return (existingTiddler?: Tiddler): Tiddler => {
-      if ("create" in updateOrCreate) {
-        // create
-        const newTiddler = this.tiddlerFactory.createTiddler(
-          user,
-          key,
-          updateOrCreate.create.type
-        );
-        return Object.assign(newTiddler, updateOrCreate.create);
+      if ("update" in updateOrCreate) {
+        return Object.assign({}, existingTiddler, updateOrCreate.update);
       }
-      return Object.assign({}, existingTiddler, updateOrCreate.update);
+
+      // create
+      const newTiddler = this.tiddlerFactory.createTiddler(
+        user,
+        key,
+        updateOrCreate.create.type
+      );
+      return Object.assign(newTiddler, updateOrCreate.create);
     };
   }
 
@@ -168,7 +180,7 @@ export class GlobalTiddlerStore {
           persistence,
           user,
           namespacedRecipe.wiki,
-          bags,
+          bags
         );
         if (!readPermissions.every((p) => p.allowed)) {
           // In the future, we may want to ignore some bags not being readable, and just serve tiddlers from those accessible.
@@ -317,7 +329,7 @@ export class GlobalTiddlerStore {
           persistence,
           user,
           namespace.wiki,
-          [namespace.bag],
+          [namespace.bag]
         );
         if (writePermission[0].allowed) {
           const updater = (
@@ -346,39 +358,51 @@ export class GlobalTiddlerStore {
  * Binds user and wiki for a tiddlerstore
  */
 
-const asBoundTiddler = (namespacedTiddler:NamespacedTiddler):SingleWikiNamespacedTiddler => ({
-    bag: namespacedTiddler.namespace.bag,
-    tiddler: namespacedTiddler.value,
-    revision: namespacedTiddler.revision
-  });
-
+const asBoundTiddler = (
+  namespacedTiddler: NamespacedTiddler
+): SingleWikiNamespacedTiddler => ({
+  bag: namespacedTiddler.namespace.bag,
+  tiddler: namespacedTiddler.value,
+  revision: namespacedTiddler.revision,
+});
 
 export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
   private user: User;
   private wiki: string;
   private tiddlerStore: GlobalTiddlerStore;
 
-  constructor(user:User, wiki:string, tiddlerStore:GlobalTiddlerStore) {
+  constructor(user: User, wiki: string, tiddlerStore: GlobalTiddlerStore) {
     this.user = user;
     this.wiki = wiki;
     this.tiddlerStore = tiddlerStore;
   }
 
- removeFromBag(
+  removeFromBag(
     bag: string,
     key: string,
     expectedRevision: Revision
   ): Promise<boolean> {
-    return this.tiddlerStore.removeFromBag(this.user, {wiki:this.wiki, bag}, key, expectedRevision);
+    return this.tiddlerStore.removeFromBag(
+      this.user,
+      { wiki: this.wiki, bag },
+      key,
+      expectedRevision
+    );
   }
 
- async writeToRecipe(
+  async writeToRecipe(
     recipe: string,
     key: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<SingleWikiNamespacedTiddler> {
     return asBoundTiddler(
-      await this.tiddlerStore.writeToRecipe(this.user, {wiki:this.wiki, recipe}, key, updateOrCreate));
+      await this.tiddlerStore.writeToRecipe(
+        this.user,
+        { wiki: this.wiki, recipe },
+        key,
+        updateOrCreate
+      )
+    );
   }
 
   async writeToBag(
@@ -387,7 +411,13 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<SingleWikiNamespacedTiddler> {
     return asBoundTiddler(
-      await this.tiddlerStore.writeToBag(this.user, {wiki:this.wiki, bag}, key, updateOrCreate));
+      await this.tiddlerStore.writeToBag(
+        this.user,
+        { wiki: this.wiki, bag },
+        key,
+        updateOrCreate
+      )
+    );
   }
 
   async readFromRecipe(
@@ -396,7 +426,12 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
   ): Promise<SingleWikiNamespacedTiddler | Array<SingleWikiNamespacedTiddler>> {
     return mapOrApply(
       asBoundTiddler,
-      await this.tiddlerStore.readFromRecipe(this.user, {wiki: this.wiki, recipe}, key));
+      await this.tiddlerStore.readFromRecipe(
+        this.user,
+        { wiki: this.wiki, recipe },
+        key
+      )
+    );
   }
 
   async readFromBag(
@@ -405,15 +440,24 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
   ): Promise<SingleWikiNamespacedTiddler | Array<SingleWikiNamespacedTiddler>> {
     return mapOrApply(
       asBoundTiddler,
-      await this.tiddlerStore.readFromBag(this.user, {wiki: this.wiki, bag}, key));
+      await this.tiddlerStore.readFromBag(
+        this.user,
+        { wiki: this.wiki, bag },
+        key
+      )
+    );
   }
 }
 
-export const injectableBoundTiddlerStoreFactory =
-  (context:interfaces.Context) =>
-    (user:User, wiki:string) => {
-      const tiddlerStore = context.container.get<GlobalTiddlerStore>(Component.GlobalTiddlerStore);
-      return new BoundTiddlerStoreImpl(user, wiki, tiddlerStore);
-    };
+export const injectableBoundTiddlerStoreFactory = (
+  context: interfaces.Context
+) => (user: User, wiki: string) => {
+  const tiddlerStore = context.container.get<GlobalTiddlerStore>(
+    Component.GlobalTiddlerStore
+  );
+  return new BoundTiddlerStoreImpl(user, wiki, tiddlerStore);
+};
 
-export type BoundTiddlerStoreFactory = ReturnType<typeof injectableBoundTiddlerStoreFactory>;
+export type BoundTiddlerStoreFactory = ReturnType<
+  typeof injectableBoundTiddlerStoreFactory
+>;

@@ -26,7 +26,7 @@ export class TW5Transport implements HTTPTransport {
       $tw.utils.httpRequest({
         url: this.urlPrefix + urlPath,
         type: method || body ? "PUT" : undefined || "GET",
-        data: body,
+        data: JSON.stringify(body),
         headers,
         callback: (err?: any, ...data: any[]) => {
           if (err) {

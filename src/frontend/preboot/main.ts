@@ -3,7 +3,7 @@ import * as firebaseui from 'firebaseui'
 import 'firebaseui/dist/firebaseui.css'
 import { config, Config } from "../../shared/util/config";
 import { TW5TiddlerFields } from '../tw5/tw5-types';
-import {FetchHTTPTransport} from '../../shared/apiclient/fetch-http-transport';
+import {FetchHTTPTransport} from '../shared/fetch-http-transport';
 import {HTTPStoreClient} from '../../shared/apiclient/http-store-client';
 import { mapOrApply } from "../../shared/util/map";
 
@@ -181,7 +181,7 @@ var handleSignedInUser = async function(user:firebase.User) {
       effectiveConfig.wikiName,
       new FetchHTTPTransport(effectiveConfig.apiEndpoint, () => user.getIdToken()));
     namespacedTiddlers = await client.readFromRecipe(effectiveConfig.recipe);
-    tiddlers = mapOrApply(namespacedTiddler => namespacedTiddler.tiddler.fields, namespacedTiddlers) as TW5TiddlerFields[];
+    tiddlers = mapOrApply(namespacedTiddler => Object.assign({}, namespacedTiddler.tiddler, namespacedTiddler.tiddler.fields), namespacedTiddlers) as TW5TiddlerFields[];
   } catch (err) {
       const lacksPermission = err.response.status === 403 && (!firebaseAuthTokenData.claims.hasOwnProperty("_"+effectiveConfig.wikiName) || firebaseAuthTokenData.claims["_"+effectiveConfig.wikiName] < 2);
       if (lacksPermission) {

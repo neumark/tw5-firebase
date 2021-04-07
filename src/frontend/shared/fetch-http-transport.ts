@@ -1,4 +1,4 @@
-import { HTTPAPIRequest, HTTPTransport, NetworkError } from "./http-transport";
+import { HTTPAPIRequest, HTTPTransport, NetworkError } from "../../shared/apiclient/http-transport";
 
 export class FetchHTTPTransport implements HTTPTransport {
   private urlPrefix: string;
@@ -11,14 +11,15 @@ export class FetchHTTPTransport implements HTTPTransport {
 
   async request (httpApiRequest: HTTPAPIRequest): Promise<any> {
     const { urlPath, body, method } = httpApiRequest;
-    const headers:{[key:string]:string} = {
-      "Content-Type": "application/json",
+    const headers:{[key:string]:string} = {}
+    if (body) {
+      headers["Content-Type"] = "application/json";
     }
     const authToken = await this.getApiToken();
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
-    const response = await globalThis.fetch(
+    const response = await fetch(
       this.urlPrefix + urlPath,
       {headers, method, body}
     )
@@ -26,6 +27,6 @@ export class FetchHTTPTransport implements HTTPTransport {
     if (response.status < 200 || response.status > 299) {
       throw new NetworkError({message: responseBody.message || response.statusText, statusCode: response.status, apiRequest: httpApiRequest});
     }
-    return body;
+    return responseBody;
   }
 }
