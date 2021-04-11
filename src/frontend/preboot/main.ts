@@ -194,7 +194,8 @@ var handleSignedInUser = async function(user:firebase.User) {
       return;
   }
   // save tiddlers for direct access from synacadapter
-  ($tw as any)._pnwiki.initialTidders = tiddlers;
+  // TODO:
+  ($tw as any)._pnwiki.namespacedTiddlers = namespacedTiddlers;
   const userData = {
     uid: user.uid,
     photo: photoURL,

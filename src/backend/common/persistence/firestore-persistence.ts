@@ -160,12 +160,14 @@ export class FirestorePersistence
     }
     const updatedDoc = await Promise.resolve(updater(existingValue));
     if (updatedDoc) {
+      // set new revision
+      updatedDoc.revision = getRevision(this.user, this.getTimestamp());
       this.tx.set(this.db.doc(makeKey(namespace, key)), updatedDoc);
       return {
         namespace,
         key,
         value: updatedDoc,
-        revision: getRevision(this.user, this.getTimestamp()),
+        revision: updatedDoc.revision,
       };
     } else {
       this.tx.delete(this.db.doc(makeKey(namespace, key)));

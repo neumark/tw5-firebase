@@ -1,7 +1,7 @@
-import { tiddlerDataSchema } from "../../../../backend/common/schema";
-import { TiddlerFactory } from "../../../../backend/common/tiddler-factory";
+import { stringify } from "ajv";
 import { HTTPStoreClient } from "../../../../shared/apiclient/http-store-client";
 import { Revision } from "../../../../shared/model/revision";
+import { SingleWikiNamespacedTiddler } from "../../../../shared/model/store";
 import { TiddlerData } from "../../../../shared/model/tiddler";
 import { User, username } from "../../../../shared/model/user";
 import { Config } from "../../../../shared/util/config";
@@ -29,15 +29,14 @@ const toTiddlerData = (tiddler:TW5Tiddler):Partial<TiddlerData> => {
 class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
   private wiki: TW5Wiki;
   private transport: TW5Transport;
-  private tiddlerInfo: { [title: string]: TW5SyncAdaptorTiddlerInfo } = {};
-  private tiddlerRevision: { [title: string]: Revision } = {};
+  private tiddlerInfo: { [title: string]: TW5SyncAdaptorTiddlerInfo };
+  private tiddlerRevision: { [title: string]: Revision };
+  private config: Config['wiki'];
+  private user: User;
+  private store: HTTPStoreClient;
 
   name = "TW5FirebaseSyncAdaptor";
   supportsLazyLoading = false;
-  config: Config['wiki'];
-  user: User;
-  store: HTTPStoreClient;
-
 
   constructor(options: { wiki: TW5Wiki }) {
     this.wiki = options.wiki;
@@ -51,6 +50,16 @@ class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
       ($tw as any)._pnwiki.getIdToken
     );
     this.store = new HTTPStoreClient(this.config.wikiName, this.transport);
+    // TODO: temporary: get preloaded tiddlers with metadata
+    const namespacedTiddlers:SingleWikiNamespacedTiddler[] = ($tw as any)._pnwiki.namespacedTiddlers;
+    this.tiddlerInfo = namespacedTiddlers.reduce((acc, {tiddler: {title}, bag}) => {
+      acc[title] = {bag};
+      return acc;
+    }, {} as { [title: string]: TW5SyncAdaptorTiddlerInfo });
+    this.tiddlerRevision = namespacedTiddlers.reduce((acc, {tiddler: {title}, revision}) => {
+      acc[title] = revision;
+      return acc;
+    }, {} as { [title: string]: Revision })
   }
 
   isReady() {

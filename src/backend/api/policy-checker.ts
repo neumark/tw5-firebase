@@ -126,12 +126,13 @@ export class PolicyChecker {
     tiddlerData: Partial<TiddlerData>
   ): BagPermission {
     const failed = bagPermission.policy.constraints!.filter((constraint) =>
-      checkConstraint(constraint, tiddlerTitle, tiddlerData)
+      !checkConstraint(constraint, tiddlerTitle, tiddlerData)
     );
+    const allowed = failed.length < 1;
     return {
       ...bagPermission,
-      allowed: failed.length < 1,
-      reason: `Failed policy constraints prevented writing tiddler ${tiddlerTitle} to bag ${
+      allowed,
+      reason: allowed ? undefined : `Failed policy constraints prevented writing tiddler ${tiddlerTitle} to bag ${
         bagPermission.bag
       }: ${JSON.stringify(failed)}.`,
     };
