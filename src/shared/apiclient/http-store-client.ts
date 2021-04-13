@@ -18,7 +18,7 @@ export class HTTPStoreClient implements BoundTiddlerStore {
   private httpTransport: HTTPTransport;
 
   private getWriteRequest(collectionType:string, collectionName:string, key:string, updateOrCreate: TiddlerUpdateOrCreate):HTTPAPIRequest {
-    let urlPath = `${this.wiki}/${collectionType}s/${collectionName}/tiddlers/${encodeURIComponent(key)}`;
+    let urlPath = `${encodeURIComponent(this.wiki)}/${collectionType}s/${encodeURIComponent(collectionName)}/tiddlers/${encodeURIComponent(key)}`;
     const expectedRevision = getExpectedRevision(updateOrCreate);
     if (expectedRevision) {
       urlPath += `/revisions/${expectedRevision}`;
@@ -31,7 +31,7 @@ export class HTTPStoreClient implements BoundTiddlerStore {
   }
 
   private getReadRequest(collectionType:string, collectionName:string, key?:string):HTTPAPIRequest {
-    let urlPath = `${this.wiki}/${collectionType}s/${collectionName}/tiddlers/`;
+    let urlPath = `${encodeURIComponent(this.wiki)}/${collectionType}s/${encodeURIComponent(collectionName)}/tiddlers/`;
     if (key) {
       urlPath += encodeURIComponent(key);
     }
@@ -45,9 +45,9 @@ export class HTTPStoreClient implements BoundTiddlerStore {
     this.wiki = wiki;
     this.httpTransport = httpTransport;
   }
-  removeFromBag (bag: string, key: string, expectedRevision: string | undefined): Promise<boolean> {
+  async removeFromBag (bag: string, key: string, expectedRevision: string): Promise<boolean> {
     return this.httpTransport.request({
-      urlPath: `/${this.wiki}/bags/${bag}/tiddlers/${key}/revisions/${expectedRevision}`,
+      urlPath: `${encodeURIComponent(this.wiki)}/bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(key)}/revisions/${encodeURIComponent(expectedRevision)}`,
       method: 'DELETE'
     });
   }

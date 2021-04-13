@@ -2,6 +2,7 @@ import {
   HTTPAPIRequest, HTTPTransport, NetworkError
 } from "../../../shared/apiclient/http-transport";
 import { isVoid } from "../../../shared/util/is-void";
+import { maybeApply } from "../../../shared/util/map";
 import { } from '../tw5-types';
 
 export class TW5Transport implements HTTPTransport {
@@ -15,18 +16,23 @@ export class TW5Transport implements HTTPTransport {
   }
   async request(apiRequest: HTTPAPIRequest): Promise<any> {
     const { urlPath, body, method } = apiRequest;
-    const headers:{[key:string]:string} = {
-      "Content-Type": "application/json",
+    const headers:{[key:string]:string} = {};
+    if (body) {
+      headers["Content-Type"] = "application/json";
     }
     const authToken = await this.getApiToken();
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
+    let type = method;
+    if (type === undefined) {
+      type = body ? "PUT" : "GET";
+    }
     return new Promise((resolve, reject) => {
       $tw.utils.httpRequest({
         url: this.urlPrefix + urlPath,
-        type: method || body ? "PUT" : undefined || "GET",
-        data: JSON.stringify(body),
+        type,
+        data: maybeApply(JSON.stringify, body),
         headers,
         callback: (err?: any, ...data: any[]) => {
           if (err) {

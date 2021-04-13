@@ -1,9 +1,13 @@
+import {isVoid} from './is-void';
+
 export const mapOrApply = <T, R>(fn: (arg:T)=>R, input:T|T[]):R|R[] => {
   if (Array.isArray(input)) {
     return input.map(fn);
   }
   return fn(input);
 }
+
+export const maybeApply = <T, R>(fn: (arg:T)=>R, input:T|undefined|null):R|undefined => isVoid(input) ? undefined : fn(input!);
 
 export const objFilter = <V>(fn:(k:string, v:V)=>boolean, input:{[key:string]:V}):{[key:string]:V} => Object.fromEntries(Object.entries(input).filter(([k, v]) => fn(k, v)));
 

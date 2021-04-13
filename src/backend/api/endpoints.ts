@@ -37,7 +37,7 @@ import { Component } from "../common/ioc/components";
 import { AuthenticatorMiddleware } from "./authentication";
 import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";
 import { BoundTiddlerStoreFactory } from "./tiddler-store";
-import { mapOrApply } from "../../shared/util/map";
+import { mapOrApply, maybeApply } from "../../shared/util/map";
 import {
   SingleWikiNamespacedTiddler,
   TiddlerUpdateOrCreate,
@@ -65,12 +65,10 @@ export class APIEndpointFactory {
   private tiddlerDataValidator = getValidator(tiddlerDataSchema);
 
   private async read(req: express.Request) {
-    const wiki = req.params["wiki"];
-    const bag = req.params["bag"];
-    const recipe = req.params["recipe"];
-    const title = req.params["title"]
-      ? decodeURIComponent(req.params["title"])
-      : undefined;
+    const wiki = decodeURIComponent(req.params["wiki"]);
+    const bag = maybeApply(decodeURIComponent, req.params["bag"]);
+    const recipe = maybeApply(decodeURIComponent, req.params["recipe"]);
+    const title = maybeApply(decodeURIComponent, req.params["title"]);
     if (!wiki) {
       throw new HTTPError(`invalid wiki: ${wiki}`, HTTP_BAD_REQUEST);
     }
@@ -95,10 +93,10 @@ export class APIEndpointFactory {
 
   private async write(req: express.Request) {
     const wiki = req.params["wiki"];
-    const bag = req.params["bag"];
-    const recipe = req.params["recipe"];
-    const title = req.params["title"];
-    const expectedRevision = req.params["revision"];
+    const bag = maybeApply(decodeURIComponent, req.params["bag"]);
+    const recipe = maybeApply(decodeURIComponent, req.params["recipe"]);
+    const title = decodeURIComponent(req.params["title"]);
+    const expectedRevision = maybeApply(decodeURIComponent, req.params["revision"]);
     if (!wiki) {
       throw new HTTPError(`invalid wiki: ${wiki}`, HTTP_BAD_REQUEST);
     }
@@ -132,10 +130,10 @@ export class APIEndpointFactory {
   }
 
   private async remove(req: express.Request) {
-    const wiki = req.params["wiki"];
-    const bag = req.params["bag"];
-    const title = req.params["title"];
-    const expectedRevision = req.params["revision"];
+    const wiki = decodeURIComponent(req.params["wiki"]);
+    const bag = decodeURIComponent(req.params["bag"]);
+    const title = decodeURIComponent(req.params["title"]);
+    const expectedRevision = decodeURIComponent(req.params["revision"]);
     if (wiki && bag && title && expectedRevision) {
       const store = this.boundTiddlerStoreFactory(req.user, wiki);
       return store.removeFromBag(bag, title, expectedRevision);

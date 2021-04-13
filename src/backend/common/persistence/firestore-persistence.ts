@@ -36,15 +36,12 @@ export type FirestoreSerializedTiddler = Modify<
 const asyncMap = async <T, R = any>(list: T[], fn: (e: T) => Promise<R>) =>
   await Promise.all(list.map(fn));
 
-// Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
-const stringToFirebaseDocName = (str: string) => str.replace(/\//g, "_");
-
 const makeKey = (ns: TiddlerNamespace, key?: string) => {
-  const bag = `wikis/${stringToFirebaseDocName(
+  const bag = `wikis/${encodeURIComponent(
     ns.wiki
-  )}/bags/${stringToFirebaseDocName(ns.bag)}/tiddlers`;
+  )}/bags/${encodeURIComponent(ns.bag)}/tiddlers`;
   if (key) {
-    return `${bag}/${stringToFirebaseDocName(key)}`;
+    return `${bag}/${encodeURIComponent(key)}`;
   }
   return bag;
 };

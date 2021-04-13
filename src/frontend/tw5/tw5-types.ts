@@ -25,6 +25,12 @@ export interface TW5Tiddler {
   */
 }
 
+export declare class Widget {
+  constructor(greeting: string);
+  greeting: string;
+  showGreeting(): void;
+}
+
 export interface TW5Wiki {
   tiddlerExists: (title:string) => boolean;
   getTiddlerText: (title:string) => string|undefined;
