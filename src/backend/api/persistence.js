@@ -11,7 +11,7 @@ const fixDates = tiddler => Object.assign({}, tiddler, {
 });
 
 // Note: theoretically, tiddlers with different titles could be considered the same due to this transformation.
-const stringToFirebaseDocName = str => str.replace(/\//g, "_");
+const stringToFirebaseDocName = encodeURIComponent;
 
 const getBagRef = (db, wiki, bag) => db.collectionRef(`wikis/${stringToFirebaseDocName(wiki)}/bags/${stringToFirebaseDocName(bag)}/tiddlers`);
 
