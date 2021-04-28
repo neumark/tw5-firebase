@@ -4,13 +4,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 . "$DIR/env.sh"
 
 pushd "$DIR/.."
-# build syncadaptor plugin
-yarn run webpack -c build/webpack.tw5-plugins.js --mode production
-# copy plugin info for syncadaptor
-cp src/frontend/tw5/plugins/syncadaptor/plugin.info dist/plugins/tw5-firebase/syncadaptor
-
-# build preboot main
-yarn run webpack -c build/webpack.tw5-preboot.js --mode production
+# build all frontend assets
+yarn run webpack -c build/webpack.frontend.js --mode production
+# copy plugin infos
+pushd "$DIR/../src/frontend/tw5/plugins/"
+for i in $(find . -name 'plugin.info')
+do
+    cp "$i" "dist/plugins/tw5-firebase/$i"
+done
+popd
 
 # build tiddlywiki all-in-one html
 TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"

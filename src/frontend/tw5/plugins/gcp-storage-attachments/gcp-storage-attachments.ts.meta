@@ -1,0 +1,5 @@
+title: $:/plugins/tw5-firebase/gcp-storage-attachments/gcp-storage-attachments.ts
+type: application/javascript
+module-type: startup
+
+GCP storage attachments plugin startup initialisation

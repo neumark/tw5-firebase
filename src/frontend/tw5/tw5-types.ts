@@ -25,28 +25,136 @@ export interface TW5Tiddler {
   */
 }
 
-export declare class Widget {
-  constructor(greeting: string);
-  greeting: string;
-  showGreeting(): void;
+export interface VariableInfo {
+    text: string;
+    params: any;
+    srcVariable: string;
+    isCacheable: boolean
 }
 
-export interface TW5Wiki {
+export type MessageType = "tm-add-field" |
+"tm-add-tag" |
+"tm-auto-save-wiki" |
+"tm-cancel-tiddler" |
+"tm-close-all-tiddlers" |
+"tm-close-other-tiddlers" |
+"tm-close-tiddler" |
+"tm-delete-tiddler" |
+"tm-edit-bitmap-operation" |
+"tm-edit-text-operation" |
+"tm-edit-tiddler" |
+"tm-fold-all-tiddlers" |
+"tm-fold-other-tiddlers" |
+"tm-fold-tiddler" |
+"tm-import-tiddlers" |
+"tm-modal" |
+"tm-navigate" |
+"tm-new-tiddler" |
+"tm-perform-import" |
+"tm-remove-field" |
+"tm-remove-tag" |
+"tm-rename-tiddler" |
+"tm-save-tiddler" |
+"tm-scroll" |
+"tm-unfold-all-tiddlers";
+
+// any module with module-type: parser can extend this type, so it will never be complete.
+// from: tiddlywiki/core/modules/parsers/wikiparser/wikiparser.js
+export type ParseTree =
+{type: "element", tag: string, attributes?: {[key:string]:string}, children?: ParseTree[]} //- an HTML element
+| {type: "text", text: string} // a text node
+| {type: "entity", value: string} // - an entity
+| {type: "raw", html: string} // - raw HTML
+| {type: "string", value: string} // - literal string
+| {type: "indirect", textReference: string} // - indirect through a text reference
+| {type: "macro", macro: any /*<TBD>*/}
+// from: tiddlywiki/core/modules/parsers/textparser.js
+| {
+  type: "codeblock",
+  attributes: {
+      code: {type: "string", value: string /*text*/},
+      language: {type: "string", value: string /*type*/}
+  }
+}
+// from: tiddlywiki/core/modules/parsers/csvparser.js
+| {type: "scrollable", children?: ParseTree[]};
+
+export interface EventListeners {messageType:MessageType, handler:string};
+
+export type Event = any; // TODO, what's an event in Widget context?
+
+export interface Widget {
+  parentDomNode:HTMLElement;
+  parseTreeNode:ParseTree;
+  wiki:Wiki;
+  parentWidget:Widget;
+  document:Document;
+  attributes:{[key:string]:string};
+  children:Widget[];
+  domNodes:HTMLElement[];
+
+  execute():void;
+  refresh(changedTiddlers:TW5Tiddler[]):boolean;
+  render(parent:HTMLElement, nextSibling:HTMLElement):void;
+  computeAttributes():{[key:string]:boolean};
+  initialise(parseTreeNode:HTMLElement,options:any):void;
+  setVariable(name:string,value:any,params:any,isMacroDefinition:boolean):void;
+  getVariableInfo(name:string,options:any):any;
+  getVariable(name:string,options:any):any;
+  resolveVariableParameters(formalParams:any,actualParams:any):any;
+  substituteVariableReferences(text:string):string;
+  evaluateMacroModule(name:string,actualParams:any,defaultValue:any):any;
+  hasVariable(name:string,value?:any):boolean;
+  getStateQualifier(name:string):string;
+  hasAttribute(name:string):boolean;
+  getAttribute(name:string,defaultText:any):any;
+  assignAttributes(domNode:HTMLElement,options:any):void;
+  makeChildWidgets(parseTreeNodes:ParseTree[]):void;
+  makeChildWidget(parseTreeNode:ParseTree):void;
+  nextSibling():HTMLElement|null;
+  previousSibling():HTMLElement|null;
+  renderChildren(parent:HTMLElement,nextSibling:HTMLElement):void;
+  addEventListeners(listeners:EventListeners[]):void;
+  addEventListener(messageType:MessageType,handler:string):void;
+  dispatchEvent(event:any):void;
+  refresh(changedTiddlers:TW5Tiddler[]):void;
+  refreshSelf():void;
+  refreshChildren(changedTiddlers:TW5Tiddler[]):void;
+  findNextSiblingDomNode(startIndex:number):HTMLElement|null;
+  findFirstDomNode():HTMLElement|null;
+  removeChildDomNodes():void;
+  invokeActions(triggeringWidget:Widget,event:Event):void;
+  invokeActionString(actions:string,triggeringWidget:Widget,event:Event,variables:any):any;
+  invokeActionsByTag(tag:string,event:Event,variables:any):any;
+  allowActionPropagation():boolean
+}
+
+export interface WidgetConstructorOptions {
+    wiki: Wiki;// mandatory reference to wiki associated with this render tree
+    parentWidget: Widget; // optional reference to a parent renderer node for the context chain
+    document?: Document // optional document object to use instead of global document
+}
+
+export interface WidgetConstructor {
+  new (parseTreeNode:ParseTree, options:WidgetConstructorOptions):Widget;
+}
+
+export interface Wiki {
   tiddlerExists: (title:string) => boolean;
-  getTiddlerText: (title:string) => string|undefined;
+  getTiddlerText: (title:string, fallback?:string) => string|undefined;
   getTiddler: (title:string) => TW5Tiddler | undefined;
 }
 
-export interface TW5SyncAdaptorTiddlerInfo {
+export interface SyncAdaptorTiddlerInfo {
   bag?: string
 }
 
-export interface TW5SyncAdaptor {
+export interface SyncAdaptor {
   name?: string,
   supportsLazyLoading?: boolean,
   setLoggerSaveBuffer?: (buffer:any)=>void;
   isReady: () => boolean;
-  getTiddlerInfo: (tiddler:TW5Tiddler)=>TW5SyncAdaptorTiddlerInfo|undefined;
+  getTiddlerInfo: (tiddler:TW5Tiddler)=>SyncAdaptorTiddlerInfo|undefined;
   getTiddlerRevision: (title:string)=>Revision|undefined;
   getStatus: (callback:CallbackFn)=>void;
   // login, logout not used
@@ -54,27 +162,44 @@ export interface TW5SyncAdaptor {
   loadTiddler: (title:string, callback:CallbackFn)=>void;
   deleteTiddler: (title:string, callback: CallbackFn, options: {
       tiddlerInfo: {
-        adaptorInfo: TW5SyncAdaptorTiddlerInfo
+        adaptorInfo: SyncAdaptorTiddlerInfo
       }
   })=>void;
 }
 
-export interface TW5Logger {
+export interface Logger {
   setSaveBuffer: (buffer:any) => void;
   log: (message:string, ...data:any[]) => void;
 }
 
 
-export interface TW5LoggerConstructor {
-  new (loggerName?:string): TW5Logger;
+export interface LoggerConstructor {
+  new (loggerName?:string): Logger;
 }
 
 export interface TW5TiddlerConstructor {
   new (...fields:TW5Tiddler['fields'][]):TW5Tiddler;
 }
 
-export interface TW5Translator {
+export interface Translator {
     getString: (label:string) => string;
+}
+
+export interface TW5ImportFileInfo {
+  file: File,
+  type: string,
+  isBinary: boolean,
+  callback: CallbackFn
+}
+
+export type TW5AddHookArguments =
+  ["th-renaming-tiddler", /*newTiddler*/ string, /*oldTiddler*/ string]
+  // TODO: lots of hook typings are missing! Run a grep -R 'invokeHook("th' . to see which ones.
+  | ["th-importing-file", (info:TW5ImportFileInfo) => boolean]
+
+export interface DomMakerOptions {
+  "document": Document,
+  "class": string
 }
 
 export interface TW {
@@ -86,16 +211,21 @@ export interface TW {
       headers: {[key:string]:string},
       data:string,
       callback:CallbackFn}>)=>void;
-    Logger: TW5LoggerConstructor;
+    Logger: LoggerConstructor;
     error :(message:string)=>void;
+    domMaker:(tag:string, options:DomMakerOptions)=>HTMLElement;
+    formatDateString(date:Date, format:string):string;
   },
   boot: {
     boot: () => void;
   }
-  wiki: TW5Wiki,
+  wiki: Wiki,
   Tiddler: TW5TiddlerConstructor,
   preloadTiddlerArray: (tiddlerFields:TW5TiddlerFields[])=>void;
-  language?: TW5Translator
+  language?: Translator,
+  hooks: {
+    addHook: (...args:TW5AddHookArguments)=>void
+  }
 }
 
 declare global {

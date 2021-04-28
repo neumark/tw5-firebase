@@ -2,18 +2,22 @@
 // https://tiddlywiki.com/dev/static/Using%2520ES2016%2520for%2520Writing%2520Plugins.html
 // https://webpack.js.org/configuration/resolve/#resolvefallback
 // https://github.com/basarat/typescript-book/blob/master/docs/project/external-modules.md
-/*
-import { widget as Widget } from '$:/core/modules/widgets/widget.js';
 
-class ClockWidget extends Widget {
-  constructor(parseTreeNode, options) {
+import { ParseTree, Widget, WidgetConstructor } from "../../tw5-types";
+
+const { widget } = require('$:/core/modules/widgets/widget.js');
+const Widget:WidgetConstructor = widget;
+class ClockWidget extends Widget implements Widget {
+  private domNode: HTMLElement|null = null;
+  private clockTicker?: ReturnType<typeof setInterval>
+
+  constructor(parseTreeNode:ParseTree, options:any) {
     super(parseTreeNode, options);
-    this.logger = new $tw.utils.Logger('clock-widget');
+    // this.logger = new $tw.utils.Logger('clock-widget');
   }
 
-  render(parent, nextSibling) {
-    if (!$tw.browser) { return; }
-    this.logger.log('Rendering clock DOM nodes');
+  render(parent:HTMLElement, nextSibling:HTMLElement) {
+    // this.logger.log('Rendering clock DOM nodes');
     this.computeAttributes()
     this.parentDomNode = parent;
     this.domNode = $tw.utils.domMaker('div', {
@@ -25,26 +29,26 @@ class ClockWidget extends Widget {
   }
 
   tick() {
-    this.logger.log('Tick!');
+    console.log('Tick!');
     if (!document.contains(this.domNode)) {
       // Apparently the widget was removed from the DOM. Do some clean up.
       return this.stop();
     }
     this.start();
-    this.domNode.innerHTML = this.dateString;
+    this.domNode!.innerHTML = this.dateString;
   }
 
   start() {
     if (!this.clockTicker) {
-      this.logger.log('Starting clock');
+      console.log('Starting clock');
       this.clockTicker = setInterval(this.tick.bind(this), 1000);
     }
   }
 
   stop() {
-    this.logger.log('Stopping clock');
-    clearInterval(this.clockTicker);
-    this.clockTicker = null;
+    console.log('Stopping clock');
+    clearInterval(this.clockTicker!);
+    this.clockTicker = undefined;
   }
 
   get dateString() {
@@ -54,4 +58,3 @@ class ClockWidget extends Widget {
 }
 
 export { ClockWidget as clock };
-*/

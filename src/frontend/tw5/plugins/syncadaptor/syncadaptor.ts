@@ -1,4 +1,3 @@
-import { stringify } from "ajv";
 import { HTTPStoreClient } from "../../../../shared/apiclient/http-store-client";
 import { Revision } from "../../../../shared/model/revision";
 import { SingleWikiNamespacedTiddler } from "../../../../shared/model/store";
@@ -7,10 +6,10 @@ import { User, username } from "../../../../shared/model/user";
 import { Config } from "../../../../shared/util/config";
 import {
   CallbackFn,
-  TW5SyncAdaptor,
-  TW5SyncAdaptorTiddlerInfo,
+  SyncAdaptor,
+  SyncAdaptorTiddlerInfo,
   TW5Tiddler,
-  TW5Wiki
+  Wiki
 } from "../../tw5-types";
 import { TW5Transport } from "../tw5-transport";
 
@@ -26,10 +25,10 @@ const toTiddlerData = (tiddler:TW5Tiddler):Partial<TiddlerData> => {
   return {text, tags, type, fields};
 };
 
-class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
-  private wiki: TW5Wiki;
+class TW5FirebaseSyncAdaptor implements SyncAdaptor {
+  private wiki: Wiki;
   private transport: TW5Transport;
-  private tiddlerInfo: { [title: string]: TW5SyncAdaptorTiddlerInfo };
+  private tiddlerInfo: { [title: string]: SyncAdaptorTiddlerInfo };
   private tiddlerRevision: { [title: string]: Revision };
   private config: Config['wiki'];
   private user: User;
@@ -38,7 +37,7 @@ class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
   name = "TW5FirebaseSyncAdaptor";
   supportsLazyLoading = false;
 
-  constructor(options: { wiki: TW5Wiki }) {
+  constructor(options: { wiki: Wiki }) {
     this.wiki = options.wiki;
     this.config = JSON.parse(
       this.wiki.getTiddlerText(CONFIG_TIDDLER)!
@@ -55,7 +54,7 @@ class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
     this.tiddlerInfo = namespacedTiddlers.reduce((acc, {tiddler: {title}, bag}) => {
       acc[title] = {bag};
       return acc;
-    }, {} as { [title: string]: TW5SyncAdaptorTiddlerInfo });
+    }, {} as { [title: string]: SyncAdaptorTiddlerInfo });
     this.tiddlerRevision = namespacedTiddlers.reduce((acc, {tiddler: {title}, revision}) => {
       acc[title] = revision;
       return acc;
@@ -122,7 +121,7 @@ class TW5FirebaseSyncAdaptor implements TW5SyncAdaptor {
   deleteTiddler(
     title: string,
     callback: (err: any, ...data: any[]) => void,
-    options: { tiddlerInfo: { adaptorInfo: TW5SyncAdaptorTiddlerInfo } }
+    options: { tiddlerInfo: { adaptorInfo: SyncAdaptorTiddlerInfo } }
   ) {
     asyncToCallback(async () => {
       const bag = options?.tiddlerInfo?.adaptorInfo?.bag;
