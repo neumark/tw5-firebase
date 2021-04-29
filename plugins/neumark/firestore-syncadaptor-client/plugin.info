@@ -1,6 +1,0 @@
-{
-	"title": "$:/plugins/neumark/firestore-syncadaptor-client",
-	"name": "Firestore-SyncAdatpor-Client",
-	"description": "Sync changes to firestore",
-	"list": "readme"
-}

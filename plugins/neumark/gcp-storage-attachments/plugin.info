@@ -1,6 +1,0 @@
-{
-	"title": "$:/plugins/neumark/gcp-storage-attachments",
-	"name": "GCP Storage Attachments",
-	"description": "External attachments for Stored in GCP",
-	"list": "readme settings"
-}

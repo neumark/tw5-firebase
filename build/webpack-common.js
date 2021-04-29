@@ -93,13 +93,13 @@ const getTW5PluginConfig = (baseOptions) => {
     if (fs.existsSync(bannerFile)) {
       banner = fs.readFileSync(bannerFile, { encoding: "utf-8" });
     }
-    return `/*\\\n${banner}\\*/`;
+    return `/*\\\n${banner}\n\\*/\n`;
   };
   Object.assign(pluginConfig, {
     externals: [{
       // make firebase and firebase-ui external
-      firebase: "firebase",
-      firebaseui: "firebaseui",
+      firebase: "global firebase",
+      firebaseui: "global firebaseui",
     },
     function ({ context, request }, callback) {
         // console.log("externals", context, request);

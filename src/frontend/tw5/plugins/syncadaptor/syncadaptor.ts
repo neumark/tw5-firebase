@@ -1,7 +1,7 @@
 import { HTTPStoreClient } from "../../../../shared/apiclient/http-store-client";
 import { Revision } from "../../../../shared/model/revision";
 import { SingleWikiNamespacedTiddler } from "../../../../shared/model/store";
-import { TiddlerData } from "../../../../shared/model/tiddler";
+import { PartialTiddlerData } from "../../../../shared/model/tiddler";
 import { User, username } from "../../../../shared/model/user";
 import { Config } from "../../../../shared/util/config";
 import {
@@ -9,6 +9,7 @@ import {
   SyncAdaptor,
   SyncAdaptorTiddlerInfo,
   TW5Tiddler,
+  TW5TiddlerFields,
   Wiki
 } from "../../tw5-types";
 import { TW5Transport } from "../tw5-transport";
@@ -20,9 +21,10 @@ const asyncToCallback = (fn: ()=>Promise<any[]>, callback:CallbackFn) => fn().th
   data => callback(null, ...data),
   callback);
 
-const toTiddlerData = (tiddler:TW5Tiddler):Partial<TiddlerData> => {
-  const {text, tags, type, title, ...fields} = tiddler.fields;
-  return {text, tags, type, fields};
+const toTiddlerData = (tiddler:TW5Tiddler):PartialTiddlerData => {
+  // we don't need to send metadata fields:
+  const {text, tags, type, title, created, creator, modified, modifier, ...otherFields} = tiddler.fields;
+  return {text, tags, type, fields: otherFields};
 };
 
 class TW5FirebaseSyncAdaptor implements SyncAdaptor {

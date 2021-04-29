@@ -2,6 +2,8 @@
     "description": "edition to build index.html",
     "plugins": [
         "tw5-firebase/syncadaptor",
+        "tw5-firebase/gcp-storage-attachments",
+        "tw5-firebase/clock-widget",
         "tiddlywiki/highlight",
         "tiddlywiki/internals",
         "tiddlywiki/codemirror",

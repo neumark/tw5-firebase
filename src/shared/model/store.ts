@@ -1,5 +1,5 @@
 import { Revision } from "./revision";
-import { Tiddler, TiddlerData, TiddlerNamespace } from "./tiddler";
+import { PartialTiddlerData, Tiddler, TiddlerNamespace } from "./tiddler";
 
 export type NamespacedTiddler = {
   namespace: TiddlerNamespace;
@@ -8,8 +8,8 @@ export type NamespacedTiddler = {
   revision: Revision;
 };
 export type TiddlerUpdateOrCreate =
-  | { create: Partial<TiddlerData> }
-  | { update: Partial<TiddlerData>; expectedRevision: Revision };
+  | { create: PartialTiddlerData }
+  | { update: PartialTiddlerData; expectedRevision: Revision };
 
 
 export type SingleWikiNamespacedTiddler = {
@@ -26,5 +26,5 @@ export interface BoundTiddlerStore {
   readFromBag(bag: string, key?: string): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
 }
 
-export const getTiddlerData = (updateOrCreate:TiddlerUpdateOrCreate):Partial<TiddlerData> => 'create' in updateOrCreate ? updateOrCreate.create : updateOrCreate.update;
+export const getTiddlerData = (updateOrCreate:TiddlerUpdateOrCreate):PartialTiddlerData => 'create' in updateOrCreate ? updateOrCreate.create : updateOrCreate.update;
 export const getExpectedRevision = (updateOrCreate:TiddlerUpdateOrCreate):Revision|undefined => 'update' in updateOrCreate ? updateOrCreate.expectedRevision : undefined;
