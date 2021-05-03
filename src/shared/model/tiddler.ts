@@ -1,4 +1,4 @@
-import { Modify } from "../util/modify";
+import { Modify } from "../util/useful-types";
 import { Revision } from "./revision";
 
 export type TiddlerFields = { [key: string]: any };

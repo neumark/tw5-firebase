@@ -2,58 +2,52 @@ import * as admin from "firebase-admin";
 import { inject, injectable } from "inversify";
 import { getRevision, Revision } from "../../../shared/model/revision";
 import { Tiddler, TiddlerNamespace } from "../../../shared/model/tiddler";
-import { Modify } from "../../../shared/util/modify";
+import { User } from "../../../shared/model/user";
+import { Modify } from "../../../shared/util/useful-types";
+import { getTimestamp as _getTimestamp } from "../../../shared/util/time";
 import { HTTPError, HTTP_CONFLICT } from "../../api/errors";
 import { Component } from "../ioc/components";
 import {
   MaybePromise,
-  Persistence,
-  StandardTiddlerPersistence,
+  TiddlerPersistence,
   TransactionRunner,
 } from "./interfaces";
-import { TransformingTiddlerPersistence } from "./transforming-persistence";
-import {
-  getTimestamp as _getTimestamp,
-} from "../../../shared/util/time";
-import { User } from "../../../shared/model/user";
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;
 type Timestamp = admin.firestore.Timestamp;
 
-// Override Date fields as strings and remove bag field in DB serialized version
-export type FirestoreSerializedTiddler = Modify<
-  Tiddler,
-  {
-    // convert timestamps to firestore-native timestamp type
-    created: Timestamp;
-    modified: Timestamp;
-    // add the revision field
-    revision?: string;
-  }
+export type FirestoreSerializedTiddler = Omit<
+  Modify<
+    Tiddler,
+    {
+      // convert timestamps to firestore-native timestamp type
+      created: Timestamp;
+      modified: Timestamp;
+      // add the revision field
+      revision: string;
+    }
+  >,
+  "title"
 >;
 
 const asyncMap = async <T, R = any>(list: T[], fn: (e: T) => Promise<R>) =>
   await Promise.all(list.map(fn));
 
-const makeKey = (ns: TiddlerNamespace, key?: string) => {
-  const bag = `wikis/${encodeURIComponent(
-    ns.wiki
-  )}/bags/${encodeURIComponent(ns.bag)}/tiddlers`;
-  if (key) {
-    return `${bag}/${encodeURIComponent(key)}`;
+const makeKey = (ns: TiddlerNamespace, title?: string) => {
+  const bag = `wikis/${encodeURIComponent(ns.wiki)}/bags/${encodeURIComponent(
+    ns.bag
+  )}/tiddlers`;
+  if (title) {
+    return `${bag}/${encodeURIComponent(title)}`;
   }
   return bag;
 };
 
-export class FirestorePersistence
-  implements
-    Persistence<
-      string,
-      Revision,
-      FirestoreSerializedTiddler,
-      TiddlerNamespace
-    > {
+const firestoreTimestampToDate = (ts: Timestamp): Date => ts.toDate();
+const dateToFirestoreTimestamp = (date: Date) =>  admin.firestore.Timestamp.fromDate(date);
+
+export class FirestorePersistence implements TiddlerPersistence {
   private user: User;
   private tx: Transaction;
   private db: Database;
@@ -70,18 +64,45 @@ export class FirestorePersistence
     this.db = db;
     this.getTimestamp = getTimestamp;
   }
+
+  toStandardTiddler(
+    docId: string,
+    serializedTiddler: FirestoreSerializedTiddler
+  ): Tiddler {
+    const { created, modified, revision, ...rest } = serializedTiddler;
+    return {
+      ...rest,
+      title: decodeURIComponent(docId),
+      created: firestoreTimestampToDate(created),
+      modified: firestoreTimestampToDate(modified),
+    };
+  }
+
+  toFirestoreTiddler(
+    tiddler: Tiddler,
+    revision: Revision
+  ): FirestoreSerializedTiddler {
+    const { created, modified, title, ...rest } = tiddler;
+    return {
+      ...rest,
+      created: dateToFirestoreTimestamp(created),
+      modified: dateToFirestoreTimestamp(modified),
+      revision,
+    };
+  }
+
   async readDocs(
-    documentKeys: { namespace: TiddlerNamespace; key: string }[]
+    documentKeys: { namespace: TiddlerNamespace; title: string }[]
   ): Promise<
     {
       namespace: TiddlerNamespace;
-      key: string;
-      value: FirestoreSerializedTiddler;
+      title: string;
+      value: Tiddler;
       revision: Revision;
     }[]
   > {
     const refs = documentKeys.map((docKey) =>
-      this.db.doc(makeKey(docKey.namespace, docKey.key))
+      this.db.doc(makeKey(docKey.namespace, docKey.title))
     );
     return (
       (await this.tx.getAll(...refs))
@@ -91,8 +112,12 @@ export class FirestorePersistence
         .filter(({ doc }) => doc.exists)
         // return in format of interface
         .map(({ doc, ix }) => {
-          const value = doc.data() as FirestoreSerializedTiddler;
-          return { revision: value.revision!, value, ...documentKeys[ix] };
+          const firestoreTiddler = doc.data() as FirestoreSerializedTiddler;
+          return {
+            revision: firestoreTiddler.revision,
+            value: this.toStandardTiddler(doc.id, firestoreTiddler),
+            ...documentKeys[ix],
+          };
         })
     );
   }
@@ -101,8 +126,8 @@ export class FirestorePersistence
   ): Promise<
     {
       namespace: TiddlerNamespace;
-      key: string;
-      value: FirestoreSerializedTiddler;
+      title: string;
+      value: Tiddler;
       revision: Revision;
     }[]
   > {
@@ -115,8 +140,14 @@ export class FirestorePersistence
     );
     const allDocs = allCollections.map(({ namespace, cursor }) =>
       cursor.docs.map((doc) => {
-        const value = doc.data() as FirestoreSerializedTiddler;
-        return { namespace, key: value.title, value, revision: value.revision! };
+        const firestoreTiddler = doc.data() as FirestoreSerializedTiddler;
+        const value = this.toStandardTiddler(doc.id, firestoreTiddler);
+        return {
+          namespace,
+          title: value.title,
+          value,
+          revision: firestoreTiddler.revision,
+        };
       })
     );
     return allDocs.flat();
@@ -124,92 +155,55 @@ export class FirestorePersistence
 
   async updateDoc(
     namespace: TiddlerNamespace,
-    key: string,
-    updater: (
-      value?: FirestoreSerializedTiddler
-    ) => MaybePromise<FirestoreSerializedTiddler | undefined>,
-    expectedRevision?: string
+    title: string,
+    updater: (value?: Tiddler) => MaybePromise<Tiddler | undefined>,
+    expectedRevision?: Revision
   ): Promise<
     | {
         namespace: TiddlerNamespace;
-        key: string;
-        value: FirestoreSerializedTiddler;
+        title: string;
+        value: Tiddler;
         revision: Revision;
       }
     | undefined
   > {
-    const docs = await this.readDocs([{ namespace, key }]);
-    let existingValue = docs.length > 0 ? docs[0].value : undefined;
-    if (
-      existingValue &&
-      expectedRevision &&
-      existingValue.revision !== expectedRevision
-    ) {
+    const [doc] = await this.readDocs([{ namespace, title }]);
+    if (doc && doc.revision !== expectedRevision) {
       throw new HTTPError(
         `revision conflict: Tiddler ${JSON.stringify({
-          key,
+          title,
           ...namespace,
         })} has revision ${
-          existingValue.revision
+          doc.revision
         }, attempted update expected revision ${expectedRevision}`,
         HTTP_CONFLICT
       );
     }
-    const updatedDoc = await Promise.resolve(updater(existingValue));
-    if (updatedDoc) {
+    const updatedTiddler = await Promise.resolve(updater(doc ? doc.value : undefined));
+    if (updatedTiddler) {
       // set new revision
-      updatedDoc.revision = getRevision(this.user, this.getTimestamp());
-      this.tx.set(this.db.doc(makeKey(namespace, key)), updatedDoc);
+      const revision = getRevision(this.user, this.getTimestamp());
+      this.tx.set(
+        this.db.doc(makeKey(namespace, title)),
+        this.toFirestoreTiddler(updatedTiddler, revision)
+      );
       return {
         namespace,
-        key,
-        value: updatedDoc,
-        revision: updatedDoc.revision,
+        title,
+        value: updatedTiddler,
+        revision,
       };
     } else {
-      this.tx.delete(this.db.doc(makeKey(namespace, key)));
+      this.tx.delete(this.db.doc(makeKey(namespace, title)));
     }
-    return updatedDoc;
+    return updatedTiddler;
   }
 }
-
-export const firestoreTimestampToDate = (ts: Timestamp): Date =>
-  ts.toDate();
-
-const decode = (serializedTiddler: FirestoreSerializedTiddler): Tiddler => {
-  const {revision, ...rest} = serializedTiddler;
-  return {
-    ...rest,
-    created: firestoreTimestampToDate(serializedTiddler.created),
-    modified: firestoreTimestampToDate(serializedTiddler.modified),
-  };
-};
-
-const dateToFirestoreTimestamp = (date: Date) => admin.firestore.Timestamp.fromDate(date);
-
-const encode = (tiddler: Tiddler): FirestoreSerializedTiddler => {
-  return {
-    ...tiddler,
-    created: dateToFirestoreTimestamp(tiddler.created),
-    modified: dateToFirestoreTimestamp(tiddler.modified),
-  };
-};
 
 @injectable()
 export class FirestoreTransactionRunner implements TransactionRunner {
   private db: Database;
   private getTimestamp: () => Date;
-
-  private makeFirestorePersistence(
-    user: User,
-    tx: Transaction
-  ): StandardTiddlerPersistence {
-    return new TransformingTiddlerPersistence(
-      encode,
-      decode,
-      new FirestorePersistence(user, tx, this.db, this.getTimestamp)
-    );
-  }
 
   constructor(
     @inject(Component.FireStoreDB) db: Database,
@@ -221,16 +215,12 @@ export class FirestoreTransactionRunner implements TransactionRunner {
 
   async runTransaction<R>(
     user: User,
-    updateFunction: (
-      persistence: StandardTiddlerPersistence
-    ) => Promise<R>
+    updateFunction: (persistence: TiddlerPersistence) => Promise<R>
   ): Promise<R> {
-    return await this.db.runTransaction(
-      async (tx: Transaction) => {
-        return updateFunction(
-          this.makeFirestorePersistence(user, tx)
-        );
-      }
-    );
+    return await this.db.runTransaction(async (tx: Transaction) => {
+      return updateFunction(
+        new FirestorePersistence(user, tx, this.db, this.getTimestamp)
+      );
+    });
   }
 }

@@ -32,7 +32,7 @@ import {
   Tiddler,
   TiddlerData,
 } from "../../shared/model/tiddler";
-import { Modify } from "../../shared/util/modify";
+import { Modify } from "../../shared/util/useful-types";
 import { Component } from "../common/ioc/components";
 import { AuthenticatorMiddleware } from "./authentication";
 import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";

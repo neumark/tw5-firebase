@@ -6,16 +6,16 @@ import { JSON_TIDDLER_TYPE } from ".././../../constants";
 import { Component } from "../ioc/components";
 import { TiddlerFactory } from "../tiddler-factory";
 import { getValidator } from "../validator";
-import { MaybePromise, StandardTiddlerPersistence } from "./interfaces";
+import { MaybePromise, TiddlerPersistence } from "./interfaces";
 
 export class TiddlerValidator<T> {
   private validator: ReturnType<typeof getValidator>;
   private tiddlerFactory: TiddlerFactory;
 
-  private validate(namespace:TiddlerNamespace, key:string, value?:T, phase?:string):T|undefined {
+  private validate(namespace:TiddlerNamespace, title:string, value?:T, phase?:string):T|undefined {
     const validation = this.validator(value)
     if (!validation.valid) {
-      throw new Error(`${phase ? phase + ': ' : ''}tiddler ${JSON.stringify({key, ...namespace})} text does not conform to schema. Errors: ${JSON.stringify(validation.errors)}`);
+      throw new Error(`${phase ? phase + ': ' : ''}tiddler ${JSON.stringify({title, ...namespace})} text does not conform to schema. Errors: ${JSON.stringify(validation.errors)}`);
     }
     return value;
   }
@@ -25,38 +25,38 @@ export class TiddlerValidator<T> {
     this.tiddlerFactory = tiddlerFactory;
   }
 
-  async read(persistence:StandardTiddlerPersistence, tiddlers:Array<{namespace:TiddlerNamespace, key:string, fallbackValue?:T}>):Promise<Array<{namespace:TiddlerNamespace, key:string, value:T|undefined}>> {
+  async read(persistence:TiddlerPersistence, tiddlers:Array<{namespace:TiddlerNamespace, title:string, fallbackValue?:T}>):Promise<Array<{namespace:TiddlerNamespace, title:string, value:T|undefined}>> {
     const docs = await persistence.readDocs(tiddlers);
-    return tiddlers.map(({namespace, key, fallbackValue})=> {
+    return tiddlers.map(({namespace, title, fallbackValue})=> {
       let value = fallbackValue;
       const doc = docs.find(doc => {
         doc.namespace.wiki === namespace.wiki &&
         doc.namespace.bag === namespace.bag &&
-        doc.key === key;
+        doc.title === title;
       })
       if (doc && doc.value.text) {
         value = JSON.parse(doc.value.text) as T;
-        this.validate(namespace, key, value);
+        this.validate(namespace, title, value);
       }
-      return {namespace, key, value};
+      return {namespace, title, value};
     });
   }
 
-  async update(user:User, persistence:StandardTiddlerPersistence, namespace:TiddlerNamespace, key:string, updater:((originalValue?:T)=>MaybePromise<T>), fallbackValue?:T):Promise<void> {
+  async update(user:User, persistence:TiddlerPersistence, namespace:TiddlerNamespace, title:string, updater:((originalValue?:T)=>MaybePromise<T>), fallbackValue?:T):Promise<void> {
     await persistence.updateDoc(
       namespace,
-      key,
+      title,
       async (tiddler?:Tiddler):Promise<Tiddler|undefined> => {
         let originalValue = fallbackValue;
         if (tiddler && tiddler.text) {
-          originalValue = this.validate(namespace, key, JSON.parse(tiddler.text) as T, 'PRE-UPDATE');
+          originalValue = this.validate(namespace, title, JSON.parse(tiddler.text) as T, 'PRE-UPDATE');
         }
-        const updatedValue = this.validate(namespace, key, await Promise.resolve(updater(originalValue)), 'POST-UPDATE');
+        const updatedValue = this.validate(namespace, title, await Promise.resolve(updater(originalValue)), 'POST-UPDATE');
         let outputTiddler:Tiddler;
         if (tiddler) {
           outputTiddler = {...tiddler, text: JSON.stringify(updatedValue)}
         } else {
-          outputTiddler = this.tiddlerFactory.createTiddler(user, key, JSON_TIDDLER_TYPE);
+          outputTiddler = this.tiddlerFactory.createTiddler(user, title, JSON_TIDDLER_TYPE);
           outputTiddler.text = JSON.stringify(updatedValue);
         }
         return outputTiddler;

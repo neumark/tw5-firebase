@@ -1,5 +1,5 @@
 import { inject, injectable } from "inversify";
-import { Tiddler } from "../../shared/model/tiddler";
+import { PartialTiddlerData, Tiddler } from "../../shared/model/tiddler";
 import { User, username } from "../../shared/model/user";
 import { DEFAULT_TIDDLER_TYPE } from "../../constants";
 import { getTimestamp as _getTimestamp } from "../../shared/util/time";
@@ -17,10 +17,11 @@ export class TiddlerFactory {
   createTiddler(
     creator: User,
     title: string,
-    type?: string
+    type?: string,
+    tiddlerData?: PartialTiddlerData
   ): Tiddler {
     const date = this.getTimestamp();
-    return {
+    return Object.assign({
       created: date,
       creator: username(creator),
       modified: date,
@@ -30,6 +31,6 @@ export class TiddlerFactory {
       title,
       type: type || DEFAULT_TIDDLER_TYPE,
       fields: {},
-    };
+    }, tiddlerData);
   }
 }

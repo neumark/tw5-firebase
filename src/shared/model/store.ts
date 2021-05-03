@@ -3,7 +3,7 @@ import { PartialTiddlerData, Tiddler, TiddlerNamespace } from "./tiddler";
 
 export type NamespacedTiddler = {
   namespace: TiddlerNamespace;
-  key: string;
+  title: string;
   value: Tiddler;
   revision: Revision;
 };
@@ -19,11 +19,11 @@ export type SingleWikiNamespacedTiddler = {
 };
 
 export interface BoundTiddlerStore {
-  removeFromBag: (bag: string, key: string, expectedRevision: string) => Promise<boolean>;
-  writeToRecipe: (recipe: string, key: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
-  writeToBag: (bag: string, key: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
-  readFromRecipe: (recipe: string, key?: string) => Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
-  readFromBag(bag: string, key?: string): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
+  removeFromBag: (bag: string, title: string, expectedRevision: string) => Promise<boolean>;
+  writeToRecipe: (recipe: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
+  writeToBag: (bag: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
+  readFromRecipe: (recipe: string, title?: string) => Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
+  readFromBag(bag: string, title?: string): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
 }
 
 export const getTiddlerData = (updateOrCreate:TiddlerUpdateOrCreate):PartialTiddlerData => 'create' in updateOrCreate ? updateOrCreate.create : updateOrCreate.update;

@@ -13,7 +13,7 @@ import { ROLE } from "../../shared/model/roles";
 import { TiddlerData } from "../../shared/model/tiddler";
 import { User } from "../../shared/model/user";
 import { Component } from "../common/ioc/components";
-import { StandardTiddlerPersistence } from "../common/persistence/interfaces";
+import { TiddlerPersistence } from "../common/persistence/interfaces";
 import {
   TiddlerValidator,
   TiddlerValidatorFactory,
@@ -58,7 +58,7 @@ export class PolicyChecker {
   private policyValidator: TiddlerValidator<BagPolicy>;
 
   private async checkPolicies(
-    persistence: StandardTiddlerPersistence,
+    persistence: TiddlerPersistence,
     user: User,
     wiki: string,
     bags: string[],
@@ -89,7 +89,7 @@ export class PolicyChecker {
           .filter((bag) => !(bag in standardPolicies))
           .map((bag) => ({
             namespace: { wiki, bag },
-            key: POLICY_TIDDLER,
+            title: POLICY_TIDDLER,
             fallbackValue: defaultCustomBagPolicy,
           }))
       );
@@ -146,7 +146,7 @@ export class PolicyChecker {
   }
 
   async verifyReadAccess(
-    persistence: StandardTiddlerPersistence,
+    persistence: TiddlerPersistence,
     user: User,
     wiki: string,
     bags: string[]
@@ -155,7 +155,7 @@ export class PolicyChecker {
   }
 
   async verifyRemoveAccess(
-    persistence: StandardTiddlerPersistence,
+    persistence: TiddlerPersistence,
     user: User,
     wiki: string,
     bags: string[]
@@ -167,7 +167,7 @@ export class PolicyChecker {
    * Gets first writable bag (if any) and returns any error message encoundered along the way.
    */
   async getWriteableBag(
-    persistence: StandardTiddlerPersistence,
+    persistence: TiddlerPersistence,
     user: User,
     wiki: string,
     bags: string[],

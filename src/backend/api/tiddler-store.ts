@@ -10,10 +10,10 @@ import { User } from "../../shared/model/user";
 import { Component } from "../common/ioc/components";
 import {
   MaybePromise,
-  StandardTiddlerPersistence,
+  TiddlerPersistence,
   TransactionRunner,
 } from "../common/persistence/interfaces";
-import { HTTPError, HTTP_FORBIDDEN, HTTP_NOT_FOUND } from "./errors";
+import { HTTPError, HTTP_BAD_REQUEST, HTTP_FORBIDDEN, HTTP_NOT_FOUND } from "./errors";
 import { PolicyChecker } from "./policy-checker";
 import { RecipeResolver } from "./recipe-resolver";
 import { getTimestamp as _getTimestamp } from "../../shared/util/time";
@@ -27,6 +27,7 @@ import {
   getTiddlerData,
   getExpectedRevision,
 } from "../../shared/model/store";
+import { MaybeArray } from "../../shared/util/useful-types";
 
 @injectable()
 export class GlobalTiddlerStore {
@@ -39,25 +40,25 @@ export class GlobalTiddlerStore {
   private deduplicate(
     tiddlers: {
       namespace: TiddlerNamespace;
-      key: string;
+      title: string;
       value: Tiddler;
       revision: string;
     }[]
   ): {
     namespace: TiddlerNamespace;
-    key: string;
+    title: string;
     value: Tiddler;
     revision: string;
   }[] {
-    const encounteredKeys = new Set<string>();
+    const encounteredTitles = new Set<string>();
     const deduplicated: {
       namespace: TiddlerNamespace;
-      key: string;
+      title: string;
       value: Tiddler;
       revision: string;
     }[] = [];
     for (let tiddler of tiddlers) {
-      if (encounteredKeys.has(tiddler.key)) {
+      if (encounteredTitles.has(tiddler.title)) {
         continue;
       }
       deduplicated.push(tiddler);
@@ -68,39 +69,46 @@ export class GlobalTiddlerStore {
   private getFirst(
     tiddlers: {
       namespace: TiddlerNamespace;
-      key: string;
+      title: string;
       value: Tiddler;
       revision: string;
     }[],
-    key: string
+    title: string
   ):
     | {
         namespace: TiddlerNamespace;
-        key: string;
+        title: string;
         value: Tiddler;
         revision: string;
       }
     | undefined {
-    return tiddlers.find((t) => t.key === key);
+    return tiddlers.find((t) => t.title === title);
   }
 
   private getUpdater(
     user: User,
-    key: string,
+    title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ) {
     return (existingTiddler?: Tiddler): Tiddler => {
+      let result:Tiddler;
       if ("update" in updateOrCreate) {
-        return Object.assign({}, existingTiddler, updateOrCreate.update);
+        if (!existingTiddler) {
+          throw new HTTPError(
+            `Tiddler ${title} received update, but no such tiddler exists in bag`,
+            HTTP_BAD_REQUEST
+          );
+        }
+        result = Object.assign({}, existingTiddler, updateOrCreate.update);
+      } else {
+        result = this.tiddlerFactory.createTiddler(
+          user,
+          title,
+          updateOrCreate.create.type,
+          updateOrCreate.create
+        );
       }
-
-      // create
-      const newTiddler = this.tiddlerFactory.createTiddler(
-        user,
-        key,
-        updateOrCreate.create.type
-      );
-      return Object.assign(newTiddler, updateOrCreate.create);
+      return result;
     };
   }
 
@@ -121,11 +129,11 @@ export class GlobalTiddlerStore {
   async readFromBag(
     user: User,
     namespace: TiddlerNamespace,
-    key?: string
+    title?: string
   ): Promise<NamespacedTiddler | Array<NamespacedTiddler>> {
     return this.transactionRunner.runTransaction(
       user,
-      async (persistence: StandardTiddlerPersistence) => {
+      async (persistence: TiddlerPersistence) => {
         const readPermission = await this.policyChecker.verifyReadAccess(
           persistence,
           user,
@@ -133,14 +141,14 @@ export class GlobalTiddlerStore {
           [namespace.bag]
         );
         if (readPermission[0].allowed) {
-          const tiddlers = await (key
-            ? persistence.readDocs([{ namespace, key }])
+          const tiddlers = await (title
+            ? persistence.readDocs([{ namespace, title }])
             : persistence.readCollections([namespace]));
-          if (key) {
+          if (title) {
             // unpack array if specific tiddler requested
             if (tiddlers.length < 1) {
               throw new HTTPError(
-                `Tiddler ${key} not found in wiki ${namespace.wiki} bag ${namespace.bag}`,
+                `Tiddler ${title} not found in wiki ${namespace.wiki} bag ${namespace.bag}`,
                 HTTP_NOT_FOUND
               );
             }
@@ -159,11 +167,11 @@ export class GlobalTiddlerStore {
   async readFromRecipe(
     user: User,
     namespacedRecipe: NamespacedRecipe,
-    key?: string
-  ): Promise<NamespacedTiddler | Array<NamespacedTiddler>> {
+    title?: string
+  ): Promise<MaybeArray<NamespacedTiddler>> {
     return this.transactionRunner.runTransaction(
       user,
-      async (persistence: StandardTiddlerPersistence) => {
+      async (persistence: TiddlerPersistence) => {
         const bags = await this.recipeResolver.getRecipeBags(
           user,
           "read",
@@ -199,11 +207,11 @@ export class GlobalTiddlerStore {
         const tiddlers = await persistence.readCollections(
           bags.map((bag) => ({ wiki: namespacedRecipe.wiki, bag }))
         );
-        if (key) {
-          const tiddler = this.getFirst(tiddlers, key);
+        if (title) {
+          const tiddler = this.getFirst(tiddlers, title);
           if (!tiddler) {
             throw new HTTPError(
-              `Tiddler ${key} not found in wiki ${namespacedRecipe.wiki} recipe ${namespacedRecipe.recipe}`,
+              `Tiddler ${title} not found in wiki ${namespacedRecipe.wiki} recipe ${namespacedRecipe.recipe}`,
               HTTP_NOT_FOUND
             );
           }
@@ -218,30 +226,30 @@ export class GlobalTiddlerStore {
   async writeToBag(
     user: User,
     namespace: TiddlerNamespace,
-    key: string,
+    title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<{
     namespace: TiddlerNamespace;
-    key: string;
+    title: string;
     value: Tiddler;
     revision: string;
   }> {
     const txResult = await this.transactionRunner.runTransaction(
       user,
-      async (persistence: StandardTiddlerPersistence) => {
+      async (persistence: TiddlerPersistence) => {
         const writePermission = await this.policyChecker.getWriteableBag(
           persistence,
           user,
           namespace.wiki,
           [namespace.bag],
-          key,
+          title,
           getTiddlerData(updateOrCreate)
         );
         if (writePermission[0].allowed) {
           return persistence.updateDoc(
             namespace,
-            key,
-            this.getUpdater(user, key, updateOrCreate),
+            title,
+            this.getUpdater(user, title, updateOrCreate),
             getExpectedRevision(updateOrCreate)
           );
         }
@@ -260,17 +268,17 @@ export class GlobalTiddlerStore {
   async writeToRecipe(
     user: User,
     namespacedRecipe: NamespacedRecipe,
-    key: string,
+    title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<{
     namespace: TiddlerNamespace;
-    key: string;
+    title: string;
     value: Tiddler;
     revision: string;
   }> {
     const txResult = await this.transactionRunner.runTransaction(
       user,
-      async (persistence: StandardTiddlerPersistence) => {
+      async (persistence: TiddlerPersistence) => {
         const bags = await this.recipeResolver.getRecipeBags(
           user,
           "write",
@@ -289,7 +297,7 @@ export class GlobalTiddlerStore {
           user,
           namespacedRecipe.wiki,
           bags,
-          key,
+          title,
           getTiddlerData(updateOrCreate)
         );
         const bagToWrite = permissions.find((p) => p.allowed === true);
@@ -306,8 +314,8 @@ export class GlobalTiddlerStore {
         }
         return persistence.updateDoc(
           { wiki: namespacedRecipe.wiki, bag: bagToWrite.bag },
-          key,
-          this.getUpdater(user, key, updateOrCreate),
+          title,
+          this.getUpdater(user, title, updateOrCreate),
           getExpectedRevision(updateOrCreate)
         );
       }
@@ -318,13 +326,13 @@ export class GlobalTiddlerStore {
   async removeFromBag(
     user: User,
     namespace: TiddlerNamespace,
-    key: string,
+    title: string,
     expectedRevision: Revision
   ): Promise<boolean> {
     let tiddlerExisted = false;
     await this.transactionRunner.runTransaction(
       user,
-      async (persistence: StandardTiddlerPersistence) => {
+      async (persistence: TiddlerPersistence) => {
         const writePermission = await this.policyChecker.verifyRemoveAccess(
           persistence,
           user,
@@ -340,7 +348,7 @@ export class GlobalTiddlerStore {
           };
           return persistence.updateDoc(
             namespace,
-            key,
+            title,
             updater,
             expectedRevision
           );
@@ -379,27 +387,27 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
 
   removeFromBag(
     bag: string,
-    key: string,
+    title: string,
     expectedRevision: Revision
   ): Promise<boolean> {
     return this.tiddlerStore.removeFromBag(
       this.user,
       { wiki: this.wiki, bag },
-      key,
+      title,
       expectedRevision
     );
   }
 
   async writeToRecipe(
     recipe: string,
-    key: string,
+    title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<SingleWikiNamespacedTiddler> {
     return asBoundTiddler(
       await this.tiddlerStore.writeToRecipe(
         this.user,
         { wiki: this.wiki, recipe },
-        key,
+        title,
         updateOrCreate
       )
     );
@@ -407,14 +415,14 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
 
   async writeToBag(
     bag: string,
-    key: string,
+    title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ): Promise<SingleWikiNamespacedTiddler> {
     return asBoundTiddler(
       await this.tiddlerStore.writeToBag(
         this.user,
         { wiki: this.wiki, bag },
-        key,
+        title,
         updateOrCreate
       )
     );
@@ -422,28 +430,28 @@ export class BoundTiddlerStoreImpl implements BoundTiddlerStore {
 
   async readFromRecipe(
     recipe: string,
-    key?: string
+    title?: string
   ): Promise<SingleWikiNamespacedTiddler | Array<SingleWikiNamespacedTiddler>> {
     return mapOrApply(
       asBoundTiddler,
       await this.tiddlerStore.readFromRecipe(
         this.user,
         { wiki: this.wiki, recipe },
-        key
+        title
       )
     );
   }
 
   async readFromBag(
     bag: string,
-    key?: string
+    title?: string
   ): Promise<SingleWikiNamespacedTiddler | Array<SingleWikiNamespacedTiddler>> {
     return mapOrApply(
       asBoundTiddler,
       await this.tiddlerStore.readFromBag(
         this.user,
         { wiki: this.wiki, bag },
-        key
+        title
       )
     );
   }
