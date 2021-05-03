@@ -435,14 +435,3 @@ export class TiddlerStoreFactory {
     return tiddlerExisted;
   }
 }
-
-export const injectTiddlerStoreFactory = (
-  context: interfaces.Context
-) => (user: User, wiki: string) => {
-  const tiddlerStoreFactory = context.container.get<TiddlerStoreFactory>(
-    Component.TiddlerStoreFactory
-  );
-  return tiddlerStoreFactory.createTiddlerStore(user, wiki);
-};
-
-export type GetTiddlerStore = ReturnType<typeof injectTiddlerStoreFactory>;

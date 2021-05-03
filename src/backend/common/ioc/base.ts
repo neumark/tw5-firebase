@@ -3,11 +3,7 @@ import { AuthenticatorMiddleware } from "../../../backend/api/authentication";
 import { APIEndpointFactory } from "../../../backend/api/endpoints";
 import { PolicyChecker } from "../../../backend/api/policy-checker";
 import { RecipeResolver } from "../../../backend/api/recipe-resolver";
-import {
-  GetTiddlerStore,
-  injectTiddlerStoreFactory,
-  TiddlerStoreFactory,
-} from "../../../backend/api/tiddler-store";
+import { TiddlerStoreFactory } from "../../../backend/api/tiddler-store";
 import { config } from "../../../shared/util/config";
 import { Config } from "../../../shared/model/config";
 import { TiddlerValidatorFactory } from "../persistence/tiddler-validator-factory";
@@ -27,9 +23,6 @@ export const baseComponents = new ContainerModule((bind: interfaces.Bind) => {
   bind<RecipeResolver>(Component.RecipeResolver).to(RecipeResolver);
   bind<TiddlerStoreFactory>(Component.TiddlerStoreFactory).to(
     TiddlerStoreFactory
-  );
-  bind<GetTiddlerStore>(Component.GetTiddlerStore).toFactory(
-    injectTiddlerStoreFactory
   );
   bind<APIEndpointFactory>(Component.APIEndpointFactory).to(APIEndpointFactory);
 });

@@ -42,7 +42,7 @@ import {
 } from "../../shared/model/store";
 import { getValidator } from "../common/validator";
 import { tiddlerDataSchema } from "../common/schema";
-import { GetTiddlerStore } from "./tiddler-store";
+import { TiddlerStoreFactory } from "./tiddler-store";
 
 const toHTTPNamespacedTiddler = (
   namespacedTiddler: SingleWikiNamespacedTiddler
@@ -61,7 +61,7 @@ export class APIEndpointFactory {
   private authenticatorMiddleware: AuthenticatorMiddleware;
   private logger: Logger;
   private tiddlerDataValidator = getValidator(tiddlerDataSchema);
-  private getTiddlerStore: GetTiddlerStore;
+  private tiddlerStoreFactory: TiddlerStoreFactory;
 
   private async read(req: express.Request) {
     const wiki = decodeURIComponent(req.params["wiki"]);
@@ -71,7 +71,7 @@ export class APIEndpointFactory {
     if (!wiki) {
       throw new HTTPError(`invalid wiki: ${wiki}`, HTTP_BAD_REQUEST);
     }
-    const store = this.getTiddlerStore(req.user, wiki);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
     if (bag) {
       return mapOrApply(
         toHTTPNamespacedTiddler,
@@ -111,7 +111,7 @@ export class APIEndpointFactory {
     const updateOrCreate: TiddlerUpdateOrCreate = expectedRevision
       ? { update: body, expectedRevision }
       : { create: body };
-    const store = this.getTiddlerStore(req.user, wiki);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
     if (bag) {
       return toHTTPNamespacedTiddler(
         await store.writeToBag(bag, title, updateOrCreate)
@@ -134,7 +134,7 @@ export class APIEndpointFactory {
     const title = decodeURIComponent(req.params["title"]);
     const expectedRevision = decodeURIComponent(req.params["revision"]);
     if (wiki && bag && title && expectedRevision) {
-      const store = this.getTiddlerStore(req.user, wiki);
+      const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
       return store.removeFromBag(bag, title, expectedRevision);
     }
     throw new HTTPError(
@@ -155,12 +155,12 @@ export class APIEndpointFactory {
   constructor(
     @inject(Component.AuthenticatorMiddleware)
     authenticatorMiddleware: AuthenticatorMiddleware,
-    @inject(Component.GetTiddlerStore)
-    getTiddlerStore: GetTiddlerStore,
+    @inject(Component.TiddlerStoreFactory)
+    tiddlerStoreFactory: TiddlerStoreFactory,
     @inject(Component.Logger) logger: Logger
   ) {
     this.authenticatorMiddleware = authenticatorMiddleware;
-    this.getTiddlerStore = getTiddlerStore;
+    this.tiddlerStoreFactory = tiddlerStoreFactory;
     this.logger = logger;
   }
 

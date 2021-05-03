@@ -10,7 +10,6 @@ export const enum Component {
   TiddlerFactory = "TiddlerFactory",
   TiddlerValidatorFactory = "TiddlerValidatorFactory",
   TiddlerStoreFactory = "TiddlerStoreFactory",
-  GetTiddlerStore = "GetTiddlerStore",
   PolicyChecker = "PolicyChecker",
   AuthenticatorMiddleware = "AuthenticatorMiddleware",
   APIEndpointFactory = "APIEndpointFactory",
