@@ -9,6 +9,5 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 "$DIR/build.sh"
 
 # run firebase cli deploy command
-TARGETS="$(cat "$DIR/../etc/config.json" | jq -r ".deploy.targets")"
-"$DIR/build.sh"
+TARGETS="$(cat "$DIR/../etc/config.$ENV.json" | jq -r ".deploy.targets")"
 firebase_cli deploy --only "$TARGETS"

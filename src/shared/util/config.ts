@@ -1,3 +1,3 @@
-import _config from '../../../etc/config.json';
-export type Config = typeof _config;
-export const config = _config;
+import {Config} from '../model/config';
+import _config from '../../../generated/config/config.json';
+export const config = _config as Config;

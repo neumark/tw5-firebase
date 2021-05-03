@@ -18,7 +18,7 @@ export type SingleWikiNamespacedTiddler = {
   revision: Revision;
 };
 
-export interface BoundTiddlerStore {
+export interface TiddlerStore {
   removeFromBag: (bag: string, title: string, expectedRevision: string) => Promise<boolean>;
   writeToRecipe: (recipe: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
   writeToBag: (bag: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;

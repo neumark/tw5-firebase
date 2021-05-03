@@ -3,9 +3,11 @@
 .firebase
 .firebaserc
 dist/
-etc/config.json
-etc/keys.json
-etc/service-account-key.json
+etc/config.*.json
+!etc/config.example.json
+etc/keys.*.json
+!etc/keys.example.json
+etc/service-account-key.*.json
 firebase-debug.log
 firebase_custom.json
 functions/index.js*
@@ -16,3 +18,4 @@ public/index.html
 public/sourcemaps
 ui-debug.log
 generated/jsonschema/*
+generated/config/config.json

@@ -21,7 +21,6 @@
 
 import cors from "cors";
 import * as express from "express";
-import helmet from "helmet";
 import { inject, injectable } from "inversify";
 import { Logger } from "../../shared/util/logger";
 import { Revision } from "../../shared/model/revision";
@@ -36,7 +35,6 @@ import { Modify } from "../../shared/util/useful-types";
 import { Component } from "../common/ioc/components";
 import { AuthenticatorMiddleware } from "./authentication";
 import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";
-import { BoundTiddlerStoreFactory } from "./tiddler-store";
 import { mapOrApply, maybeApply } from "../../shared/util/map";
 import {
   SingleWikiNamespacedTiddler,
@@ -44,6 +42,7 @@ import {
 } from "../../shared/model/store";
 import { getValidator } from "../common/validator";
 import { tiddlerDataSchema } from "../common/schema";
+import { GetTiddlerStore } from "./tiddler-store";
 
 const toHTTPNamespacedTiddler = (
   namespacedTiddler: SingleWikiNamespacedTiddler
@@ -60,9 +59,9 @@ const toHTTPNamespacedTiddler = (
 @injectable()
 export class APIEndpointFactory {
   private authenticatorMiddleware: AuthenticatorMiddleware;
-  private boundTiddlerStoreFactory: BoundTiddlerStoreFactory;
   private logger: Logger;
   private tiddlerDataValidator = getValidator(tiddlerDataSchema);
+  private getTiddlerStore: GetTiddlerStore;
 
   private async read(req: express.Request) {
     const wiki = decodeURIComponent(req.params["wiki"]);
@@ -72,7 +71,7 @@ export class APIEndpointFactory {
     if (!wiki) {
       throw new HTTPError(`invalid wiki: ${wiki}`, HTTP_BAD_REQUEST);
     }
-    const store = this.boundTiddlerStoreFactory(req.user, wiki);
+    const store = this.getTiddlerStore(req.user, wiki);
     if (bag) {
       return mapOrApply(
         toHTTPNamespacedTiddler,
@@ -112,7 +111,7 @@ export class APIEndpointFactory {
     const updateOrCreate: TiddlerUpdateOrCreate = expectedRevision
       ? { update: body, expectedRevision }
       : { create: body };
-    const store = this.boundTiddlerStoreFactory(req.user, wiki);
+    const store = this.getTiddlerStore(req.user, wiki);
     if (bag) {
       return toHTTPNamespacedTiddler(
         await store.writeToBag(bag, title, updateOrCreate)
@@ -135,7 +134,7 @@ export class APIEndpointFactory {
     const title = decodeURIComponent(req.params["title"]);
     const expectedRevision = decodeURIComponent(req.params["revision"]);
     if (wiki && bag && title && expectedRevision) {
-      const store = this.boundTiddlerStoreFactory(req.user, wiki);
+      const store = this.getTiddlerStore(req.user, wiki);
       return store.removeFromBag(bag, title, expectedRevision);
     }
     throw new HTTPError(
@@ -156,19 +155,18 @@ export class APIEndpointFactory {
   constructor(
     @inject(Component.AuthenticatorMiddleware)
     authenticatorMiddleware: AuthenticatorMiddleware,
-    @inject(Component.BoundTiddlerStoreFactory)
-    boundTiddlerStoreFactory: BoundTiddlerStoreFactory,
+    @inject(Component.GetTiddlerStore)
+    getTiddlerStore: GetTiddlerStore,
     @inject(Component.Logger) logger: Logger
   ) {
     this.authenticatorMiddleware = authenticatorMiddleware;
-    this.boundTiddlerStoreFactory = boundTiddlerStoreFactory;
+    this.getTiddlerStore = getTiddlerStore;
     this.logger = logger;
   }
 
   createAPI() {
     const api = express.default();
-    // api.use(helmet());
-    api.use(cors({ origin: true }));
+    api.use(cors({origin: true}));
     api.use(
       this.authenticatorMiddleware.authenticate.bind(
         this.authenticatorMiddleware

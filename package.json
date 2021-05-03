@@ -20,6 +20,7 @@
     "@babel/runtime-corejs3": "^7.13.10",
     "@types/cors": "^2.8.10",
     "@types/express": "^4.17.11",
+    "ajv-cli": "^5.0.0",
     "babel-loader": "^8.2.2",
     "core-js": "^3.9.1",
     "css-loader": "^5.2.0",
@@ -44,7 +45,6 @@
     "express": "^4.17.1",
     "firebase-admin": "^9.5.0",
     "firebase-functions": "^3.13.2",
-    "helmet": "^4.4.1",
     "inversify": "^5.0.5",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19"

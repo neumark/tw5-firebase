@@ -3,7 +3,7 @@ import { Revision } from "../../../../shared/model/revision";
 import { SingleWikiNamespacedTiddler } from "../../../../shared/model/store";
 import { PartialTiddlerData } from "../../../../shared/model/tiddler";
 import { User, username } from "../../../../shared/model/user";
-import { Config } from "../../../../shared/util/config";
+import { Config } from "../../../../shared/model/config";
 import {
   CallbackFn,
   SyncAdaptor,

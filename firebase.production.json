@@ -1,0 +1,34 @@
+{
+  "storage": {
+    "rules": "etc/storage.rules"
+  },
+  "firestore": {
+    "rules": "etc/firestore.rules"
+  },
+  "hosting": [
+    {
+      "site": "pn-wiki",
+      "public": "public",
+      "redirects": [{
+          "source": "/static/:file*",
+          "destination": "https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/:file",
+          "type": 301
+      }],
+      "rewrites": [{
+          "source": "**",
+          "destination": "/index.html"
+      }],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "tw/**",
+        "scripts/**",
+        "editions/**",
+        "doc/**",
+        "public/static/**",
+        "**/node_modules/**",
+        "etc/**"
+      ]
+    }
+  ]
+}

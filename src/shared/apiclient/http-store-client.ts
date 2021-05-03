@@ -1,4 +1,4 @@
-import { BoundTiddlerStore, getExpectedRevision, getTiddlerData, SingleWikiNamespacedTiddler, TiddlerUpdateOrCreate } from "../model/store";
+import { TiddlerStore, getExpectedRevision, getTiddlerData, SingleWikiNamespacedTiddler, TiddlerUpdateOrCreate } from "../model/store";
 import { HTTPNamespacedTiddler } from "../model/tiddler";
 import { mapOrApply } from "../util/map";
 import { HTTPAPIRequest, HTTPTransport } from "./http-transport";
@@ -13,7 +13,7 @@ const fromHTTPNamespacedTiddler = (namespacedTiddler:HTTPNamespacedTiddler):Sing
   }
 });
 
-export class HTTPStoreClient implements BoundTiddlerStore {
+export class HTTPStoreClient implements TiddlerStore {
   private wiki:string;
   private httpTransport: HTTPTransport;
 

@@ -1,7 +1,8 @@
 import firebase from "firebase";
 import * as firebaseui from 'firebaseui'
 import 'firebaseui/dist/firebaseui.css'
-import { config, Config } from "../../shared/util/config";
+import { config } from "../../shared/util/config";
+import { Config } from "../../shared/model/config";
 import { TW5TiddlerFields } from '../tw5/tw5-types';
 import {FetchHTTPTransport} from '../shared/fetch-http-transport';
 import {HTTPStoreClient} from '../../shared/apiclient/http-store-client';

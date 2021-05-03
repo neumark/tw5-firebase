@@ -1,0 +1,33 @@
+[
+ {
+    "output": "generated/jsonschema/tiddlerdata.json",
+    "input": "src/shared/model/tiddler.ts",
+    "type": "PartialTiddlerData"
+ },
+ {
+
+    "output": "generated/jsonschema/bag-policy.json",
+    "input": "src/shared/model/bag-policy.ts",
+    "type": "BagPolicy"
+ },
+ {
+    "output": "generated/jsonschema/role-assignment.json",
+    "input": "src/shared/model/roles.ts",
+    "type": "RoleAssignment"
+ },
+ {
+     "output": "generated/jsonschema/recipes.json",
+     "input": "src/shared/model/recipe.ts",
+     "type": "Recipes"
+ },
+ {
+     "output": "generated/jsonschema/config.json",
+     "input": "src/shared/model/config.ts",
+     "type": "Config"
+ },
+ {
+     "output": "generated/jsonschema/keys.json",
+     "input": "src/shared/model/config.ts",
+     "type": "Keys"
+ }
+]
