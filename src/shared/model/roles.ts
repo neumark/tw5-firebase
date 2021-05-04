@@ -1,4 +1,4 @@
-export const enum ROLE {
+export enum ROLE {
   anonymous = 0,
   authenticated = 1,
   reader = 2,

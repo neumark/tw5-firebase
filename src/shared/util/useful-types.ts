@@ -2,3 +2,5 @@
 export type Modify<T, R> = Omit<T, keyof R> & R;
 
 export type MaybeArray<T> = T | T[];
+
+export type ObjectOf<T> = { [key: string]: T };

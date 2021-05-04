@@ -1,16 +1,20 @@
-const admin = require("firebase-admin");
-const path = require('path');
+import 'reflect-metadata';
+import 'source-map-support/register'
+import * as admin from 'firebase-admin';
+import yargs from "yargs";
+import {config} from '../shared/util/config';
+import {getCommandModules as getRoleModules}  from './roles';
+import {getCommandModules as getImportModules}  from './import';
+import { productionStartup } from '../backend/common/startup';
 
-const config = require(process.env.CONFIGPATH || path.resolve(__dirname, '../etc/config.json'));
-
-admin.initializeApp(config.firebase);
+const container = productionStartup(config['firebase']);
 
 const defaultWiki = config.wiki.wikiName;
 
-const {setrole, getrole, getuser} = require('./cli/roles.js')(admin);
-const {importTiddlers} = require('./cli/import.js')(admin);
+const {getrole, setrole, getuser} = getRoleModules(container);
+const {importTiddlers} = getImportModules(container);
 
-const argv = require('yargs/yargs')(process.argv.slice(2))
+const args = yargs(process.argv.slice(2))
     .strict()
     .usage('Usage: $0 <command> [options]')
     .alias('w', 'wiki')

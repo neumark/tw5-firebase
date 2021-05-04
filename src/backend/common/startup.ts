@@ -6,8 +6,8 @@ import { getContainer } from './ioc/components';
 
 import { baseComponents } from './ioc/base';
 
-export const productionStartup = ():Container => {
-  const app = admin.initializeApp();
+export const productionStartup = (appOptions?:admin.AppOptions):Container => {
+  const app = admin.initializeApp(appOptions);
   const container = getContainer();
   container.load(baseComponents);
   container.load(productionComponents(app));

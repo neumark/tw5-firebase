@@ -22,26 +22,22 @@
 import cors from "cors";
 import * as express from "express";
 import { inject, injectable } from "inversify";
-import { Logger } from "../../shared/util/logger";
-import { Revision } from "../../shared/model/revision";
-import {
-  HTTPNamespacedTiddler,
-  HTTPTiddler,
-  PartialTiddlerData,
-  Tiddler,
-  TiddlerData,
-} from "../../shared/model/tiddler";
-import { Modify } from "../../shared/util/useful-types";
-import { Component } from "../common/ioc/components";
-import { AuthenticatorMiddleware } from "./authentication";
-import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";
-import { mapOrApply, maybeApply } from "../../shared/util/map";
 import {
   SingleWikiNamespacedTiddler,
-  TiddlerUpdateOrCreate,
+  TiddlerUpdateOrCreate
 } from "../../shared/model/store";
-import { getValidator } from "../common/validator";
+import {
+  HTTPNamespacedTiddler,
+
+  PartialTiddlerData
+} from "../../shared/model/tiddler";
+import { Logger } from "../../shared/util/logger";
+import { mapOrApply, maybeApply } from "../../shared/util/map";
+import { Component } from "../common/ioc/components";
 import { tiddlerDataSchema } from "../common/schema";
+import { getValidator } from "../common/validator";
+import { AuthenticatorMiddleware } from "./authentication";
+import { HTTPError, HTTP_BAD_REQUEST, sendErr } from "./errors";
 import { TiddlerStoreFactory } from "./tiddler-store";
 
 const toHTTPNamespacedTiddler = (

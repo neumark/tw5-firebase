@@ -3,6 +3,10 @@ export interface Config {
       apiRegion: string,
       targets?: string
   },
+  build?: {
+    env: string,
+    timestamp: number
+  }
   wiki: {
       wikiName: string,
       recipe: string,

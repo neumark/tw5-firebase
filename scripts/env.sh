@@ -27,7 +27,7 @@ SERVICE_ACCOUNT_KEY="$DIR/../etc/service-account-key.$ENV.json"
 FIREBASECLI="$DIR/../node_modules/.bin/firebase"
 TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"
 
-[[ ${DEBUG} = 5 ]] && NODE_FLAGS="--inspect-brk" || NODE_FLAGS=""
+[[ ${DEBUG} ]] && NODE_FLAGS="--inspect-brk" || NODE_FLAGS=""
 
 function firebase_cli() {
     pushd "$DIR/../"

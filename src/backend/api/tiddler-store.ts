@@ -274,7 +274,7 @@ export class TiddlerStoreFactory {
               .map((p) => p.reason)
               .filter((x) => x)
               .join(", ")}`,
-            HTTP_NOT_FOUND
+            HTTP_FORBIDDEN
           );
         }
         const tiddlers = await persistence.readCollections(
