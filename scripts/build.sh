@@ -12,4 +12,6 @@ pushd "$DIR/.."
 
 "$DIR/build-backend.sh"
 
+"$DIR/build-cli.sh"
+
 popd

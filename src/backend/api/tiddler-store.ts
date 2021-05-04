@@ -92,6 +92,7 @@ export class TiddlerStoreFactory {
 
   private getUpdater(
     user: User,
+    bag: String,
     title: string,
     updateOrCreate: TiddlerUpdateOrCreate
   ) {
@@ -100,7 +101,7 @@ export class TiddlerStoreFactory {
       if ("update" in updateOrCreate) {
         if (!existingTiddler) {
           throw new HTTPError(
-            `Tiddler ${title} received update, but no such tiddler exists in bag`,
+            `Tiddler ${title} received update, but no such tiddler exists in bag ${bag}`,
             HTTP_BAD_REQUEST
           );
         }
@@ -322,7 +323,7 @@ export class TiddlerStoreFactory {
           return persistence.updateDoc(
             namespace,
             title,
-            this.getUpdater(user, title, updateOrCreate),
+            this.getUpdater(user, namespace.bag, title, updateOrCreate),
             getExpectedRevision(updateOrCreate)
           );
         }
@@ -388,7 +389,7 @@ export class TiddlerStoreFactory {
         return persistence.updateDoc(
           { wiki: namespacedRecipe.wiki, bag: bagToWrite.bag },
           title,
-          this.getUpdater(user, title, updateOrCreate),
+          this.getUpdater(user, bagToWrite.bag, title, updateOrCreate),
           getExpectedRevision(updateOrCreate)
         );
       }
