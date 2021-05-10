@@ -101,7 +101,7 @@ export class TiddlerStoreFactory {
       if ("update" in updateOrCreate) {
         if (!existingTiddler) {
           throw new HTTPError(
-            `Tiddler ${title} received update, but no such tiddler exists in bag ${bag}`,
+            `Tiddler "${title}" received update, but no such tiddler exists in bag ${bag}`,
             HTTP_BAD_REQUEST
           );
         }
