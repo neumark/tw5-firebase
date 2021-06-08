@@ -43,9 +43,7 @@ export const getCommandModules = (
           [] as Tiddler[]
         );
         for (let tiddler of allTiddlers) {
-          tiddlerStore.writeToBag(DEFAULT_BAG, tiddler.title, {
-            create: tiddler,
-          });
+          tiddlerStore.createInBag(DEFAULT_BAG, tiddler.title, tiddler);
         }
       },
     },

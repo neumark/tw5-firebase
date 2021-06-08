@@ -1,16 +1,6 @@
+import { MaybeArray } from "../util/useful-types";
 import { Revision } from "./revision";
-import { PartialTiddlerData, Tiddler, TiddlerNamespace } from "./tiddler";
-
-export type NamespacedTiddler = {
-  namespace: TiddlerNamespace;
-  title: string;
-  value: Tiddler;
-  revision: Revision;
-};
-export type TiddlerUpdateOrCreate =
-  | { create: PartialTiddlerData }
-  | { update: PartialTiddlerData; expectedRevision: Revision };
-
+import { PartialTiddlerData, Tiddler } from "./tiddler";
 
 export type SingleWikiNamespacedTiddler = {
   bag: string
@@ -19,12 +9,10 @@ export type SingleWikiNamespacedTiddler = {
 };
 
 export interface TiddlerStore {
-  removeFromBag: (bag: string, title: string, expectedRevision: string) => Promise<boolean>;
-  writeToRecipe: (recipe: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
-  writeToBag: (bag: string, title: string, updateOrCreate: TiddlerUpdateOrCreate) => Promise<SingleWikiNamespacedTiddler>;
-  readFromRecipe: (recipe: string, title?: string) => Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
-  readFromBag(bag: string, title?: string): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]>;
+  createInBag: (bag: string, title: string, tiddlerData:PartialTiddlerData) => Promise<SingleWikiNamespacedTiddler>;
+  readFromBag(bag: string, title?: string): Promise<MaybeArray<SingleWikiNamespacedTiddler>>;
+  updateInBag: (bag: string, title: string, tiddlerData:PartialTiddlerData, expectedRevision:Revision) => Promise<SingleWikiNamespacedTiddler>;
+  deleteFromBag: (bag: string, title: string, expectedRevision: string) => Promise<boolean>;
+  readFromRecipe: (recipe: string, title?: string) => Promise<MaybeArray<SingleWikiNamespacedTiddler>>;
+  createInRecipe: (recipe: string, title: string, tiddlerData:PartialTiddlerData) => Promise<SingleWikiNamespacedTiddler>;
 }
-
-export const getTiddlerData = (updateOrCreate:TiddlerUpdateOrCreate):PartialTiddlerData => 'create' in updateOrCreate ? updateOrCreate.create : updateOrCreate.update;
-export const getExpectedRevision = (updateOrCreate:TiddlerUpdateOrCreate):Revision|undefined => 'update' in updateOrCreate ? updateOrCreate.expectedRevision : undefined;

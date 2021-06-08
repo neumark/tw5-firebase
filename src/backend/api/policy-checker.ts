@@ -166,7 +166,7 @@ export class PolicyChecker {
   /**
    * Gets first writable bag (if any) and returns any error message encoundered along the way.
    */
-  async getWriteableBag(
+  async verifyWriteAccess(
     persistence: TiddlerPersistence,
     user: User,
     wiki: string,

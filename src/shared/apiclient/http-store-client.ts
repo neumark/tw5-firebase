@@ -1,5 +1,5 @@
-import { TiddlerStore, getExpectedRevision, getTiddlerData, SingleWikiNamespacedTiddler, TiddlerUpdateOrCreate } from "../model/store";
-import { HTTPNamespacedTiddler } from "../model/tiddler";
+import { TiddlerStore, SingleWikiNamespacedTiddler } from "../model/store";
+import { HTTPNamespacedTiddler, PartialTiddlerData, TiddlerData } from "../model/tiddler";
 import { mapOrApply } from "../util/map";
 import { HTTPAPIRequest, HTTPTransport } from "./http-transport";
 
@@ -17,23 +17,22 @@ export class HTTPStoreClient implements TiddlerStore {
   private wiki:string;
   private httpTransport: HTTPTransport;
 
-  private getWriteRequest(collectionType:string, collectionName:string, key:string, updateOrCreate: TiddlerUpdateOrCreate):HTTPAPIRequest {
-    let urlPath = `${encodeURIComponent(this.wiki)}/${collectionType}s/${encodeURIComponent(collectionName)}/tiddlers/${encodeURIComponent(key)}`;
-    const expectedRevision = getExpectedRevision(updateOrCreate);
+  private getWriteRequest(collectionType:string, collectionName:string, title:string, tiddler: PartialTiddlerData, expectedRevision?: string):HTTPAPIRequest {
+    let urlPath = `${encodeURIComponent(this.wiki)}/${collectionType}s/${encodeURIComponent(collectionName)}/tiddlers/${encodeURIComponent(title)}`;
     if (expectedRevision) {
       urlPath += `/revisions/${expectedRevision}`;
     }
     return {
       urlPath,
       method: 'PUT',
-      body: getTiddlerData(updateOrCreate)
+      body: tiddler
     };
   }
 
-  private getReadRequest(collectionType:string, collectionName:string, key?:string):HTTPAPIRequest {
+  private getReadRequest(collectionType:string, collectionName:string, title?:string):HTTPAPIRequest {
     let urlPath = `${encodeURIComponent(this.wiki)}/${collectionType}s/${encodeURIComponent(collectionName)}/tiddlers/`;
-    if (key) {
-      urlPath += encodeURIComponent(key);
+    if (title) {
+      urlPath += encodeURIComponent(title);
     }
     return {
       urlPath,
@@ -45,17 +44,23 @@ export class HTTPStoreClient implements TiddlerStore {
     this.wiki = wiki;
     this.httpTransport = httpTransport;
   }
-  async removeFromBag (bag: string, key: string, expectedRevision: string): Promise<boolean> {
+  async createInBag (bag: string, title: string, tiddlerData: PartialTiddlerData): Promise<SingleWikiNamespacedTiddler> {
+    return fromHTTPNamespacedTiddler(
+      await this.httpTransport.request(this.getWriteRequest('bag', bag, title, tiddlerData)));
+  }
+  async updateInBag (bag: string, title: string, tiddlerData: PartialTiddlerData, expectedRevision: string): Promise<SingleWikiNamespacedTiddler> {
+    return fromHTTPNamespacedTiddler(
+      await this.httpTransport.request(this.getWriteRequest('bag', bag, title, tiddlerData, expectedRevision)));
+  }
+  async createInRecipe (recipe: string, title: string, tiddlerData: Partial<TiddlerData>): Promise<SingleWikiNamespacedTiddler> {
+    return fromHTTPNamespacedTiddler(
+      await this.httpTransport.request(this.getWriteRequest('recipe', recipe, title, tiddlerData)));
+  }
+  async deleteFromBag (bag: string, key: string, expectedRevision: string): Promise<boolean> {
     return this.httpTransport.request({
       urlPath: `${encodeURIComponent(this.wiki)}/bags/${encodeURIComponent(bag)}/tiddlers/${encodeURIComponent(key)}/revisions/${encodeURIComponent(expectedRevision)}`,
       method: 'DELETE'
     });
-  }
-  async writeToRecipe (recipe: string, key: string, updateOrCreate: TiddlerUpdateOrCreate) : Promise<SingleWikiNamespacedTiddler> {
-    return fromHTTPNamespacedTiddler(await this.httpTransport.request(this.getWriteRequest('recipe', recipe, key, updateOrCreate)));
-  }
-  async writeToBag (bag: string, key: string, updateOrCreate: TiddlerUpdateOrCreate) : Promise<SingleWikiNamespacedTiddler> {
-    return fromHTTPNamespacedTiddler( await this.httpTransport.request(this.getWriteRequest('bag', bag, key, updateOrCreate)));
   }
   async readFromRecipe (recipe: string, key?: string | undefined): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]> {
     return mapOrApply(fromHTTPNamespacedTiddler, await this.httpTransport.request(this.getReadRequest('recipe', recipe, key)));

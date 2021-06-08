@@ -146,7 +146,7 @@ class TW5FirebaseSyncAdaptor implements SyncAdaptor {
       const bag = options?.tiddlerInfo?.adaptorInfo?.bag;
       if (bag) {
         // If we don't have a bag it means that the tiddler hasn't been seen by the server, so we don't need to delete it
-        await this.store.removeFromBag(bag, title, this.tiddlerRevision[title]);
+        await this.store.deleteFromBag(bag, title, this.tiddlerRevision[title]);
       }
       delete this.tiddlerInfo[title];
       delete this.tiddlerRevision[title];

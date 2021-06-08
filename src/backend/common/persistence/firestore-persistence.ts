@@ -1,17 +1,16 @@
 import * as admin from "firebase-admin";
 import { inject, injectable } from "inversify";
-import { getRevision, Revision } from "../../../shared/model/revision";
+import { Revision } from "../../../shared/model/revision";
 import { Tiddler, TiddlerNamespace } from "../../../shared/model/tiddler";
-import { User } from "../../../shared/model/user";
 import { Modify } from "../../../shared/util/useful-types";
 import { getTimestamp as _getTimestamp } from "../../../shared/util/time";
-import { HTTPError, HTTP_CONFLICT } from "../../api/errors";
 import { Component } from "../ioc/components";
 import {
   MaybePromise,
   TiddlerPersistence,
   TransactionRunner,
 } from "./interfaces";
+import { TW5FirebaseError, TW5FirebaseErrorCode } from "../../../shared/model/errors";
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;
@@ -35,34 +34,26 @@ const asyncMap = async <T, R = any>(list: T[], fn: (e: T) => Promise<R>) =>
   await Promise.all(list.map(fn));
 
 const makeKey = (ns: TiddlerNamespace, title?: string) => {
-  const bag = `wikis/${encodeURIComponent(ns.wiki)}/bags/${encodeURIComponent(
-    ns.bag
-  )}/tiddlers`;
+  const collectionPath = `wikis/${encodeURIComponent(
+    ns.wiki
+  )}/bags/${encodeURIComponent(ns.bag)}/tiddlers`;
   if (title) {
-    return `${bag}/${encodeURIComponent(title)}`;
+    return `${collectionPath}/${encodeURIComponent(title)}`;
   }
-  return bag;
+  return collectionPath;
 };
 
 const firestoreTimestampToDate = (ts: Timestamp): Date => ts.toDate();
-const dateToFirestoreTimestamp = (date: Date) =>  admin.firestore.Timestamp.fromDate(date);
+const dateToFirestoreTimestamp = (date: Date) =>
+  admin.firestore.Timestamp.fromDate(date);
 
 export class FirestorePersistence implements TiddlerPersistence {
-  private user: User;
   private tx: Transaction;
   private db: Database;
-  private getTimestamp: typeof _getTimestamp;
 
-  constructor(
-    user: User,
-    tx: Transaction,
-    db: Database,
-    getTimestamp: typeof _getTimestamp
-  ) {
-    this.user = user;
+  constructor(tx: Transaction, db: Database) {
     this.tx = tx;
     this.db = db;
-    this.getTimestamp = getTimestamp;
   }
 
   toStandardTiddler(
@@ -91,17 +82,37 @@ export class FirestorePersistence implements TiddlerPersistence {
     };
   }
 
-  async readDocs(
-    documentKeys: { namespace: TiddlerNamespace; title: string }[]
+  async revisionCheck (namespace: TiddlerNamespace, title: string, expectedRevision?:Revision):Promise<{
+    namespace: TiddlerNamespace;
+    tiddler: Tiddler;
+    revision: Revision;
+  }|undefined> {
+    const [doc] = await this.readTiddlers([{ namespace, title }]);
+  if (!doc) {
+    return undefined;
+  }
+  if (expectedRevision && (doc.revision !== expectedRevision)) {
+    throw new TW5FirebaseError(
+      `revision conflict: Tiddler "${title}" in ${namespace.wiki}:${namespace.bag} has revision ${
+        doc.revision
+      }, attempted update expected revision ${expectedRevision}`,
+      TW5FirebaseErrorCode.REVISION_CONFLICT,
+      {namespace, title, expectedRevision, currentRevision: doc.revision}
+    );
+  }
+  return doc;
+  }
+
+  async readTiddlers(
+    namespacedTitles: { namespace: TiddlerNamespace; title: string }[]
   ): Promise<
     {
       namespace: TiddlerNamespace;
-      title: string;
-      value: Tiddler;
+      tiddler: Tiddler;
       revision: Revision;
     }[]
   > {
-    const refs = documentKeys.map((docKey) =>
+    const refs = namespacedTitles.map((docKey) =>
       this.db.doc(makeKey(docKey.namespace, docKey.title))
     );
     return (
@@ -115,19 +126,19 @@ export class FirestorePersistence implements TiddlerPersistence {
           const firestoreTiddler = doc.data() as FirestoreSerializedTiddler;
           return {
             revision: firestoreTiddler.revision,
-            value: this.toStandardTiddler(doc.id, firestoreTiddler),
-            ...documentKeys[ix],
+            tiddler: this.toStandardTiddler(doc.id, firestoreTiddler),
+            namespace: namespacedTitles[ix].namespace,
           };
         })
     );
   }
-  async readCollections(
+
+  async readBags(
     namespaces: TiddlerNamespace[]
   ): Promise<
     {
       namespace: TiddlerNamespace;
-      title: string;
-      value: Tiddler;
+      tiddler: Tiddler;
       revision: Revision;
     }[]
   > {
@@ -141,11 +152,10 @@ export class FirestorePersistence implements TiddlerPersistence {
     const allDocs = allCollections.map(({ namespace, cursor }) =>
       cursor.docs.map((doc) => {
         const firestoreTiddler = doc.data() as FirestoreSerializedTiddler;
-        const value = this.toStandardTiddler(doc.id, firestoreTiddler);
+        const tiddler = this.toStandardTiddler(doc.id, firestoreTiddler);
         return {
           namespace,
-          title: value.title,
-          value,
+          tiddler,
           revision: firestoreTiddler.revision,
         };
       })
@@ -153,50 +163,54 @@ export class FirestorePersistence implements TiddlerPersistence {
     return allDocs.flat();
   }
 
-  async updateDoc(
+  async updateTiddler(
     namespace: TiddlerNamespace,
     title: string,
-    updater: (value?: Tiddler) => MaybePromise<Tiddler | undefined>,
+    updater: (
+      oldTiddler: Tiddler
+    ) => MaybePromise<{
+      tiddler: Tiddler /* new tiddler */;
+      revision: Revision /* new revision */;
+    }>,
     expectedRevision?: Revision
-  ): Promise<
-    | {
-        namespace: TiddlerNamespace;
-        title: string;
-        value: Tiddler;
-        revision: Revision;
-      }
-    | undefined
-  > {
-    const [doc] = await this.readDocs([{ namespace, title }]);
-    if (doc && doc.revision !== expectedRevision) {
-      throw new HTTPError(
-        `revision conflict: Tiddler ${JSON.stringify({
-          title,
-          ...namespace,
-        })} has revision ${
-          doc.revision
-        }, attempted update expected revision ${expectedRevision}`,
-        HTTP_CONFLICT
+  ): Promise<{ tiddler: Tiddler; revision: Revision }> {
+    const doc = await this.revisionCheck(namespace, title, expectedRevision);
+    if (!doc) {
+      throw new TW5FirebaseError(
+        `attempting to update nonexisting tiddler "${title}" in ${namespace.wiki}:${namespace.bag}`,
+        TW5FirebaseErrorCode.UPDATE_MISSING_TIDDLER,
+        {namespace, title}
       );
     }
-    const updatedTiddler = await Promise.resolve(updater(doc ? doc.value : undefined));
-    if (updatedTiddler) {
-      // set new revision
-      const revision = getRevision(this.user, this.getTimestamp());
-      this.tx.set(
-        this.db.doc(makeKey(namespace, title)),
-        this.toFirestoreTiddler(updatedTiddler, revision)
-      );
-      return {
-        namespace,
-        title,
-        value: updatedTiddler,
-        revision,
-      };
-    } else {
-      this.tx.delete(this.db.doc(makeKey(namespace, title)));
+    const { tiddler, revision } = await Promise.resolve(updater(doc.tiddler));
+    this.tx.set(
+      this.db.doc(makeKey(namespace, title)),
+      this.toFirestoreTiddler(tiddler, revision)
+    );
+    return { tiddler, revision };
+  }
+
+  async removeTiddler (namespace: TiddlerNamespace, title: string, expectedRevision?: string) : Promise<{ existed: boolean; }> {
+    const doc = this.revisionCheck(namespace, title, expectedRevision);
+    if (!doc) {
+      return {existed: false};
     }
-    return updatedTiddler;
+    this.tx.delete(this.db.doc(makeKey(namespace, title)));
+    return {existed: true};
+  }
+  async createTiddler (namespace: TiddlerNamespace, tiddler: Tiddler, revision:Revision) : Promise<void> {
+    if ((await this.readTiddlers([{ namespace, title: tiddler.title }])).length > 0) {
+      throw new TW5FirebaseError(
+        `Attempting to create tiddler "${tiddler}" in ${namespace.wiki}:${namespace.bag} when it already exists!`,
+        TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER,
+        {namespace, tiddler}
+      );
+    }
+    this.tx.set(
+      this.db.doc(makeKey(namespace, tiddler.title)),
+      this.toFirestoreTiddler(tiddler, revision)
+    );
+    return;
   }
 }
 
@@ -214,13 +228,10 @@ export class FirestoreTransactionRunner implements TransactionRunner {
   }
 
   async runTransaction<R>(
-    user: User,
     updateFunction: (persistence: TiddlerPersistence) => Promise<R>
   ): Promise<R> {
     return await this.db.runTransaction(async (tx: Transaction) => {
-      return updateFunction(
-        new FirestorePersistence(user, tx, this.db, this.getTimestamp)
-      );
+      return updateFunction(new FirestorePersistence(tx, this.db));
     });
   }
 }
