@@ -1,7 +1,9 @@
 import {
   CONTENT_TIDDLER_TYPES,
+  JSON_TIDDLER_TYPE,
   PERSONAL_TAG,
   PERSONAL_TIDDLERS,
+  POLICY_TIDDLER,
   SYSTEM_TITLE_PREFIX,
 } from "../../constants";
 import { PartialTiddlerData } from "../../shared/model/tiddler";
@@ -19,8 +21,11 @@ const isDraftTiddler = (tiddlerData: PartialTiddlerData) => hasField(tiddlerData
 
 const isPlugin = (tiddlerData: PartialTiddlerData) => hasField(tiddlerData, "plugin-type");
 
+const isPolicyTiddler = (title: string, tiddlerData: PartialTiddlerData) => title === POLICY_TIDDLER && tiddlerData.type === JSON_TIDDLER_TYPE;
+
 const tiddlerConstraints: { [key: string]: TiddlerDataConstraint } = {
-  isContentTiddler: (title: string, tiddlerData: PartialTiddlerData) => tiddlerData.type !== undefined && CONTENT_TIDDLER_TYPES.has(tiddlerData.type) && !isPlugin(tiddlerData),
+
+  isContentTiddler: (title: string, tiddlerData: PartialTiddlerData) => isPolicyTiddler(title, tiddlerData) || (tiddlerData.type !== undefined && CONTENT_TIDDLER_TYPES.has(tiddlerData.type) && !isPlugin(tiddlerData)),
 
   isPersonalTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
     PERSONAL_TIDDLERS.has(title) ||

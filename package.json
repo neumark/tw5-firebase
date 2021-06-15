@@ -8,7 +8,8 @@
     "local": "node ./node_modules/.bin/tiddlywiki editions/tw-local --listen",
     "build": "./scripts/build.sh",
     "backup": "./scripts/backup2.sh",
-    "deploy": "./scripts/build.sh && ./scripts/deploy.sh"
+    "deploy": "./scripts/build.sh && ./scripts/deploy.sh",
+    "test": "./scripts/build-tests.sh && ./scripts/test.sh"
   },
   "directories": {
     "bin": "./scripts"

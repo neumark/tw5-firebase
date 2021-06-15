@@ -10,7 +10,7 @@ export const standardPolicies:{[bag:string]:BagPolicy} = {
   [BUILTIN_BAG_CONTENT]: {
     write: [{ role: ROLE.editor }],
     read: [{ role: ROLE.reader }],
-    constraints: ["!isSystemTiddler", "!isPersonalTiddler"],
+    constraints: ["isContentTiddler"],
   },
   [BUILTIN_BAG_SYSTEM]: {
     write: [{ role: ROLE.admin }],
@@ -34,3 +34,10 @@ export const personalBag = (user: User) => `${PERSONAL_BAG_PREFIX}${user.userId}
 
 // TOOD: a regexp would probably be faster...
 export const isPersonalBag = (bag:string) => bag.startsWith(PERSONAL_BAG_PREFIX) && bag.length > PERSONAL_BAG_PREFIX.length;
+
+export interface BagPermission {
+  bag: string;
+  allowed: boolean;
+  reason?: string;
+  policy: BagPolicy;
+}

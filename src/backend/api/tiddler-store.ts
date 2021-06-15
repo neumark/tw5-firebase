@@ -1,18 +1,18 @@
 import { inject, injectable } from "inversify";
 import {
   TW5FirebaseError,
-  TW5FirebaseErrorCode,
+  TW5FirebaseErrorCode
 } from "../../shared/model/errors";
 import { getRevision, Revision } from "../../shared/model/revision";
 import {
   SingleWikiNamespacedTiddler,
-  TiddlerStore,
+  TiddlerStore
 } from "../../shared/model/store";
 import {
   PartialTiddlerData,
   Tiddler,
   TiddlerData,
-  TiddlerNamespace,
+  TiddlerNamespace
 } from "../../shared/model/tiddler";
 import { User } from "../../shared/model/user";
 import { getTimestamp as _getTimestamp } from "../../shared/util/time";
@@ -20,11 +20,10 @@ import { MaybeArray } from "../../shared/util/useful-types";
 import { Component } from "../common/ioc/components";
 import {
   TiddlerPersistence,
-  TransactionRunner,
+  TransactionRunner
 } from "../common/persistence/interfaces";
 import { TiddlerFactory } from "../common/tiddler-factory";
-import { getWikiRoles } from "./authentication";
-import { BagPermission, PolicyChecker } from "./policy-checker";
+import { PolicyChecker } from "./policy-checker";
 import { RecipeResolver } from "./recipe-resolver";
 
 const deduplicate = (

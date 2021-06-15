@@ -1,10 +1,15 @@
 import { Schema } from "ajv";
 import { inject, injectable } from "inversify";
+import { JSON_TIDDLER_TYPE } from "../../../constants";
+import { Revision } from "../../../shared/model/revision";
 import { TiddlerNamespace } from "../../../shared/model/tiddler";
+import { User } from "../../../shared/model/user";
 import { Component } from "../ioc/components";
 import { TiddlerFactory } from "../tiddler-factory";
 import { getValidator } from "../validator";
 import { TiddlerPersistence } from "./interfaces";
+
+
 
 export class TiddlerValidator<T> {
   private validator: ReturnType<typeof getValidator>;
@@ -38,6 +43,16 @@ export class TiddlerValidator<T> {
       }
       return {namespace, title, value};
     });
+  }
+
+  async write(persistence:TiddlerPersistence, user:User, tiddlers:Array<{namespace:TiddlerNamespace, title:string, data:T, revision:Revision}>):Promise<void> {
+    await Promise.all(
+      tiddlers.map(
+        async ({namespace, title, data, revision}) => persistence.createTiddler(
+          namespace,
+          this.tiddlerFactory.createTiddler(user, title, JSON_TIDDLER_TYPE, {text: JSON.stringify(this.validate(namespace, title, data))}),
+          revision)
+    ));
   }
 }
 

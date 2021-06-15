@@ -14,7 +14,7 @@ interface TiddlerWithRevision {
 }
 
 export class MapPersistance implements TiddlerPersistence, TransactionRunner {
-  private state = new Map<string, TiddlerWithRevision>();
+  state = new Map<string, TiddlerWithRevision>();
 
   private makeKey(namespace: TiddlerNamespace, title?: string) {
     return `${namespace.wiki}:${namespace.bag}/${title ? title : ""}`;

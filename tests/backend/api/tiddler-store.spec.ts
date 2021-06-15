@@ -1,20 +1,45 @@
-import 'reflect-metadata';
-import {} from 'jasmine';
+import "reflect-metadata";
+import {} from '../../backend-test-base';
 import * as sinon from 'sinon';
 import { Component, getContainer } from '../../../src/backend/common/ioc/components';
 import { baseComponents } from '../../../src/backend/common/ioc/base';
-import { testComponents, TIMESTAMP } from './test-components';
+import { testComponents, FROZEN_TIMESTAMP } from './test-components';
 import { TiddlerStoreFactory } from '../../../src/backend/api/tiddler-store';
 import { User, username } from '../../../src/shared/model/user';
 import { TiddlerStore } from '../../../src/shared/model/store';
+import { MapPersistance } from './map-persistence';
+import { TiddlerMetadata } from '../../../src/shared/model/tiddler';
+import { ROLE } from '../../../src/shared/model/roles';
+import { DEFAULT_TIDDLER_TYPE, JSON_TIDDLER_TYPE } from "../../../src/constants";
 
 const wiki = "testwiki"
+
+
+const READER_USER =  {
+  name: 'Charlie Root',
+  userId: 'root',
+  roles: {
+    [wiki]: ROLE.reader
+  }
+};
+
+const ADMIN_USER = {...READER_USER, roles: {[wiki]: ROLE.admin}};
+
+const getDefaultTiddlerMetadata:(user:User) => TiddlerMetadata = user => ({
+  created: FROZEN_TIMESTAMP,
+  creator: username(user),
+  modified: FROZEN_TIMESTAMP,
+  modifier: username(user)
+})
 
 const createTiddlerStore = (user:User) => {
   const container = getContainer();
   container.load(baseComponents);
   container.load(testComponents());
-  return container.get<TiddlerStoreFactory>(Component.TiddlerStoreFactory).createTiddlerStore(user, wiki);
+  return {
+    store: container.get<TiddlerStoreFactory>(Component.TiddlerStoreFactory).createTiddlerStore(user, wiki),
+    persistence: container.get<MapPersistance>(Component.TransactionRunner)
+  }
 }
 
 // Planned tests
@@ -54,39 +79,69 @@ const createTiddlerStore = (user:User) => {
 describe('Bag reads', function () {
 
   const sinonSandbox = sinon.createSandbox();
-  let user:User;
   let store:TiddlerStore;
+  let persistence:MapPersistance;
+
+  const numDocs = () => persistence.state.size
 
   beforeEach(async () => {
-    user =  {
-      name: 'Charlie Root',
-      userId: 'root',
-      roles: {}
-    }
-    store = createTiddlerStore(user);
-    sinonSandbox.spy(store);
+
   });
 
   afterEach(async () => {
     sinonSandbox.restore();
   });
 
-  it('Reading an existing tiddler from bag works as expected when user has sufficient permissions.', async () => {
+  it('Reading an existing tiddler from bag works as expected when user has sufficient permissions (by role).', async () => {
     const bag = 'content';
     const title = 'title';
     const text = 'asdf';
-    const newlyCreated = await store.createInBag(bag, title, {text});
+    const revision = '0';
+    ({persistence, store} = createTiddlerStore(READER_USER));
+    sinonSandbox.spy(store);
+    sinonSandbox.spy(persistence);
+    expect(numDocs()).toEqual(0);
+    await persistence.createTiddler({wiki, bag}, {title, text, ...getDefaultTiddlerMetadata(READER_USER)}, revision)
+    expect(numDocs()).toEqual(1);
     expect(await store.readFromBag(bag, title)).toEqual({
       bag,
-      revision: newlyCreated.revision,
+      revision,
       tiddler: {
         title,
         text,
-        creator: username(user),
-        modifier: username(user),
-        created: TIMESTAMP,
-        modified: TIMESTAMP
+        creator: username(READER_USER),
+        modifier: username(READER_USER),
+        created: FROZEN_TIMESTAMP,
+        modified: FROZEN_TIMESTAMP
       }
     })
-  })
+  });
+
+  it('Creating a new tiddler in bag works as expected when user has sufficient permissions (by role) and it doesn\'t yet exist.', async () => {
+    const bag = 'content';
+    const title = 'title';
+    const text = 'asdf';
+    const revision = '1620624466294:root';
+    ({persistence, store} = createTiddlerStore(ADMIN_USER));
+    sinonSandbox.spy(store);
+    sinonSandbox.spy(persistence);
+    expect(numDocs()).toEqual(0);
+    await store.createInBag(bag, title, {text, type: DEFAULT_TIDDLER_TYPE, ...getDefaultTiddlerMetadata(ADMIN_USER)})
+    expect(numDocs()).toEqual(1);
+    expect(await store.readFromBag(bag, title)).toEqual({
+      bag,
+      revision,
+      tiddler: {
+        title,
+        text,
+        type: DEFAULT_TIDDLER_TYPE,
+        fields: {},
+        tags: [],
+        creator: username(ADMIN_USER),
+        modifier: username(ADMIN_USER),
+        created: FROZEN_TIMESTAMP,
+        modified: FROZEN_TIMESTAMP
+      }
+    })
+  });
 });

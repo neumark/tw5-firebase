@@ -1,6 +1,7 @@
 import { inject, injectable } from "inversify";
 import {
   AccessType,
+  BagPermission,
   BagPolicy,
   defaultCustomBagPolicy,
   getPersonalBagPolicy,
@@ -27,13 +28,6 @@ import { checkConstraint } from "./tiddler-constraints";
   There are 5 roles as defined in src/model/roles:ROLES
 
 */
-
-export interface BagPermission {
-  bag: string;
-  allowed: boolean;
-  reason?: string;
-  policy: BagPolicy;
-}
 
 const granteesInclude = (
   wiki: string,
@@ -132,9 +126,9 @@ export class PolicyChecker {
     return {
       ...bagPermission,
       allowed,
-      reason: allowed ? undefined : `Failed policy constraints prevented writing tiddler ${tiddlerTitle} to bag ${
+      reason: allowed ? undefined : `Failed policy constraints prevented writing tiddler '${tiddlerTitle}' to bag '${
         bagPermission.bag
-      }: ${JSON.stringify(failed)}.`,
+      }': ${JSON.stringify(failed)}.`,
     };
   }
 
