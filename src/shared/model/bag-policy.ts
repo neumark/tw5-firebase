@@ -6,6 +6,11 @@ export type AccessType = 'read' | 'write';
 export type Grantee =  UserId | { role: ROLE };
 export type BagPolicy =  { [key in AccessType]: Grantee[] } & {constraints?: string[]};
 
+export enum PolicyRejectReason {
+  INSUFFICIENT_PERMISSION = 'insufficient_permissions',
+  CONTRAINTS = 'constraints'
+}
+
 export const standardPolicies:{[bag:string]:BagPolicy} = {
   [BUILTIN_BAG_CONTENT]: {
     write: [{ role: ROLE.editor }],
@@ -38,6 +43,6 @@ export const isPersonalBag = (bag:string) => bag.startsWith(PERSONAL_BAG_PREFIX)
 export interface BagPermission {
   bag: string;
   allowed: boolean;
-  reason?: string;
+  reason?: PolicyRejectReason;
   policy: BagPolicy;
 }

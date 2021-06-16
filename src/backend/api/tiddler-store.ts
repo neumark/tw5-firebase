@@ -84,12 +84,14 @@ class TiddlerStoreImpl implements TiddlerStore {
     );
     const allowPermission = first((p) => p.allowed, permissions);
     if (!allowPermission) {
-      throw new TW5FirebaseError(
-        `No bags in list "${bags.join(", ")}" could be written by user "${
-          this.user.userId
-        }"`,
-        TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE,
-        { wiki: this.wiki, bags, userId: this.user.userId, title, permissions }
+      throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE,
+          data: {
+            title,
+            user: this.user,
+            permissions,
+            tiddlerData
+          }}
       );
     }
     return allowPermission.bag;
@@ -100,33 +102,45 @@ class TiddlerStoreImpl implements TiddlerStore {
     bags: string[],
     title?: string
   ) {
-    const readPermissions = await this.policyChecker.verifyReadAccess(
+    const permissions = await this.policyChecker.verifyReadAccess(
       persistence,
       this.user,
       this.wiki,
       bags
     );
-    if (!readPermissions.every((p) => p.allowed)) {
-      // In the future, we may want to ignore some bags not being readable, and just serve tiddlers from those accessible.
-      throw new TW5FirebaseError(
-        `At least one bag within ["${bags.join(", ")}"] in wiki ${
-          this.wiki
-        } is not readable.`,
-        TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE,
-        { bags, title, readPermissions }
-      );
+    if (!permissions.every((p) => p.allowed)) {
+      if (bags.length === 1) {
+        throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG,
+          data: {
+            user: this.user,
+            ...permissions[0]
+          }
+        });
+      } else {
+        throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE,
+          data: {
+            user: this.user,
+            permissions,
+            title
+          }
+        });
+      }
+
     }
     if (title) {
       const tiddlers = await persistence.readTiddlers(
         bags.map((bag) => ({ namespace: { wiki: this.wiki, bag }, title }))
       );
       if (tiddlers.length < 1) {
-        throw new TW5FirebaseError(
-          `Tiddler "${title}" not found in any of the following bags: "${bags.join(
-            ", "
-          )}" of wiki ${this.wiki}`,
-          TW5FirebaseErrorCode.TIDDLER_NOT_FOUND
-        );
+        throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.TIDDLER_NOT_FOUND,
+          data: {
+            title,
+            bags
+          }
+        });
       }
       return convert(tiddlers[0]);
     } else {
@@ -223,11 +237,13 @@ class TiddlerStoreImpl implements TiddlerStore {
           [bag]
         );
         if (!removePermission.allowed) {
-          throw new TW5FirebaseError(
-            `Remove permission denied on "${this.wiki}:${bag}/${title}"`,
-            TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG,
-            { wiki: this.wiki, title, bag }
-          );
+          throw new TW5FirebaseError({
+            code: TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG,
+            data: {
+              user: this.user,
+              ...removePermission
+            }
+          });
         }
         return (
           await persistence.removeTiddler(
@@ -255,9 +271,10 @@ class TiddlerStoreImpl implements TiddlerStore {
         );
         if (!bags) {
           throw new TW5FirebaseError(
-            `Recipe "${recipe}" not found in wiki ${this.wiki}`,
-            TW5FirebaseErrorCode.RECIPE_NOT_FOUND,
-            { wiki: this.wiki, recipe, title }
+            {code: TW5FirebaseErrorCode.RECIPE_NOT_FOUND,
+            data: {
+              recipe
+            }}
           );
         }
         return this.doCreateTiddler(persistence, bags, title, tiddlerData);
@@ -310,9 +327,12 @@ class TiddlerStoreImpl implements TiddlerStore {
         );
         if (!bags) {
           throw new TW5FirebaseError(
-            `Recipe ${recipe} not found in wiki ${this.wiki}`,
-            TW5FirebaseErrorCode.RECIPE_NOT_FOUND,
-            { wiki: this.wiki, recipe, title }
+            {
+              code: TW5FirebaseErrorCode.RECIPE_NOT_FOUND,
+              data: {
+                recipe
+              }
+            }
           );
         }
         return await this.doReadTiddlers(persistence, bags, title);

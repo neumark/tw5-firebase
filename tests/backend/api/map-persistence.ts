@@ -6,7 +6,10 @@ import {
 } from "../../../src/backend/common/persistence/interfaces";
 import { TiddlerNamespace, Tiddler } from "../../../src/shared/model/tiddler";
 import { Revision } from "../../../src/shared/model/revision";
-import { TW5FirebaseError, TW5FirebaseErrorCode} from "../../../src/shared/model/errors";
+import {
+  TW5FirebaseError,
+  TW5FirebaseErrorCode,
+} from "../../../src/shared/model/errors";
 
 interface TiddlerWithRevision {
   tiddler: Tiddler;
@@ -30,34 +33,30 @@ export class MapPersistance implements TiddlerPersistence, TransactionRunner {
 
   async readBags(
     collections: TiddlerNamespace[]
-  ): Promise<
-    NamespacedTiddler[]
-  > {
+  ): Promise<NamespacedTiddler[]> {
     const prefixSet = new Set(collections.map((c) => this.makeKey(c)));
     return [...this.state.entries()]
-        .filter(([key, _val]) => prefixSet.has(key.split("/")[0]))
-        .map(([key, val]) => ({
-          namespace: this.parseNamespace(key),
-          ...val,
-        }))
+      .filter(([key, _val]) => prefixSet.has(key.split("/")[0]))
+      .map(([key, val]) => ({
+        namespace: this.parseNamespace(key),
+        ...val,
+      }));
   }
 
   async readTiddlers(
     requestedTiddlers: { namespace: TiddlerNamespace; title: string }[]
-  ): Promise<
-    NamespacedTiddler[]
-  > {
+  ): Promise<NamespacedTiddler[]> {
     return requestedTiddlers
-        .map(({ namespace, title }) => {
-          const key = this.makeKey(namespace, title);
-          if (this.state.has(key)) {
-            return {
-              namespace,
-              ...this.state.get(key),
-            } as NamespacedTiddler;
-          }
-        })
-        .filter((x) => x !== undefined) as NamespacedTiddler[]
+      .map(({ namespace, title }) => {
+        const key = this.makeKey(namespace, title);
+        if (this.state.has(key)) {
+          return {
+            namespace,
+            ...this.state.get(key),
+          } as NamespacedTiddler;
+        }
+      })
+      .filter((x) => x !== undefined) as NamespacedTiddler[];
   }
 
   async removeTiddler(
@@ -65,15 +64,23 @@ export class MapPersistance implements TiddlerPersistence, TransactionRunner {
     title: string,
     expectedRevision?: string
   ): Promise<{ existed: boolean }> {
-    const entry:TiddlerWithRevision|undefined = this.state.get(this.makeKey(namespace, title));
+    const entry: TiddlerWithRevision | undefined = this.state.get(
+      this.makeKey(namespace, title)
+    );
     if (entry) {
       if (entry.revision !== expectedRevision) {
-        throw new TW5FirebaseError("revision error", TW5FirebaseErrorCode.REVISION_CONFLICT, {expectedRevision, revision: entry.revision});
+        throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.REVISION_CONFLICT,
+          data: {
+            updateExpected: expectedRevision!,
+            foundInDatabase: entry.revision,
+          },
+        });
       }
-      this.state.delete(this.makeKey(namespace, title))
-      return {existed: true};
+      this.state.delete(this.makeKey(namespace, title));
+      return { existed: true };
     }
-    return {existed: false};
+    return { existed: false };
   }
 
   async createTiddler(
@@ -82,11 +89,16 @@ export class MapPersistance implements TiddlerPersistence, TransactionRunner {
     revision: string
   ): Promise<void> {
     const key = this.makeKey(namespace, tiddler.title);
-    const entry:TiddlerWithRevision|undefined = this.state.get(key);
+    const entry: TiddlerWithRevision | undefined = this.state.get(key);
     if (entry) {
-      throw new TW5FirebaseError("tiddler already exists", TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER);
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER,
+        data: {
+          title: tiddler.title,
+        },
+      });
     }
-    this.state.set(key, {tiddler, revision});
+    this.state.set(key, { tiddler, revision });
   }
 
   async updateTiddler(
@@ -98,12 +110,24 @@ export class MapPersistance implements TiddlerPersistence, TransactionRunner {
     expectedRevision?: string
   ): Promise<{ tiddler: Tiddler; revision: Revision }> {
     const key = this.makeKey(namespace, title);
-    const entry:TiddlerWithRevision|undefined = this.state.get(key);
+    const entry: TiddlerWithRevision | undefined = this.state.get(key);
     if (!entry) {
-      throw new TW5FirebaseError("tiddler does not exists", TW5FirebaseErrorCode.UPDATE_MISSING_TIDDLER);
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.UPDATE_MISSING_TIDDLER,
+        data: {
+          bag: namespace.bag,
+          title,
+        },
+      });
     }
     if (expectedRevision !== entry.revision) {
-      throw new TW5FirebaseError("revision mismatch", TW5FirebaseErrorCode.REVISION_CONFLICT);
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.REVISION_CONFLICT,
+        data: {
+          updateExpected: expectedRevision!,
+          foundInDatabase: entry.revision,
+        },
+      });
     }
     const newEntry = await updater(entry.tiddler);
     this.state.set(key, newEntry);

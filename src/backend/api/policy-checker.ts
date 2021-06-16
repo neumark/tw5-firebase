@@ -7,6 +7,7 @@ import {
   getPersonalBagPolicy,
   Grantee,
   isPersonalBag,
+  PolicyRejectReason,
   standardPolicies,
 } from "../../shared/model/bag-policy";
 import { PERSONAL_BAG_PREFIX, POLICY_TIDDLER } from "../../constants";
@@ -92,7 +93,7 @@ export class PolicyChecker {
       );
     }
     return Object.entries(policiesToCheck).map(([bag, policy]) => {
-      let reason;
+      let reason:undefined|PolicyRejectReason=undefined;
       let allowed = true;
       if (!policy) {
         // this shouldn't happen because we should have a fallback policy for any bag
@@ -101,14 +102,8 @@ export class PolicyChecker {
         );
       }
       if (!granteesInclude(wiki, policy[accessType], user)) {
-        allowed = false;
-        reason = `Permission denied for '${accessType}' access on wiki ${wiki} bag ${bag} to user ${
-          user.userId
-        } with roles ${JSON.stringify(
-          user.roles
-        )} due to bag policy. Grantee list for ${accessType} access is ${JSON.stringify(
-          policy[accessType]
-        )}.`;
+          allowed = false;
+          reason = PolicyRejectReason.INSUFFICIENT_PERMISSION;
       }
       return { bag, allowed, reason, policy };
     });
@@ -126,9 +121,7 @@ export class PolicyChecker {
     return {
       ...bagPermission,
       allowed,
-      reason: allowed ? undefined : `Failed policy constraints prevented writing tiddler '${tiddlerTitle}' to bag '${
-        bagPermission.bag
-      }': ${JSON.stringify(failed)}.`,
+      reason: allowed ? undefined : PolicyRejectReason.CONTRAINTS
     };
   }
 

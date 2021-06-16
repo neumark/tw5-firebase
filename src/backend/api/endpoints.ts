@@ -22,14 +22,14 @@
 import cors from "cors";
 import * as express from "express";
 import { inject, injectable } from "inversify";
-import { TW5FirebaseError, TW5FirebaseErrorCode } from "../../shared/model/errors";
 import {
-  SingleWikiNamespacedTiddler,
-} from "../../shared/model/store";
+  TW5FirebaseError,
+  TW5FirebaseErrorCode,
+} from "../../shared/model/errors";
+import { SingleWikiNamespacedTiddler } from "../../shared/model/store";
 import {
   HTTPNamespacedTiddler,
-
-  PartialTiddlerData
+  PartialTiddlerData,
 } from "../../shared/model/tiddler";
 import { Logger } from "../../shared/util/logger";
 import { mapOrApply, maybeApply } from "../../shared/util/map";
@@ -59,9 +59,11 @@ export class APIEndpointFactory {
   private tiddlerDataValidator = getValidator(tiddlerDataSchema);
   private tiddlerStoreFactory: TiddlerStoreFactory;
 
-  private assertWikiInPath(params:express.Request["params"]):void {
+  private assertWikiInPath(params: express.Request["params"]): void {
     if (!params["wiki"]) {
-      throw new TW5FirebaseError(`No wiki specified in request`, TW5FirebaseErrorCode.INVALID_WIKI);
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.INVALID_WIKI,
+      });
     }
   }
 
@@ -84,11 +86,10 @@ export class APIEndpointFactory {
         await store.readFromRecipe(recipe, title)
       );
     }
-    throw new TW5FirebaseError(
-      `read() got weird request parameters`,
-      TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-      req.params
-    );
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
   }
 
   private async write(req: express.Request) {
@@ -97,38 +98,45 @@ export class APIEndpointFactory {
     const bag = maybeApply(decodeURIComponent, req.params["bag"]);
     const recipe = maybeApply(decodeURIComponent, req.params["recipe"]);
     const title = decodeURIComponent(req.params["title"]);
-    const expectedRevision = maybeApply(decodeURIComponent, req.params["revision"]);
+    const expectedRevision = maybeApply(
+      decodeURIComponent,
+      req.params["revision"]
+    );
     const body = req.body;
     const tiddlerValidation = this.tiddlerDataValidator(body);
     if (!tiddlerValidation.valid) {
-      throw new TW5FirebaseError(
-        `write() got invalid tiddler data`,
-        TW5FirebaseErrorCode.INVALID_REQUEST_BODY,
-        {body, tiddlerValidation}
-      );
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.INVALID_REQUEST_BODY,
+        data: { body, errors: tiddlerValidation.errors },
+      });
     }
     const tiddlerData = body as PartialTiddlerData;
     const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
     if (bag) {
       if (expectedRevision) {
-        return toHTTPNamespacedTiddler(await store.updateInBag(bag, title, tiddlerData, expectedRevision));
+        return toHTTPNamespacedTiddler(
+          await store.updateInBag(bag, title, tiddlerData, expectedRevision)
+        );
       }
-      return toHTTPNamespacedTiddler(await store.createInBag(bag, title, tiddlerData));
+      return toHTTPNamespacedTiddler(
+        await store.createInBag(bag, title, tiddlerData)
+      );
     }
     if (recipe) {
       if (expectedRevision) {
-        throw new TW5FirebaseError(
-          "Update tiddlers in bags, not recipies!",
-          TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE
-        )
+        throw new TW5FirebaseError({
+          code: TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE,
+          data: { recipe },
+        });
       }
-      return toHTTPNamespacedTiddler(await store.createInRecipe(recipe, title, tiddlerData));
+      return toHTTPNamespacedTiddler(
+        await store.createInRecipe(recipe, title, tiddlerData)
+      );
     }
-    throw new TW5FirebaseError(
-      `write() got weird request parameters`,
-      TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-      req.params
-    );
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
   }
 
   private async remove(req: express.Request) {
@@ -141,11 +149,10 @@ export class APIEndpointFactory {
       const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
       return store.deleteFromBag(bag, title, expectedRevision);
     }
-    throw new TW5FirebaseError(
-      `remove() got weird request parameters`,
-      TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-      req.params
-    );
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
   }
 
   private bindAndSerialize(fn: (req: express.Request) => Promise<any>) {
@@ -171,7 +178,7 @@ export class APIEndpointFactory {
 
   createAPI() {
     const api = express.default();
-    api.use(cors({origin: true}));
+    api.use(cors({ origin: true }));
     api.use(
       this.authenticatorMiddleware.authenticate.bind(
         this.authenticatorMiddleware

@@ -92,13 +92,13 @@ export class FirestorePersistence implements TiddlerPersistence {
     return undefined;
   }
   if (expectedRevision && (doc.revision !== expectedRevision)) {
-    throw new TW5FirebaseError(
-      `revision conflict: Tiddler "${title}" in ${namespace.wiki}:${namespace.bag} has revision ${
-        doc.revision
-      }, attempted update expected revision ${expectedRevision}`,
-      TW5FirebaseErrorCode.REVISION_CONFLICT,
-      {namespace, title, expectedRevision, currentRevision: doc.revision}
-    );
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.REVISION_CONFLICT,
+      data: {
+        updateExpected: expectedRevision,
+        foundInDatabase: doc.revision
+      }
+    });
   }
   return doc;
   }
@@ -177,10 +177,12 @@ export class FirestorePersistence implements TiddlerPersistence {
     const doc = await this.revisionCheck(namespace, title, expectedRevision);
     if (!doc) {
       throw new TW5FirebaseError(
-        `attempting to update nonexisting tiddler "${title}" in ${namespace.wiki}:${namespace.bag}`,
-        TW5FirebaseErrorCode.UPDATE_MISSING_TIDDLER,
-        {namespace, title}
-      );
+        {code: TW5FirebaseErrorCode.UPDATE_MISSING_TIDDLER,
+          data: {
+            bag: namespace.bag,
+            title
+          }
+        });
     }
     const { tiddler, revision } = await Promise.resolve(updater(doc.tiddler));
     this.tx.set(
@@ -201,9 +203,10 @@ export class FirestorePersistence implements TiddlerPersistence {
   async createTiddler (namespace: TiddlerNamespace, tiddler: Tiddler, revision:Revision) : Promise<void> {
     if ((await this.readTiddlers([{ namespace, title: tiddler.title }])).length > 0) {
       throw new TW5FirebaseError(
-        `Attempting to create tiddler "${tiddler}" in ${namespace.wiki}:${namespace.bag} when it already exists!`,
-        TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER,
-        {namespace, tiddler}
+        {code: TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER,
+        data: {
+          title: tiddler.title
+        }}
       );
     }
     this.tx.set(
