@@ -19,3 +19,4 @@ public/sourcemaps
 ui-debug.log
 generated/jsonschema/*
 generated/config/config.json
+.nyc_output/

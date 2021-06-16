@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const TW_HOME = path.resolve(ROOT_DIR, 'node_modules/tiddlywiki/');

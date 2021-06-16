@@ -5,6 +5,7 @@
 
 import { ParseTree, Widget, WidgetConstructor } from '../../tw5-types';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { widget } = require('$:/core/modules/widgets/widget.js');
 const Widget: WidgetConstructor = widget;
 class ClockWidget extends Widget implements Widget {

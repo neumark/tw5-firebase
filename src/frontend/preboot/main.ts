@@ -93,13 +93,6 @@ function getWidgetUrl() {
 }
 
 /**
- * Redirects to the FirebaseUI widget.
- */
-const signInWithRedirect = function () {
-    window.location.assign(getWidgetUrl());
-};
-
-/**
  * Open a popup with the FirebaseUI widget.
  */
 const signInWithPopup = function () {
@@ -115,7 +108,7 @@ const getAuthTokenData = async (user: firebase.User) => {
  * Displays the UI for a signed in user.
  * @param {!firebase.User} user
  */
-var handleSignedInUser = async function (user: firebase.User) {
+const handleSignedInUser = async function (user: firebase.User) {
     const getQueryVariables = (): Partial<Config['wiki']> => {
         const query = window.location.search.substring(1);
         const vars = query.split('&');
