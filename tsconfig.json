@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "declarationMap": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "lib": [ "es2020", "dom"],
+    "module": "es2020",
+    "target": "ES2020",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "plugins": [],
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "strict": true,
+    "stripInternal": true,
+    "typeRoots": ["node_modules/@types"],
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "generated"],
+  "compileOnSave": false
+}

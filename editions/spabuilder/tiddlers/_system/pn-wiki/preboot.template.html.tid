@@ -2,8 +2,7 @@ title: $:/pn-wiki/preboot.template.html
 
 `
 <script>
-window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
-    adaptorCore: `{{{ $:/plugins/neumark/firestore-syncadaptor-client/core.js || $:/pn-wiki/export-javascript-tiddler}}}`});
+window.$tw._pnwiki = {};
 </script>
 <div id="container">
       <div id="loading">Loading...</div>
@@ -64,4 +63,4 @@ window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
         </div>
       </div>
     </div>`
-    {{ $:/pn-wiki/app.js ||$:/core/templates/javascript-tiddler}}
+    {{ $:/tw5-firebase/preboot/main.js ||$:/core/templates/javascript-tiddler}}

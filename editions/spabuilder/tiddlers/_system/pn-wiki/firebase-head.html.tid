@@ -13,12 +13,4 @@ title: $:/pn-wiki/firebase-head.html
   <script src="https://www.gstatic.com/firebasejs/8.2.3/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.2.3/firebase-storage.js"></script>
   <script src="https://www.gstatic.com/firebasejs/ui/4.7.1/firebase-ui-auth.js"></script>
-  <script>
-    window.$tw = window.$tw || {};
-    window.$tw._pnwiki = window.$tw._pnwiki || {};
-    window.$tw._pnwiki = Object.assign(window.$tw._pnwiki || {},  {
-      config: `{{{ $:/config/WikiConfig ||$:/core/templates/raw-static-tiddler}}}`
-    });
-    firebase.initializeApp(window.$tw._pnwiki.config.firebase);
-  </script>
 `

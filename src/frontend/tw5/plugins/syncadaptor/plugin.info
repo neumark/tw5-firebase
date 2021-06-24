@@ -1,0 +1,7 @@
+{
+	"title": "$:/plugins/tw5-firebase/syncadaptor",
+	"name": "TW5-firebase Syncadaptor",
+	"description": "Synchronize your tiddlywiki with firebase",
+	"contributor": "Peter Neumark",
+	"list": ""
+}

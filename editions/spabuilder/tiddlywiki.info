@@ -1,8 +1,9 @@
 {
     "description": "edition to build index.html",
     "plugins": [
-        "neumark/firestore-syncadaptor-client",
-        "neumark/gcp-storage-attachments",
+        "tw5-firebase/syncadaptor",
+        "tw5-firebase/gcp-storage-attachments",
+        "tw5-firebase/clock-widget",
         "tiddlywiki/highlight",
         "tiddlywiki/internals",
         "tiddlywiki/codemirror",
@@ -21,10 +22,10 @@
         "tiddlywiki/vanilla"
     ],
     "build": {
-        "index": [
+        "spa": [
             "--rendertiddler",
             "$:/pn-wiki/save-all",
-            "index.html",
+            "tw5.html",
             "text/plain"
         ]
     }
