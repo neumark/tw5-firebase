@@ -178,4 +178,37 @@ describe('Bag writes', function () {
             },
         });
     });
+
+    it("Creating a new tiddler in bag works as expected when user has sufficient permissions (by role) and it doesn't yet exist.", async () => {
+      const bag = 'content';
+      const title = 'title';
+      const text = 'asdf';
+      const revision = `${+FROZEN_TIMESTAMP}:${ADMIN_USER.userId}`;
+      const { persistence, store } = createTiddlerStore(ADMIN_USER);
+      const sinonSandbox = sinon.createSandbox();
+      sinonSandbox.spy(store);
+      sinonSandbox.spy(persistence);
+      expect(numDocs(persistence)).toEqual(0);
+      await store.createInBag(bag, title, {
+          text,
+          type: DEFAULT_TIDDLER_TYPE,
+          ...getDefaultTiddlerMetadata(ADMIN_USER),
+      });
+      expect(numDocs(persistence)).toEqual(1);
+      expect(await store.readFromBag(bag, title)).toEqual({
+          bag,
+          revision,
+          tiddler: {
+              title,
+              text,
+              type: DEFAULT_TIDDLER_TYPE,
+              fields: {},
+              tags: [],
+              creator: username(ADMIN_USER),
+              modifier: username(ADMIN_USER),
+              created: FROZEN_TIMESTAMP,
+              modified: FROZEN_TIMESTAMP,
+          },
+      });
+  });
 });

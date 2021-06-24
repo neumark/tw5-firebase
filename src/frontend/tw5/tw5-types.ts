@@ -11,18 +11,16 @@ export type TW5TiddlerFields = { title: string } & Partial<Omit<Tiddler, 'fields
 
 export interface TW5Tiddler {
     fields: TW5TiddlerFields;
-    /* tiddler methods
-  getFieldDay: ƒ (field)
-  getFieldList: ƒ (field)
-  getFieldString: ƒ (field)
-  getFieldStringBlock: ƒ (options)
-  getFieldStrings: ƒ (options)
-  hasField: ƒ (field)
-  hasTag: ƒ (tag)
-  isDraft: ƒ ()
-  isEqual: ƒ (tiddler,excludeFields)
-  isPlugin: ƒ ()
-  */
+    getFieldDay: () => string;
+    getFieldList: (fieldName: string) => any[];
+    getFieldString: (fieldName: string) => string;
+    getFieldStringBlock: () => string;
+    getFieldStrings: (fieldNames: string[]) => string[];
+    hasField: (fieldName: string) => boolean;
+    hasTag: (tag: string) => boolean;
+    isDraft: () => boolean;
+    isEqual: (tiddler: TW5Tiddler, excludeFields?: Record<string, boolean>) => boolean;
+    isPlugin: () => boolean;
 }
 
 export interface VariableInfo {
@@ -32,32 +30,44 @@ export interface VariableInfo {
     isCacheable: boolean;
 }
 
-export type MessageType =
-    | 'tm-add-field'
-    | 'tm-add-tag'
-    | 'tm-auto-save-wiki'
-    | 'tm-cancel-tiddler'
-    | 'tm-close-all-tiddlers'
-    | 'tm-close-other-tiddlers'
-    | 'tm-close-tiddler'
-    | 'tm-delete-tiddler'
-    | 'tm-edit-bitmap-operation'
-    | 'tm-edit-text-operation'
-    | 'tm-edit-tiddler'
-    | 'tm-fold-all-tiddlers'
-    | 'tm-fold-other-tiddlers'
-    | 'tm-fold-tiddler'
-    | 'tm-import-tiddlers'
-    | 'tm-modal'
-    | 'tm-navigate'
-    | 'tm-new-tiddler'
-    | 'tm-perform-import'
-    | 'tm-remove-field'
-    | 'tm-remove-tag'
-    | 'tm-rename-tiddler'
-    | 'tm-save-tiddler'
-    | 'tm-scroll'
-    | 'tm-unfold-all-tiddlers';
+// found using grep -R 'addEventListener("tm-' node_modules/tiddlywiki | cut -d '(' -f 2 | cut -d , -f 1 | sort | uniq -c
+export type AddEventListenerArgs =
+    | ['tm-auto-save-wiki']
+    | ['tm-browser-refresh']
+    | ['tm-clear-browser-storage']
+    | ['tm-clear-password']
+    | ['tm-close-tiddler']
+    | ['tm-consent-accept']
+    | ['tm-consent-clear']
+    | ['tm-consent-decline']
+    | ['tm-copy-syncer-logs-to-clipboard']
+    | ['tm-copy-to-clipboard']
+    | ['tm-download-file', (event: Event) => string | undefined]
+    | ['tm-focus-selector']
+    | ['tm-full-screen']
+    | ['tm-home']
+    | ['tm-load-plugin-from-library']
+    | ['tm-load-plugin-library']
+    | ['tm-login']
+    | ['tm-logout']
+    | ['tm-modal']
+    | ['tm-notify']
+    | ['tm-open-external-window']
+    | ['tm-open-window']
+    | ['tm-permalink']
+    | ['tm-permaview']
+    | ['tm-print']
+    | ['tm-save-wiki']
+    | ['tm-scroll']
+    | ['tm-server-refresh']
+    | ['tm-set-password']
+    | ['tm-show-switcher']
+    | ['tm-slice-tiddler']
+    | ['tm-unload-plugin-library']
+    | ['tm-zip-add-text-file']
+    | ['tm-zip-create']
+    | ['tm-zip-download']
+    | ['tm-zip-render-file'];
 
 // any module with module-type: parser can extend this type, so it will never be complete.
 // from: tiddlywiki/core/modules/parsers/wikiparser/wikiparser.js
@@ -80,10 +90,17 @@ export type ParseTree =
     // from: tiddlywiki/core/modules/parsers/csvparser.js
     | { type: 'scrollable'; children?: ParseTree[] };
 
-export interface EventListeners {
-    messageType: MessageType;
-    handler: string;
-}
+// based on: https://instil.co/blog/crazy-powerful-typescript-tuple-types/
+type ConvertEventListener<T> = T extends AddEventListenerArgs
+    ? {
+          type: T[0];
+          handler: T[1];
+      }
+    : never;
+
+type ConvertEventListeners<T extends [...any[]]> = T extends [infer Head, ...infer Tail]
+    ? [ConvertEventListener<Head>, ...ConvertEventListeners<Tail>]
+    : [];
 
 export type Event = any; // TODO, what's an event in Widget context?
 
@@ -97,8 +114,8 @@ export interface Widget {
     children: Widget[];
     domNodes: HTMLElement[];
 
-    addEventListener(messageType: MessageType, handler: string): void;
-    addEventListeners(listeners: EventListeners[]): void;
+    addEventListener(...args: AddEventListenerArgs): void;
+    addEventListeners<T extends [...any[]]>(...listeners: ConvertEventListeners<T>): void;
     allowActionPropagation(): boolean;
     assignAttributes(domNode: HTMLElement, options: any): void;
     computeAttributes(): { [key: string]: boolean };
@@ -199,10 +216,18 @@ export interface TW5ImportFileInfo {
     callback: CallbackFn;
 }
 
-export type TW5AddHookArguments =
+// found using grep -R 'addHook("th-' node_modules/tiddlywiki |  cut -d '(' -f 2 | cut -d , -f 1 | sort | uniq -c
+export type AddHookArguments =
     | ['th-renaming-tiddler', /*newTiddler*/ string, /*oldTiddler*/ string]
-    // TODO: lots of hook typings are missing! Run a grep -R 'invokeHook("th' . to see which ones.
-    | ['th-importing-file', (info: TW5ImportFileInfo) => boolean];
+    | ['th-importing-file', (info: TW5ImportFileInfo) => boolean]
+    | ['th-deleting-tiddler']
+    | ['th-importing-tiddler']
+    | ['th-opening-default-tiddlers-list']
+    | ['th-page-refreshed']
+    | ['th-page-refreshing']
+    | ['th-relinking-tiddler']
+    | ['th-rendering-element']
+    | ['th-saving-tiddler'];
 
 export interface DomMakerOptions {
     document: Document;
@@ -234,7 +259,7 @@ export interface TW {
     preloadTiddlerArray: (tiddlerFields: TW5TiddlerFields[]) => void;
     language?: Translator;
     hooks: {
-        addHook: (...args: TW5AddHookArguments) => void;
+        addHook: (...args: AddHookArguments) => void;
     };
 }
 

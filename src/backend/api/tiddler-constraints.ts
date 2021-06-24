@@ -28,13 +28,13 @@ const isPolicyTiddler = (title: string, tiddlerData: PartialTiddlerData) =>
 const tiddlerConstraints: { [key: string]: TiddlerDataConstraint } = {
     isContentTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
         isPolicyTiddler(title, tiddlerData) ||
-        (tiddlerData.type !== undefined && CONTENT_TIDDLER_TYPES.has(tiddlerData.type) && !isPlugin(tiddlerData)),
+        ((tiddlerData.type === undefined || CONTENT_TIDDLER_TYPES.has(tiddlerData.type)) && !isPlugin(tiddlerData)),
 
     isPersonalTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
         PERSONAL_TIDDLERS.has(title) || isDraftTiddler(tiddlerData) || hasTag(tiddlerData, PERSONAL_TAG),
 
     isSystemTiddler: (title: string, tiddlerData: PartialTiddlerData) =>
-        title.startsWith(SYSTEM_TITLE_PREFIX) || !tiddlerConstraints.isContentTiddler(title, tiddlerData),
+      tiddlerData.type !== undefined && title.startsWith(SYSTEM_TITLE_PREFIX)
 };
 
 const negateConstraint = (fn: TiddlerDataConstraint) => (title: string, tiddlerData: PartialTiddlerData) =>

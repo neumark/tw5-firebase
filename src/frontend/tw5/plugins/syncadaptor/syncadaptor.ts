@@ -4,7 +4,7 @@ import { SingleWikiNamespacedTiddler } from '../../../../shared/model/store';
 import { PartialTiddlerData } from '../../../../shared/model/tiddler';
 import { User, username } from '../../../../shared/model/user';
 import { Config } from '../../../../shared/model/config';
-import { CallbackFn, SyncAdaptor, SyncAdaptorTiddlerInfo, TW5Tiddler, TW5TiddlerFields, Wiki } from '../../tw5-types';
+import { CallbackFn, SyncAdaptor, SyncAdaptorTiddlerInfo, TW5Tiddler, Wiki } from '../../tw5-types';
 import { TW5Transport } from '../tw5-transport';
 
 const CONFIG_TIDDLER = '$:/config/WikiConfig';
@@ -80,14 +80,12 @@ class TW5FirebaseSyncAdaptor implements SyncAdaptor {
             const originalBag = this.tiddlerInfo[title]?.bag;
             const expectedRevision = this.tiddlerRevision[title];
             const tiddlerData = toTiddlerData(tiddler);
-            const update = expectedRevision ? { update: tiddlerData, expectedRevision } : { create: tiddlerData };
-            // TODO1: support writes to bag directly in addition to through recipe
-            const writeResult = await this.store.writeToRecipe(this.config.recipe, title, update);
-            if (writeResult.bag !== originalBag) {
-                // log only for now
-                // TODO2: if new bag is not the same as original bag, delete tiddler in original bag
-                console.log(`Tiddler "${title}" moved from bag ${originalBag} to ${writeResult.bag}`);
-            }
+            // TODO: support writes to either recipe or bag depending on config
+            // TODO: if write fails due to constraints, then tiddler should be deleted from bag
+            //       and written to recipe again (which will presumably place it in a different bag).
+            const writeResult = await (originalBag ?
+              this.store.updateInBag(originalBag, title, tiddlerData, expectedRevision) :
+              this.store.createInRecipe(this.config.recipe, title, tiddlerData));
             // updated saved revision
             const newTiddlerInfo = { bag: writeResult.bag };
             this.tiddlerInfo[title] = newTiddlerInfo;
