@@ -125,7 +125,12 @@ export class APIEndpointFactory {
         if (wiki && bag && title && expectedRevision) {
             const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
             this.logger.info(`about to delete ${title}`)
-            return await store.deleteFromBag(bag, title, expectedRevision);
+            try {
+              const result = await store.deleteFromBag(bag, title, expectedRevision);
+              return result;
+            } catch (e) {
+              this.logger.error(`error deleting ${title}`, e.stack);
+            }
         }
         throw new TW5FirebaseError({
             code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,

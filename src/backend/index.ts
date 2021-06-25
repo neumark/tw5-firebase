@@ -12,4 +12,6 @@ const apiEndpointFactory = container.get<APIEndpointFactory>(Component.APIEndpoi
 
 export const wiki = functions
     .region(container.get<Config>(Component.config).deploy.apiRegion)
-    .https.onRequest(apiEndpointFactory.createAPI());
+    .runWith({
+      timeoutSeconds: 540
+    }).https.onRequest(apiEndpointFactory.createAPI());

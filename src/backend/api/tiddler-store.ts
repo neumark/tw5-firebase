@@ -181,6 +181,7 @@ class TiddlerStoreImpl implements TiddlerStore {
     }
 
     deleteFromBag(bag: string, title: string, expectedRevision: string): Promise<boolean> {
+      // break this up into two transactions
         return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
             const [removePermission] = await this.policyChecker.verifyRemoveAccess(persistence, this.user, this.wiki, [
                 bag,
@@ -284,7 +285,7 @@ export class TiddlerStoreFactory {
         @inject(Component.RecipeResolver) recipeResolver: RecipeResolver,
         @inject(Component.getTimestamp) getTimestamp: typeof _getTimestamp,
         @inject(Component.TiddlerFactory) tiddlerFactory: TiddlerFactory,
-        @inject(Component.Logger) logger: Logger,
+        @inject(Component.Logger) logger: Logger
     ) {
         this.transactionRunner = transactionRunner;
         this.policyChecker = policyChecker;

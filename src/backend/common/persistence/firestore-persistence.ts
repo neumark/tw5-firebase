@@ -7,6 +7,7 @@ import { getTimestamp as _getTimestamp } from '../../../shared/util/time';
 import { Component } from '../ioc/components';
 import { MaybePromise, TiddlerPersistence, TransactionRunner } from './interfaces';
 import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../../shared/model/errors';
+import { Logger } from '../../../shared/util/logger';
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;
@@ -42,10 +43,12 @@ const dateToFirestoreTimestamp = (date: Date) => admin.firestore.Timestamp.fromD
 export class FirestorePersistence implements TiddlerPersistence {
     private tx: Transaction;
     private db: Database;
+    private logger: Logger;
 
-    constructor(tx: Transaction, db: Database) {
+    constructor(tx: Transaction, db: Database, logger: Logger) {
         this.tx = tx;
         this.db = db;
+        this.logger = logger;
     }
 
     toStandardTiddler(docId: string, serializedTiddler: FirestoreSerializedTiddler): Tiddler {
@@ -176,13 +179,22 @@ export class FirestorePersistence implements TiddlerPersistence {
         title: string,
         expectedRevision?: string,
     ): Promise<{ existed: boolean }> {
-        const doc = this.revisionCheck(namespace, title, expectedRevision);
+        const doc = await this.revisionCheck(namespace, title, expectedRevision);
         if (!doc) {
             return { existed: false };
         }
-        this.tx.delete(this.db.doc(makeKey(namespace, title)));
+        this.logger.info(`firestore-persistence: about to delete ${title}`);
+        try {
+          this.tx.delete(this.db.doc(makeKey(namespace, title)));
+          this.logger.info(`tx contains delete call for ${title}`);
+        } catch (e) {
+          this.logger.error(`error deleting tiddler ${title}`, e.stack);
+          throw e;
+        }
+
         return { existed: true };
     }
+
     async createTiddler(namespace: TiddlerNamespace, tiddler: Tiddler, revision: Revision): Promise<void> {
         if ((await this.readTiddlers([{ namespace, title: tiddler.title }])).length > 0) {
             throw new TW5FirebaseError({
@@ -200,14 +212,18 @@ export class FirestorePersistence implements TiddlerPersistence {
 @injectable()
 export class FirestoreTransactionRunner implements TransactionRunner {
     private db: Database;
+    private logger: Logger;
 
-    constructor(@inject(Component.FireStoreDB) db: Database) {
+    constructor(
+      @inject(Component.FireStoreDB) db: Database,
+      @inject(Component.Logger) logger: Logger) {
         this.db = db;
+        this.logger = logger;
     }
 
     async runTransaction<R>(updateFunction: (persistence: TiddlerPersistence) => Promise<R>): Promise<R> {
         return await this.db.runTransaction(async (tx: Transaction) => {
-            return updateFunction(new FirestorePersistence(tx, this.db));
+            return updateFunction(new FirestorePersistence(tx, this.db, this.logger));
         });
     }
 }
