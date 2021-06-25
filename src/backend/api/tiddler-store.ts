@@ -4,6 +4,7 @@ import { getRevision, Revision } from '../../shared/model/revision';
 import { SingleWikiNamespacedTiddler, TiddlerStore } from '../../shared/model/store';
 import { PartialTiddlerData, Tiddler, TiddlerData, TiddlerNamespace } from '../../shared/model/tiddler';
 import { User } from '../../shared/model/user';
+import { Logger } from '../../shared/util/logger';
 import { getTimestamp as _getTimestamp } from '../../shared/util/time';
 import { MaybeArray } from '../../shared/util/useful-types';
 import { Component } from '../common/ioc/components';
@@ -51,6 +52,7 @@ class TiddlerStoreImpl implements TiddlerStore {
     private recipeResolver: RecipeResolver;
     private getTimestamp: typeof _getTimestamp;
     private tiddlerFactory: TiddlerFactory;
+    private logger: Logger;
 
     private async getWriteableBag(
         persistence: TiddlerPersistence,
@@ -166,6 +168,7 @@ class TiddlerStoreImpl implements TiddlerStore {
         recipeResolver: RecipeResolver,
         getTimestamp: typeof _getTimestamp,
         tiddlerFactory: TiddlerFactory,
+        logger: Logger
     ) {
         this.user = user;
         this.wiki = wiki;
@@ -174,6 +177,7 @@ class TiddlerStoreImpl implements TiddlerStore {
         this.recipeResolver = recipeResolver;
         this.getTimestamp = getTimestamp;
         this.tiddlerFactory = tiddlerFactory;
+        this.logger = logger;
     }
 
     deleteFromBag(bag: string, title: string, expectedRevision: string): Promise<boolean> {
@@ -190,7 +194,14 @@ class TiddlerStoreImpl implements TiddlerStore {
                     },
                 });
             }
-            return (await persistence.removeTiddler({ wiki: this.wiki, bag }, title, expectedRevision)).existed;
+            this.logger.info(`tiddler-store.ts:deleteFromBag(): about to delete ${title}`)
+            try {
+              const result = await persistence.removeTiddler({ wiki: this.wiki, bag }, title, expectedRevision);
+              return result.existed;
+            } catch (e) {
+              this.logger.error(e.stack);
+              throw e;
+            }
         });
     }
 
@@ -265,6 +276,7 @@ export class TiddlerStoreFactory {
     private recipeResolver: RecipeResolver;
     private getTimestamp: typeof _getTimestamp;
     private tiddlerFactory: TiddlerFactory;
+    private logger: Logger;
 
     constructor(
         @inject(Component.TransactionRunner) transactionRunner: TransactionRunner,
@@ -272,12 +284,14 @@ export class TiddlerStoreFactory {
         @inject(Component.RecipeResolver) recipeResolver: RecipeResolver,
         @inject(Component.getTimestamp) getTimestamp: typeof _getTimestamp,
         @inject(Component.TiddlerFactory) tiddlerFactory: TiddlerFactory,
+        @inject(Component.Logger) logger: Logger,
     ) {
         this.transactionRunner = transactionRunner;
         this.policyChecker = policyChecker;
         this.recipeResolver = recipeResolver;
         this.getTimestamp = getTimestamp;
         this.tiddlerFactory = tiddlerFactory;
+        this.logger = logger;
     }
 
     createTiddlerStore(user: User, wiki: string): TiddlerStore {
@@ -289,6 +303,7 @@ export class TiddlerStoreFactory {
             this.recipeResolver,
             this.getTimestamp,
             this.tiddlerFactory,
+            this.logger
         );
     }
 }

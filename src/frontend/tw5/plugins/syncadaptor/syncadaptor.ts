@@ -10,8 +10,12 @@ import { TW5Transport } from '../tw5-transport';
 const CONFIG_TIDDLER = '$:/config/WikiConfig';
 const USER_TIDDLER = '$:/temp/user';
 
-const asyncToCallback = (fn: () => Promise<any[]>, callback: CallbackFn) =>
-    fn().then((data) => callback(null, ...data), callback);
+const asyncToCallback = (fn: () => Promise<any[]|void>, callback: CallbackFn) =>
+    fn().then(
+      // success
+      (data) => callback(null, ...(Array.isArray(data) ? data : [])),
+      // error (callback's first argument is the error object by convention)
+      callback);
 
 const toTiddlerData = (tiddler: TW5Tiddler): PartialTiddlerData => {
     // we don't need to send metadata fields:
@@ -107,11 +111,12 @@ class TW5FirebaseSyncAdaptor implements SyncAdaptor {
             const bag = options?.tiddlerInfo?.adaptorInfo?.bag;
             if (bag) {
                 // If we don't have a bag it means that the tiddler hasn't been seen by the server, so we don't need to delete it
+                console.log(`debug delete: ${bag} ${title} rev ${this.tiddlerRevision[title]}`);
                 await this.store.deleteFromBag(bag, title, this.tiddlerRevision[title]);
             }
             delete this.tiddlerInfo[title];
             delete this.tiddlerRevision[title];
-            return [];
+            return;
         }, callback);
     }
 }

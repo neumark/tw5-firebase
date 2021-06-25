@@ -124,7 +124,8 @@ export class APIEndpointFactory {
         const expectedRevision = decodeURIComponent(req.params['revision']);
         if (wiki && bag && title && expectedRevision) {
             const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
-            return store.deleteFromBag(bag, title, expectedRevision);
+            this.logger.info(`about to delete ${title}`)
+            return await store.deleteFromBag(bag, title, expectedRevision);
         }
         throw new TW5FirebaseError({
             code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
