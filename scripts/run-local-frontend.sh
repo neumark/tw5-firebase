@@ -12,5 +12,5 @@ else
 fi
 
 open "http://localhost:8080/$PARAMS"
-yarn run http-server -p 8080 -a 127.0.0.1
+yarn run serve -s -n -d -p 8080 public
 popd
