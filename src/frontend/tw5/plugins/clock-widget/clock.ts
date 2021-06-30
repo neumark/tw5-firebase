@@ -31,7 +31,7 @@ class ClockWidget extends Widget implements Widget {
 
     tick() {
         console.log('Tick!');
-        if (!document.contains(this.domNode)) {
+        if (this.domNode instanceof Node && !document.contains(this.domNode)) {
             // Apparently the widget was removed from the DOM. Do some clean up.
             return this.stop();
         }
