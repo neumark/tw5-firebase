@@ -11,12 +11,12 @@ import { TiddlerFactory } from '../tiddler-factory';
 import { Component } from './components';
 
 export const baseComponents = new ContainerModule((bind: interfaces.Bind) => {
-    bind<TiddlerValidatorFactory>(Component.TiddlerValidatorFactory).to(TiddlerValidatorFactory);
-    bind<TiddlerFactory>(Component.TiddlerFactory).to(TiddlerFactory);
-    bind<PolicyChecker>(Component.PolicyChecker).to(PolicyChecker);
-    bind<Config>(Component.config).toConstantValue(config);
-    bind<AuthenticatorMiddleware>(Component.AuthenticatorMiddleware).to(AuthenticatorMiddleware);
-    bind<RecipeResolver>(Component.RecipeResolver).to(RecipeResolver);
-    bind<TiddlerStoreFactory>(Component.TiddlerStoreFactory).to(TiddlerStoreFactory);
-    bind<APIEndpointFactory>(Component.APIEndpointFactory).to(APIEndpointFactory);
+  bind<TiddlerValidatorFactory>(Component.TiddlerValidatorFactory).to(TiddlerValidatorFactory);
+  bind<TiddlerFactory>(Component.TiddlerFactory).to(TiddlerFactory);
+  bind<PolicyChecker>(Component.PolicyChecker).to(PolicyChecker);
+  bind<Config>(Component.config).toConstantValue(config);
+  bind<AuthenticatorMiddleware>(Component.AuthenticatorMiddleware).to(AuthenticatorMiddleware);
+  bind<RecipeResolver>(Component.RecipeResolver).to(RecipeResolver);
+  bind<TiddlerStoreFactory>(Component.TiddlerStoreFactory).to(TiddlerStoreFactory);
+  bind<APIEndpointFactory>(Component.APIEndpointFactory).to(APIEndpointFactory);
 });

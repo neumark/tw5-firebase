@@ -1,5 +1,6 @@
-const {getNodeConfig} = require('./webpack-common');
+const { getNodeConfig } = require('./webpack-common');
 module.exports = getNodeConfig({
-        input: 'src/cli/cli.ts',
-        outputDir: 'dist',
-        outputFilename: 'cli.js'});
+  input: 'src/cli/cli.ts',
+  outputDir: 'dist',
+  outputFilename: 'cli.js',
+});

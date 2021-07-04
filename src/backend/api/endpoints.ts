@@ -35,143 +35,143 @@ import { sendErr } from './http-errors';
 import { TiddlerStoreFactory } from './tiddler-store';
 
 const toHTTPNamespacedTiddler = (namespacedTiddler: SingleWikiNamespacedTiddler): HTTPNamespacedTiddler => ({
-    bag: namespacedTiddler.bag,
-    revision: namespacedTiddler.revision,
-    tiddler: {
-        ...namespacedTiddler.tiddler,
-        modified: namespacedTiddler.tiddler.modified.toISOString(),
-        created: namespacedTiddler.tiddler.created.toISOString(),
-    },
+  bag: namespacedTiddler.bag,
+  revision: namespacedTiddler.revision,
+  tiddler: {
+    ...namespacedTiddler.tiddler,
+    modified: namespacedTiddler.tiddler.modified.toISOString(),
+    created: namespacedTiddler.tiddler.created.toISOString(),
+  },
 });
 
 @injectable()
 export class APIEndpointFactory {
-    private authenticatorMiddleware: AuthenticatorMiddleware;
-    private logger: Logger;
-    private tiddlerDataValidator = getValidator(tiddlerDataSchema);
-    private tiddlerStoreFactory: TiddlerStoreFactory;
+  private authenticatorMiddleware: AuthenticatorMiddleware;
+  private logger: Logger;
+  private tiddlerDataValidator = getValidator(tiddlerDataSchema);
+  private tiddlerStoreFactory: TiddlerStoreFactory;
 
-    private assertWikiInPath(params: express.Request['params']): void {
-        if (!params['wiki']) {
-            throw new TW5FirebaseError({
-                code: TW5FirebaseErrorCode.INVALID_WIKI,
-            });
-        }
+  private assertWikiInPath(params: express.Request['params']): void {
+    if (!params['wiki']) {
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.INVALID_WIKI,
+      });
     }
+  }
 
-    private async read(req: express.Request) {
-        this.assertWikiInPath(req.params);
-        const wiki = decodeURIComponent(req.params['wiki']);
-        const bag = maybeApply(decodeURIComponent, req.params['bag']);
-        const recipe = maybeApply(decodeURIComponent, req.params['recipe']);
-        const title = maybeApply(decodeURIComponent, req.params['title']);
-        const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
-        if (bag) {
-            return mapOrApply(toHTTPNamespacedTiddler, await store.readFromBag(bag, title));
-        }
-        if (recipe) {
-            return mapOrApply(toHTTPNamespacedTiddler, await store.readFromRecipe(recipe, title));
-        }
+  private async read(req: express.Request) {
+    this.assertWikiInPath(req.params);
+    const wiki = decodeURIComponent(req.params['wiki']);
+    const bag = maybeApply(decodeURIComponent, req.params['bag']);
+    const recipe = maybeApply(decodeURIComponent, req.params['recipe']);
+    const title = maybeApply(decodeURIComponent, req.params['title']);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+    if (bag) {
+      return mapOrApply(toHTTPNamespacedTiddler, await store.readFromBag(bag, title));
+    }
+    if (recipe) {
+      return mapOrApply(toHTTPNamespacedTiddler, await store.readFromRecipe(recipe, title));
+    }
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
+  }
+
+  private async write(req: express.Request) {
+    this.assertWikiInPath(req.params);
+    const wiki = decodeURIComponent(req.params['wiki']);
+    const bag = maybeApply(decodeURIComponent, req.params['bag']);
+    const recipe = maybeApply(decodeURIComponent, req.params['recipe']);
+    const title = decodeURIComponent(req.params['title']);
+    const expectedRevision = maybeApply(decodeURIComponent, req.params['revision']);
+    const body = req.body;
+    const tiddlerValidation = this.tiddlerDataValidator(body);
+    if (!tiddlerValidation.valid) {
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.INVALID_REQUEST_BODY,
+        data: { body, errors: tiddlerValidation.errors },
+      });
+    }
+    const tiddlerData = body as PartialTiddlerData;
+    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+    if (bag) {
+      if (expectedRevision) {
+        return toHTTPNamespacedTiddler(await store.updateInBag(bag, title, tiddlerData, expectedRevision));
+      }
+      return toHTTPNamespacedTiddler(await store.createInBag(bag, title, tiddlerData));
+    }
+    if (recipe) {
+      if (expectedRevision) {
         throw new TW5FirebaseError({
-            code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-            data: { params: req.params },
+          code: TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE,
+          data: { recipe },
         });
+      }
+      return toHTTPNamespacedTiddler(await store.createInRecipe(recipe, title, tiddlerData));
     }
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
+  }
 
-    private async write(req: express.Request) {
-        this.assertWikiInPath(req.params);
-        const wiki = decodeURIComponent(req.params['wiki']);
-        const bag = maybeApply(decodeURIComponent, req.params['bag']);
-        const recipe = maybeApply(decodeURIComponent, req.params['recipe']);
-        const title = decodeURIComponent(req.params['title']);
-        const expectedRevision = maybeApply(decodeURIComponent, req.params['revision']);
-        const body = req.body;
-        const tiddlerValidation = this.tiddlerDataValidator(body);
-        if (!tiddlerValidation.valid) {
-            throw new TW5FirebaseError({
-                code: TW5FirebaseErrorCode.INVALID_REQUEST_BODY,
-                data: { body, errors: tiddlerValidation.errors },
-            });
-        }
-        const tiddlerData = body as PartialTiddlerData;
-        const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
-        if (bag) {
-            if (expectedRevision) {
-                return toHTTPNamespacedTiddler(await store.updateInBag(bag, title, tiddlerData, expectedRevision));
-            }
-            return toHTTPNamespacedTiddler(await store.createInBag(bag, title, tiddlerData));
-        }
-        if (recipe) {
-            if (expectedRevision) {
-                throw new TW5FirebaseError({
-                    code: TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE,
-                    data: { recipe },
-                });
-            }
-            return toHTTPNamespacedTiddler(await store.createInRecipe(recipe, title, tiddlerData));
-        }
-        throw new TW5FirebaseError({
-            code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-            data: { params: req.params },
-        });
+  private async remove(req: express.Request) {
+    this.assertWikiInPath(req.params);
+    const wiki = decodeURIComponent(req.params['wiki']);
+    const bag = decodeURIComponent(req.params['bag']);
+    const title = decodeURIComponent(req.params['title']);
+    const expectedRevision = decodeURIComponent(req.params['revision']);
+    if (wiki && bag && title && expectedRevision) {
+      const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+      this.logger.info(`about to delete ${title}`);
+      try {
+        const result = await store.deleteFromBag(bag, title, expectedRevision);
+        return result;
+      } catch (e) {
+        this.logger.error(`error deleting ${title}`, e.stack);
+      }
     }
+    throw new TW5FirebaseError({
+      code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
+      data: { params: req.params },
+    });
+  }
 
-    private async remove(req: express.Request) {
-        this.assertWikiInPath(req.params);
-        const wiki = decodeURIComponent(req.params['wiki']);
-        const bag = decodeURIComponent(req.params['bag']);
-        const title = decodeURIComponent(req.params['title']);
-        const expectedRevision = decodeURIComponent(req.params['revision']);
-        if (wiki && bag && title && expectedRevision) {
-            const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
-            this.logger.info(`about to delete ${title}`)
-            try {
-              const result = await store.deleteFromBag(bag, title, expectedRevision);
-              return result;
-            } catch (e) {
-              this.logger.error(`error deleting ${title}`, e.stack);
-            }
-        }
-        throw new TW5FirebaseError({
-            code: TW5FirebaseErrorCode.BAD_REQUEST_PARAMS,
-            data: { params: req.params },
-        });
-    }
+  private bindAndSerialize(fn: (req: express.Request) => Promise<any>) {
+    const boundFn = fn.bind(this);
+    return (req: express.Request, res: express.Response, next: any) => {
+      return Promise.resolve(boundFn(req))
+        .then((body) => res.json(body))
+        .catch((err) => sendErr(err, this.logger, res));
+    };
+  }
 
-    private bindAndSerialize(fn: (req: express.Request) => Promise<any>) {
-        const boundFn = fn.bind(this);
-        return (req: express.Request, res: express.Response, next: any) => {
-            return Promise.resolve(boundFn(req))
-                .then((body) => res.json(body))
-                .catch((err) => sendErr(err, this.logger, res));
-        };
-    }
+  constructor(
+    @inject(Component.AuthenticatorMiddleware)
+    authenticatorMiddleware: AuthenticatorMiddleware,
+    @inject(Component.TiddlerStoreFactory)
+    tiddlerStoreFactory: TiddlerStoreFactory,
+    @inject(Component.Logger) logger: Logger,
+  ) {
+    this.authenticatorMiddleware = authenticatorMiddleware;
+    this.tiddlerStoreFactory = tiddlerStoreFactory;
+    this.logger = logger;
+  }
 
-    constructor(
-        @inject(Component.AuthenticatorMiddleware)
-        authenticatorMiddleware: AuthenticatorMiddleware,
-        @inject(Component.TiddlerStoreFactory)
-        tiddlerStoreFactory: TiddlerStoreFactory,
-        @inject(Component.Logger) logger: Logger,
-    ) {
-        this.authenticatorMiddleware = authenticatorMiddleware;
-        this.tiddlerStoreFactory = tiddlerStoreFactory;
-        this.logger = logger;
-    }
-
-    createAPI() {
-        const api = express.default();
-        api.use(cors({ origin: true }));
-        api.use(this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware));
-        const read = this.bindAndSerialize(this.read);
-        const write = this.bindAndSerialize(this.write);
-        api.get('/:wiki/recipes/:recipe/tiddlers/:title?', read);
-        api.get('/:wiki/bags/:bag/tiddlers/:title?', read);
-        api.put('/:wiki/recipes/:recipe/tiddlers/:title', write); // create
-        api.put('/:wiki/recipes/:recipe/tiddlers/:title/revisions/:revision', write); // update
-        api.put('/:wiki/bags/:bag/tiddlers/:title', write); // create
-        api.put('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', write); // update
-        api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', this.bindAndSerialize(this.remove));
-        return api;
-    }
+  createAPI() {
+    const api = express.default();
+    api.use(cors({ origin: true }));
+    api.use(this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware));
+    const read = this.bindAndSerialize(this.read);
+    const write = this.bindAndSerialize(this.write);
+    api.get('/:wiki/recipes/:recipe/tiddlers/:title?', read);
+    api.get('/:wiki/bags/:bag/tiddlers/:title?', read);
+    api.put('/:wiki/recipes/:recipe/tiddlers/:title', write); // create
+    api.put('/:wiki/recipes/:recipe/tiddlers/:title/revisions/:revision', write); // update
+    api.put('/:wiki/bags/:bag/tiddlers/:title', write); // create
+    api.put('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', write); // update
+    api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', this.bindAndSerialize(this.remove));
+    return api;
+  }
 }

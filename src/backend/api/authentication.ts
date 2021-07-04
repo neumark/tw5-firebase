@@ -27,52 +27,52 @@ import {} from './express-types';
  */
 
 const ANONYMOUS_USER: User = {
-    userId: '',
-    email: undefined,
-    email_verified: false,
-    name: 'anonymous',
-    picture: undefined,
-    roles: {},
+  userId: '',
+  email: undefined,
+  email_verified: false,
+  name: 'anonymous',
+  picture: undefined,
+  roles: {},
 };
 
 export const getWikiRoles = (obj?: { [key: string]: any }): WikiRoles =>
-    Object.entries((obj as WikiRoles) || {}).reduce((acc: WikiRoles, [maybeWiki, role]: [string, ROLE]) => {
-        // remove '_' prefix from name of wiki added to avoid clash with reserved claims
-        if (maybeWiki.startsWith(JWT_ROLE_CLAIM_PREFIX)) {
-            acc[maybeWiki.substr(JWT_ROLE_CLAIM_PREFIX.length)] = role;
-        }
-        return acc;
-    }, {} as WikiRoles);
+  Object.entries((obj as WikiRoles) || {}).reduce((acc: WikiRoles, [maybeWiki, role]: [string, ROLE]) => {
+    // remove '_' prefix from name of wiki added to avoid clash with reserved claims
+    if (maybeWiki.startsWith(JWT_ROLE_CLAIM_PREFIX)) {
+      acc[maybeWiki.substr(JWT_ROLE_CLAIM_PREFIX.length)] = role;
+    }
+    return acc;
+  }, {} as WikiRoles);
 
 @injectable()
 export class AuthenticatorMiddleware {
-    private auth: admin.auth.Auth;
+  private auth: admin.auth.Auth;
 
-    private async getUserFromToken(req: express.Request): Promise<User> {
-        // No bearer token means we have an anonymous visitor
-        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-            return ANONYMOUS_USER;
-        }
-
-        // Read the ID Token from the Authorization header.
-        const idToken = req.headers.authorization.split('Bearer ')[1];
-        const decodedToken = await this.auth.verifyIdToken(idToken);
-        return {
-            userId: decodedToken.uid,
-            email: decodedToken.email,
-            email_verified: decodedToken.email_verified,
-            name: decodedToken['name'],
-            picture: decodedToken.picture,
-            roles: getWikiRoles(decodedToken),
-        };
+  private async getUserFromToken(req: express.Request): Promise<User> {
+    // No bearer token means we have an anonymous visitor
+    if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+      return ANONYMOUS_USER;
     }
 
-    constructor(@inject(Component.FirebaseAuth) auth: admin.auth.Auth) {
-        this.auth = auth;
-    }
+    // Read the ID Token from the Authorization header.
+    const idToken = req.headers.authorization.split('Bearer ')[1];
+    const decodedToken = await this.auth.verifyIdToken(idToken);
+    return {
+      userId: decodedToken.uid,
+      email: decodedToken.email,
+      email_verified: decodedToken.email_verified,
+      name: decodedToken['name'],
+      picture: decodedToken.picture,
+      roles: getWikiRoles(decodedToken),
+    };
+  }
 
-    async authenticate(req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> {
-        req.user = await this.getUserFromToken(req);
-        next();
-    }
+  constructor(@inject(Component.FirebaseAuth) auth: admin.auth.Auth) {
+    this.auth = auth;
+  }
+
+  async authenticate(req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> {
+    req.user = await this.getUserFromToken(req);
+    next();
+  }
 }

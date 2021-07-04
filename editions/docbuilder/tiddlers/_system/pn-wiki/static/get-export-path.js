@@ -5,21 +5,23 @@ module-type: macro
 
 \*/
 
-(function(){
-"use strict";
+(function () {
+  'use strict';
 
-exports.name = "tv-get-export-path";
+  exports.name = 'tv-get-export-path';
 
-exports.params = [
-    {title: ""}
-];
+  exports.params = [{ title: '' }];
 
-/*
+  /*
 Run the macro
 */
-exports.run = function(title) {                   
+  exports.run = function (title) {
     // convert to space first, then trim, then kebabize, then lowercase
-    var sanitized_title = title.replace(/([^a-z0-9_-]+)/gi, ' ').trim().replace(/ /gi, '-').toLocaleLowerCase();    
-    return sanitized_title;    
-}
+    var sanitized_title = title
+      .replace(/([^a-z0-9_-]+)/gi, ' ')
+      .trim()
+      .replace(/ /gi, '-')
+      .toLocaleLowerCase();
+    return sanitized_title;
+  };
 })();
