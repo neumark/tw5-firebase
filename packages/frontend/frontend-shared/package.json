@@ -1,0 +1,14 @@
+{
+  "name": "@tw5-firebase/frontend-shared",
+  "description": "Code shared between frontend packages",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "MIT",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "dependencies": {
+    "@tw5-firebase/shared": "^0.0.0"
+  }
+}

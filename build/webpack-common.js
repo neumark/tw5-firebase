@@ -177,10 +177,25 @@ const getTW5PluginConfig = (baseOptions) => {
   return pluginConfig;
 };
 
+const getDefaultWikiLocation = () => {
+    const buildConfig = JSON.parse(process.env.BUILD_CONFIG ?? '{}');
+    return buildConfig.defaultWikiLocation ?? {};
+}
+
 const getTW5PrebootConfig = (pluginOptions) => {
   const prebootConfig = getTW5PluginConfig(pluginOptions);
   prebootConfig.output.library.type = 'window';
   return prebootConfig;
 };
 
-module.exports = { getNodeConfig, getTW5PluginConfig, getTW5PrebootConfig };
+const getOuterConfig = (pluginOptions) => {
+  const config = getTW5PluginConfig(pluginOptions);
+  config.plugins.push(
+    new webpack.DefinePlugin(
+      '__DEFAULT_WIKI_LOCATION__',
+      JSON.stringify(getDefaultWikiLocation())));
+  config.output.library.type = 'window';
+  return config;
+};
+
+module.exports = { getNodeConfig, getTW5PluginConfig, getTW5PrebootConfig, getOuterConfig };

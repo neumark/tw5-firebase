@@ -3,5 +3,6 @@
   "compilerOptions": {
     "lib": ["dom", "es2020"]
   },
-  "exclude": ["../src/backend/**/*"]
+  "exclude": ["./src/frontend/**/*", "./src/shared/**/*"],
+  "exclude": ["./src/backend/**/*", "./src/cli/**/*"]
 }

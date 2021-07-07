@@ -1,0 +1,11 @@
+{
+  "name": "@tw5-firebase/shared",
+  "description": "Isomorphic code shared between all packages",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  }
+}

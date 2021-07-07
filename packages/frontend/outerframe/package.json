@@ -1,0 +1,21 @@
+{
+  "name": "@tw5-firebase/outerframe",
+  "description": "In-browser trusted code running outside the sandbox",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "dependencies": {
+    "@tw5-firebase/frontend-shared": "^0.0.0",
+    "@tw5-firebase/shared": "^0.0.0",
+    "firebase": "^8.7.0",
+    "firebaseui": "^4.8.0",
+    "mini-iframe-rpc": "^1.6.1"
+  },
+  "devDependencies": {
+    "serve": "^12.0.0"
+  }
+}

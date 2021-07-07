@@ -9,13 +9,6 @@
     {
       "site": "pn-wiki",
       "public": "public",
-      "redirects": [
-        {
-          "source": "/static/:file*",
-          "destination": "https://raw.githubusercontent.com/neumark/tw5-firebase/master/static/:file",
-          "type": 301
-        }
-      ],
       "rewrites": [
         {
           "source": "**",
@@ -29,7 +22,6 @@
         "scripts/**",
         "editions/**",
         "doc/**",
-        "public/static/**",
         "**/node_modules/**",
         "etc/**"
       ]

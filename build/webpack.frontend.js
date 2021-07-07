@@ -1,7 +1,8 @@
-const { getTW5PluginConfig, getTW5PrebootConfig } = require('./webpack-common');
+const { getTW5PluginConfig, getTW5PrebootConfig, getOuterConfig } = require('./webpack-common');
 module.exports = (env, webpackArgs) => {
   const common = { mode: webpackArgs.mode };
   return [
+      /*
     getTW5PluginConfig({
       input: 'src/frontend/tw5/plugins/syncadaptor/syncadaptor.ts',
       outputDir: 'dist/plugins/tw5-firebase/syncadaptor',
@@ -25,6 +26,12 @@ module.exports = (env, webpackArgs) => {
       outputDir: 'dist/preboot',
       outputFilename: 'main.js',
       ...common,
-    }),
+    }),*/
+    getOuterConfig({
+      input: 'src/frontend/outerframe/outer-main.ts',
+      outputDir: 'dist/outer',
+      outputFilename: 'outer-main.js',
+      ...common,
+    })
   ];
 };

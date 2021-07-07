@@ -1,0 +1,14 @@
+{
+  "name": "@tw5-firebase/clock-widget",
+  "description": "Example widget",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "devDependencies": {
+    "@tw5-firebase/tw5-shared": "^0.0.0"
+  }
+}

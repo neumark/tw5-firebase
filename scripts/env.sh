@@ -1,40 +1,57 @@
 #!/usr/bin/env bash
 
+function read_json() {
+    FILE="$1"
+    if [ ! -f "$FILE" ]; then
+      echo "Error: $FILE must exist"
+      exit 1
+    fi
+    if (( $# < 2 ))
+    then
+        cat "$FILE"
+    else
+        shift
+        cat "$FILE" | jq -r $*
+    fi
+}
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-ENV="${ENV:-staging}"
+# default env is testwiki
+ENV="${ENV:-$(read_json "$DIR/../etc/config.json" '.defaultEnv' )}"
 
-FIREBASECONFIGPATH="$DIR/../firebase.$ENV.json"
-if [ ! -f "$FIREBASECONFIGPATH" ]; then
-  FIREBASECONFIGPATH="$DIR/../firebase_default.json"
+# firebase config must be in root of project, cannot be placed under etc/
+FIREBASESETTINGSPATH="$DIR/../firebase.$ENV.json"
+if [ ! -f "$FIREBASESETTINGSPATH" ]; then
+  FIREBASESETTINGSPATH="$DIR/../firebase_default.json"
 fi
 
-CONFIGPATH="$DIR/../etc/config.$ENV.json"
-KEYSPATH="$DIR/../etc/keys.$ENV.json"
+# the JSON file pointed to be the FIREBASE_CONFIG env var is read by firebase-admin
+# and it is set by the production cloud function runtime
+FIREBASE_CONFIG="$(read_json "$DIR/../etc/$ENV/firebase.json")"
+BACKEND_CONFIG="$(read_json "$DIR/../etc/$ENV/backend.json")"
+BUILD_CONFIG="$(read_json "$DIR/../etc/$ENV/build.json")"
 
-if [ ! -f "$CONFIGPATH" ] || [ ! -f "$KEYSPATH" ]; then
-  echo "Error: $CONFIGPATH and $KEYSPATH must exist"
-  exit 1
-fi
-
-# APIKEY is "Browser Key" at eg: https://console.developers.google.com/apis/credentials?pli=1&project=peterneumark-com&folder=&organizationId=
-APIKEY="$(cat "$CONFIGPATH" | jq -r ".firebase.apiKey")"
-PROJECT="$(cat "$CONFIGPATH" | jq -r ".firebase.projectId")"
-REFERRER="$(cat "$CONFIGPATH" | jq -r ".firebase.authDomain")"
-TOKEN="$(cat "$KEYSPATH" | jq -r .firebaseToken)"
-REFRESH_TOKEN="$(cat "$KEYSPATH" | jq -r .refreshToken)"
-SERVICE_ACCOUNT_KEY="$DIR/../etc/service-account-key.$ENV.json"
+APIKEY="$(echo "$FIREBASE_CONFIG" | jq -r ".apiKey")"
+GCP_PROJECT="$(echo "$FIREBASE_CONFIG" | jq -r ".projectId")"
+REFERRER="$(echo "$FIREBASE_CONFIG" | jq -r ".authDomain")"
+TOKEN="$(read_json "$DIR/../etc/$ENV/keys.json" '.firebaseToken')"
+SERVICE_ACCOUNT_KEY="$DIR/../etc/$ENV/service-account-key.json"
 
 FIREBASECLI="$DIR/../node_modules/.bin/firebase"
 TIDDLYWIKICLI="$DIR/../node_modules/.bin/tiddlywiki"
 
 [[ ${DEBUG} ]] && NODE_FLAGS="--inspect-brk" || NODE_FLAGS=""
 
+function run_node() {
+    node $NODE_FLAGS $@
+}
+
 function firebase_cli() {
     pushd "$DIR/../"
-    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" node $NODE_FLAGS "$FIREBASECLI" --config "$FIREBASECONFIGPATH" --project "$PROJECT" --token "$TOKEN" $@
+    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" run_node "$FIREBASECLI" --config "$FIREBASESETTINGSPATH" --project "$GCP_PROJECT" --token "$TOKEN" $@
     popd
 }
 
 function tiddlywiki_cli() {
-    TIDDLYWIKI_PLUGIN_PATH="$DIR/../dist/plugins" node $NODE_FLAGS "$TIDDLYWIKICLI" $@ --verbose 
+    TIDDLYWIKI_PLUGIN_PATH="$DIR/../dist/plugins" run_node "$TIDDLYWIKICLI" $@ --verbose 
 }

@@ -10,11 +10,24 @@
     "backup": "./scripts/backup2.sh",
     "deploy": "./scripts/build.sh && ./scripts/deploy.sh",
     "test": "./scripts/build-tests.sh && ./scripts/test.sh",
-    "lint": "eslint '{src,tests}/**/*.{js,ts,tsx}' --quiet --fix",
+    "lint": "eslint '{packages}/**/*.{js,ts,tsx}' --quiet --fix",
     "coverage": "nyc ./scripts/test.sh"
   },
   "directories": {
     "bin": "./scripts"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/shared",
+      "packages/backend/cli",
+      "packages/backend/restapi",
+      "packages/backend/backend-shared",
+      "packages/frontend/outerframe",
+      "packages/frontend/frontend-shared",
+      "packages/frontend/tw5-shared",
+      "packages/frontend/tw5-preboot",
+      "packages/frontend/tw5-plugins/**"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.13.10",
@@ -22,11 +35,8 @@
     "@babel/preset-env": "^7.13.12",
     "@babel/runtime-corejs3": "^7.13.10",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
-    "@types/cors": "^2.8.10",
-    "@types/express": "^4.17.11",
     "@types/jasmine": "^3.7.1",
     "@types/sinon": "^10.0.2",
-    "@types/yargs": "^16.0.1",
     "@typescript-eslint/eslint-plugin": "^4.27.0",
     "@typescript-eslint/parser": "^4.27.0",
     "ajv-cli": "^5.0.0",
@@ -38,33 +48,20 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-react": "^7.24.0",
-    "firebase": "^8.3.1",
     "firebase-tools": "^9.8.0",
-    "firebaseui": "^4.8.0",
     "jasmine": "^3.7.0",
-    "node-fetch": "^2.6.0",
     "nyc": "^15.1.0",
     "prettier": "^2.3.1",
-    "serve": "^12.0.0",
     "sinon": "^10.0.0",
+    "source-map-support": "^0.5.19",
     "style-loader": "^2.0.0",
     "tiddlywiki": "^5.1.23",
     "ts-json-schema-generator": "^0.88.0",
     "ts-loader": "^8.0.17",
+    "ts-node": "^10.0.0",
     "typescript": "^4.2.3",
     "webpack": "^5.24.3",
     "webpack-cli": "^4.5.0",
-    "webpack-node-externals": "^2.5.2",
-    "yargs": "^16.2.0"
-  },
-  "dependencies": {
-    "ajv": "^7.2.1",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "firebase-admin": "^9.5.0",
-    "firebase-functions": "^3.13.2",
-    "inversify": "^5.0.5",
-    "reflect-metadata": "^0.1.13",
-    "source-map-support": "^0.5.19"
+    "webpack-node-externals": "^2.5.2"
   }
 }

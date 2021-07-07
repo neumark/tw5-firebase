@@ -1,0 +1,17 @@
+{
+  "name": "@tw5-firebase/cli",
+  "description": "CLI for performing administrative tasks on a tw5-firebase instance",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "dependencies": {
+    "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "^16.0.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@tw5-firebase/tw5-shared",
+  "description": "Shared TW5-specific code",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  }
+}

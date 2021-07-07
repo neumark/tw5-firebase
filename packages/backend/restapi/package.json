@@ -1,0 +1,23 @@
+{
+  "name": "@tw5-firebase/restapi",
+  "description": "REST api for tiddler modification, deployed as firebase function",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "dependencies": {
+    "@tw5-firebase/backend-shared": "^0.0.0",
+    "@tw5-firebase/shared": "^0.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "firebase-admin": "^9.10.0",
+    "firebase-functions": "^3.13.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.10",
+    "@types/express": "^4.17.11"
+  }
+}

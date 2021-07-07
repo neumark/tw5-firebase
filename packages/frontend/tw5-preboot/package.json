@@ -1,0 +1,16 @@
+{
+  "name": "@tw5-firebase/tw5-preboot",
+  "description": "Logic to be run within the untrusted wiki iframe prior to TW5 boot",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Peter Neumark",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "echo 'No tests'"
+  },
+  "dependencies": {
+    "@tw5-firebase/frontend-shared": "^0.0.0",
+    "@tw5-firebase/shared": "^0.0.0",
+    "mini-iframe-rpc": "^1.6.1"
+  }
+}
