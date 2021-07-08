@@ -6,14 +6,18 @@
   "author": "Peter Neumark",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "run -T webpack -c webpack.config.js --mode $MODE",
+    "build": "run webpack -c webpack.config.js --mode $MODE",
+    "frontend": "run serve -n -d --no-port-switching --symlinks -p 8080 public",
     "test": "echo 'No tests'"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.10",
-    "@babel/plugin-transform-runtime": "^7.13.10",
-    "@babel/preset-env": "^7.13.12",
-    "@babel/runtime-corejs3": "^7.13.10",
+    "@babel/core": "^7.14.0",
+    "@babel/plugin-proposal-export-default-from": "^7.14.5",
+    "@babel/plugin-transform-modules-commonjs": "^7.14.5",
+    "@babel/plugin-transform-runtime": "^7.14.0",
+    "@babel/preset-env": "^7.14.0",
+    "@babel/preset-typescript": "^7.14.5",
+    "@babel/runtime-corejs3": "^7.14.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@tw5-firebase/frontend-shared": "^0.0.0",
     "@tw5-firebase/shared": "^0.0.0",

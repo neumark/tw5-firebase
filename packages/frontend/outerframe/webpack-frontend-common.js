@@ -5,6 +5,11 @@ const PnpPlugin = require("pnp-webpack-plugin");
 const supportedBrowsers = require('./supported_browsers.json');
 const fs = require('fs');
 
+const getDefaultWikiLocation = () => {
+    const buildConfig = JSON.parse(process.env.BUILD_CONFIG ?? '{}');
+    return buildConfig.defaultWikiLocation ?? {};
+}
+
 const tsConfig = path.resolve(__dirname, 'tsconfig.json');
 
 const tsLoader = {
@@ -12,6 +17,34 @@ const tsLoader = {
             options: {
               configFile: tsConfig,
             }}
+
+const babelLoader = {
+  loader: 'babel-loader',
+  options: {
+    presets: [
+      [
+        '@babel/preset-env',
+        {
+          debug: true,
+          corejs: {
+               version: '3'
+          },
+          useBuiltIns: 'usage',
+          targets: supportedBrowsers,
+        },
+      ],
+    ],
+    plugins: [
+        /*['@babel/plugin-transform-runtime', {
+        corejs: {
+           version: '3'
+        }
+    }],
+    ['@babel/plugin-proposal-export-default-from']*/
+    ],
+  },
+};
+
 
 const getBaseConfig = ({
   input,
@@ -38,34 +71,11 @@ const getBaseConfig = ({
   node: {
     __dirname: true, // Webpack has to manually solve __dirname references (future-proofing)
   },
-  plugins: [],
+  plugins: [
+      new webpack.DefinePlugin({
+      "__DEFAULT_WIKI_LOCATION__":JSON.stringify(JSON.stringify(getDefaultWikiLocation()))
+    })],
 });
-
-const babelLoader = {
-  loader: 'babel-loader',
-  options: {
-    presets: [
-      [
-        '@babel/preset-env',
-        {
-          debug: true,
-          corejs: {
-               version: '3', // works for "useBuiltIns: usage", just specify a.b, not a.b.c
-               proposals: true
-          },
-          useBuiltIns: 'usage',
-          targets: supportedBrowsers,
-        },
-      ],
-    ],
-    plugins: [['@babel/plugin-transform-runtime', {
-        corejs: {
-           version: '3', // works for "useBuiltIns: usage", just specify a.b, not a.b.c
-           proposals: true
-        }
-    }]],
-  },
-};
 
 const getTW5PluginConfig = (baseOptions) => {
   const pluginConfig = getBaseConfig(baseOptions);
@@ -144,17 +154,8 @@ const getTW5PluginConfig = (baseOptions) => {
   return pluginConfig;
 };
 
-const getDefaultWikiLocation = () => {
-    const buildConfig = JSON.parse(process.env.BUILD_CONFIG ?? '{}');
-    return buildConfig.defaultWikiLocation ?? {};
-}
-
 const getOuterConfig = (pluginOptions) => {
   const config = getTW5PluginConfig(pluginOptions);
-  config.plugins.push(
-    new webpack.DefinePlugin(
-      '__DEFAULT_WIKI_LOCATION__',
-      JSON.stringify(getDefaultWikiLocation())));
   config.output.library.type = 'window';
   return config;
 };

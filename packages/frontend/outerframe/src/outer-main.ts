@@ -35,7 +35,8 @@ const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
 
 const initFirebase = async () => {
   // start with hardcoded default api endpoint url
-  const defaultWikiLocation = JSON.parse(__DEFAULT_WIKI_LOCATION__) as WikiLocation;
+  const wikiLocationJson:string = __DEFAULT_WIKI_LOCATION__;
+  const defaultWikiLocation = JSON.parse(wikiLocationJson) as WikiLocation;
   // extend with hash parameters
   const urlHashConfig = parseQueryString(location.search) as Partial<WikiLocation>;
   const wikiLocation = Object.assign({}, defaultWikiLocation, urlHashConfig);
