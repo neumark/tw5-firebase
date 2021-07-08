@@ -1,4 +1,5 @@
-const { getTW5PluginConfig, getTW5PrebootConfig, getOuterConfig } = require('./webpack-common');
+const { getOuterConfig } = require('./webpack-frontend-common.js');
+
 module.exports = (env, webpackArgs) => {
   const common = { mode: webpackArgs.mode };
   return [

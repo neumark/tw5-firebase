@@ -1,12 +1,12 @@
-import { Tiddler, TiddlerWithRevision } from '../../../../shared/src/model/tiddler';
+import { TiddlerWithRevision } from '../../../../shared/src/model/tiddler';
 import { ChangeType, TiddlerChange, ChangeResult, ChangeListener, LocalTiddler, ChangeOrigin } from './types';
 import { registerListener as _registerListener } from './remote-change-listener';
 import { interactiveMerge as _interactiveMerge } from './interactive-merge';
 import { PickRequired } from '../../../../shared/src/util/useful-types';
 import { Logger } from '../../../../shared/src/util/logger';
-import { FirebaseLogger } from '../../../backend/restapi/firebase-logger';
 import { Wiki } from '../../../tw5-shared/src/tw5-types';
 import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../../../shared/src/model/errors';
+import { assertUnreachable } from '@tw5-firebase/shared/src/util/switch';
 
 export type ReferencedRevision = TiddlerWithRevision & { referencedBy: string };
 
@@ -54,7 +54,7 @@ export class TiddlerVersionManager implements ChangeListener {
   private bagsInRecipe: string[];
   private registerListener: typeof _registerListener;
   private logger: Logger;
-  private interactiveMerge: typeof _interactiveMerge;
+  // private interactiveMerge: typeof _interactiveMerge;
 
   // recipeState: {bag name => bag state}
   private localTiddlers: Record<string, LocalTiddler> = {};
@@ -69,6 +69,7 @@ export class TiddlerVersionManager implements ChangeListener {
     }
   }
 
+  /*
   private saveServerRevision(bag: string, tiddler: Tiddler, revision: string) {
     this.bagStates[bag].tiddlerStates[tiddler.title] = {
       writeQueue: [],
@@ -85,12 +86,14 @@ export class TiddlerVersionManager implements ChangeListener {
     return Promise.resolve({} as ChangeResult);
   }
 
+  */
+
   constructor(
     {
       wikiName,
       bagsInRecipe,
       registerListener = _registerListener,
-      logger = new FirebaseLogger(),
+      logger = globalThis.console,
       interactiveMerge = _interactiveMerge,
     } = {} as PickRequired<
       {
@@ -108,7 +111,7 @@ export class TiddlerVersionManager implements ChangeListener {
     this.bagsInRecipe = bagsInRecipe;
     this.registerListener = registerListener;
     this.logger = logger;
-    this.interactiveMerge = interactiveMerge;
+    //this.interactiveMerge = interactiveMerge;
     this.setupListeners();
   }
 

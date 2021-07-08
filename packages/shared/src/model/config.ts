@@ -1,6 +1,5 @@
 import { ResolvedRecipe } from "./recipe";
 import { ROLE } from "./roles";
-import { User } from "./user";
 
 export interface FirebaseConfig {
   apiKey: string;

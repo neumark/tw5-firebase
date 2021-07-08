@@ -1,8 +1,7 @@
 import 'reflect-metadata';
 import firebase from 'firebase';
 import * as firebaseui from 'firebaseui';
-import 'firebaseui/dist/firebaseui.css';
-import { FirebaseConfig, WikiLocation } from '../../shared/src/model/config';
+import { FirebaseConfig, WikiLocation } from '@tw5-firebase/shared/src/model/config';
 import { deleteAccount, handleConfigChange, handleSignedInUser, handleSignedOutUser, signInWithPopup } from './login';
 declare let __DEFAULT_WIKI_LOCATION__: string;
 

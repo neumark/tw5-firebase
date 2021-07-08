@@ -1,16 +1,16 @@
 import { Tiddler, TiddlerNamespace } from '../model/tiddler';
 import { Modify } from '../util/useful-types';
-import type { firestore } from 'firebase-admin';
 import { Revision } from '../model/revision';
-import { JSON_TIDDLER_TYPE } from '../../../constants';
+import { JSON_TIDDLER_TYPE } from '../constants';
+import firebase from 'firebase';
 
 export type FirestoreSerializedTiddler = Omit<
   Modify<
     Tiddler,
     {
       // convert timestamps to firestore-native timestamp type
-      created: firestore.Timestamp;
-      modified: firestore.Timestamp;
+      created: firebase.firestore.Timestamp;
+      modified: firebase.firestore.Timestamp;
       // add the revision field
       revision: string;
       text: any; // JSON tiddlers can have any type in text
@@ -19,8 +19,8 @@ export type FirestoreSerializedTiddler = Omit<
   'title'
 >;
 
-export type FirestoreToJSTimestamp = (ts: firestore.Timestamp) => Date;
-export type JSToFirestoreTimestamp = (ts: Date) => firestore.Timestamp;
+export type FirestoreToJSTimestamp = (ts: firebase.firestore.Timestamp) => Date;
+export type JSToFirestoreTimestamp = (ts: Date) => firebase.firestore.Timestamp;
 
 export const toStandardTiddler = (
   docId: string,

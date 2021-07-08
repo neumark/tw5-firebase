@@ -1,0 +1,12 @@
+[
+  {
+    "output": "generated/jsonschema/tiddlerdata.json",
+    "input": "src/model/tiddler.ts",
+    "type": "PartialTiddlerData"
+  },
+  {
+    "output": "generated/jsonschema/config.json",
+    "input": "src/model/config.ts",
+    "type": "*"
+  }
+]

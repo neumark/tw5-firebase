@@ -20,11 +20,10 @@
     "sourceMap": true,
     "strict": true,
     "stripInternal": true,
-    "typeRoots": ["node_modules/@types"],
     "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["packages", "generated"],
+  "include": ["packages"],
   "compileOnSave": false
 }

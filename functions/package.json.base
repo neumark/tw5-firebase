@@ -5,4 +5,8 @@
   "devDependencies": { },
   "engines": { "node": "14" },
   "private": true
+  "installConfig": {
+    "hoistingLimits": "workspaces",
+    "nodeLinker": "node-modules"
+  }
 }
