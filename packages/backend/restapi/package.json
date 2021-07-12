@@ -6,6 +6,7 @@
   "author": "Peter Neumark",
   "license": "Apache-2.0",
   "scripts": {
+    "build": "./scripts/build.sh",
     "test": "echo 'No tests'"
   },
   "dependencies": {

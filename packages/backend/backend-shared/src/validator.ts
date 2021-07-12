@@ -1,9 +1,15 @@
 import Ajv, { Schema } from 'ajv';
 
-export const getValidator = (schema: Schema) => {
+export const getValidator = (schema: Schema, definition?:string) => {
   const ajv = new Ajv({ allErrors: true });
   try {
-    const validate = ajv.compile(schema);
+    if (definition) {
+      ajv.addSchema(schema);
+    }
+    const validate = definition ? ajv.getSchema(definition) : ajv.compile(schema);
+    if (!validate) {
+      throw new Error("Could not get validator for schema and definition!")
+    }
     return (data: any) => {
       const valid = validate(data);
       return { valid, errors: validate.errors };
@@ -12,4 +18,12 @@ export const getValidator = (schema: Schema) => {
     console.error(`schema compilation error: ${e.message} ${e.stack} ${JSON.stringify(schema, null, 4)}`);
     throw e;
   }
+};
+
+export const assertValid = <T>(data:T, ...args:Parameters<typeof getValidator>) => {
+  const validation = getValidator(...args)(data);
+  if (!validation.valid) {
+      throw new Error(`data could not be validated against schema '${args.join(':')}'`);
+  }
+  return data;
 };

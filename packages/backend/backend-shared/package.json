@@ -8,9 +8,13 @@
   "scripts": {
     "test": "echo 'No tests'"
   },
+  "devDependencies": {
+    "@tw5-firebase/shared": "^0.0.0"
+  },
   "dependencies": {
     "ajv": "^7.2.1",
     "firebase-admin": "^9.10.0",
+    "firebase-functions": "^3.13.2",
     "inversify": "^5.0.5",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19"

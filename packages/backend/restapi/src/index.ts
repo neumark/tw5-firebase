@@ -2,11 +2,11 @@
 import 'reflect-metadata';
 import 'source-map-support/register';
 import * as functions from 'firebase-functions';
-import { productionStartup } from './backend-shared/startup';
-import { Component } from '../../backend-shared/src/ioc/components';
-import { backendConfig } from '../../backend-shared/src/config-reader';
-import { APIEndpointFactory } from './api/endpoints';
-import { DEFAULT_TIMEOUT_SECONDS } from '../constants';
+import { productionStartup } from '@tw5-firebase/backend-shared/src/startup';
+import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
+import { backendConfig } from '@tw5-firebase/backend-shared/src/config-reader';
+import { APIEndpointFactory } from './endpoints';
+import { DEFAULT_TIMEOUT_SECONDS } from '@tw5-firebase/shared/src/constants';
 
 const container = productionStartup();
 const apiEndpointFactory = container.get<APIEndpointFactory>(Component.APIEndpointFactory);
