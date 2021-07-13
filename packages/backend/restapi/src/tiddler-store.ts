@@ -1,15 +1,15 @@
 import { inject, injectable } from 'inversify';
-import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../shared/src/model/errors';
-import { getRevision, Revision } from '../../shared/src/model/revision';
-import { SingleWikiNamespacedTiddler, BagApi } from '../../shared/src/model/store';
-import { PartialTiddlerData, Tiddler, TiddlerData, TiddlerNamespace } from '../../shared/src/model/tiddler';
-import { User } from '../../shared/src/model/user';
-import { Logger } from '../../shared/src/util/logger';
-import { getTimestamp as _getTimestamp } from '../../shared/src/util/time';
-import { MaybeArray } from '../../shared/src/util/useful-types';
-import { Component } from '../backend-shared/src/ioc/components';
-import { TiddlerPersistence, TransactionRunner } from '../backend-shared/src/persistence/interfaces';
-import { TiddlerFactory } from '../backend-shared/tiddler-factory';
+import { TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model/errors';
+import { getRevision, Revision } from '@tw5-firebase/shared/src/model/revision';
+import { SingleWikiNamespacedTiddler, BagApi } from '@tw5-firebase/shared/src/api/bag-api';
+import { PartialTiddlerData, Tiddler, TiddlerData, TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
+import { User } from '@tw5-firebase/shared/src/model/user';
+import { Logger } from '@tw5-firebase/shared/src/util/logger';
+import { getTimestamp as _getTimestamp } from '@tw5-firebase/shared/src/util/time';
+import { MaybeArray } from '@tw5-firebase/shared/src/util/useful-types';
+import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
+import { TiddlerPersistence, TransactionRunner } from '@tw5-firebase/backend-shared/src/persistence/interfaces';
+import { TiddlerFactory } from '@tw5-firebase/backend-shared/src/tiddler-factory';
 import { PolicyChecker } from './policy-checker';
 
 const deduplicate = (tiddlers: SingleWikiNamespacedTiddler[]): SingleWikiNamespacedTiddler[] => {

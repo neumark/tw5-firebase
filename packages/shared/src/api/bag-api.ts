@@ -1,6 +1,6 @@
 import { MaybeArray } from '../util/useful-types';
-import { Revision } from './revision';
-import { PartialTiddlerData, Tiddler } from './tiddler';
+import { Revision } from '../model/revision';
+import { PartialTiddlerData, Tiddler } from '../model/tiddler';
 
 export type SingleWikiNamespacedTiddler = {
   bag: string;

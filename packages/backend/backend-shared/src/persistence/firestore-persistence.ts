@@ -1,19 +1,19 @@
 import * as admin from 'firebase-admin';
 import { inject, injectable } from 'inversify';
-import { Revision } from '../../../shared/model/revision';
-import { Tiddler, TiddlerNamespace } from '../../../shared/model/tiddler';
-import { getTimestamp as _getTimestamp } from '../../../shared/util/time';
+import { Revision } from '@tw5-firebase/shared/src/model/revision';
+import { Tiddler, TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
+import { getTimestamp as _getTimestamp } from '@tw5-firebase/shared/src/util/time';
 import { Component } from '../ioc/components';
 import { MaybePromise, TiddlerPersistence, TransactionRunner } from './interfaces';
-import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../../shared/model/errors';
-import { Logger } from '../../../shared/util/logger';
+import { TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model/errors';
+import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import {
   FirestoreSerializedTiddler,
   makeKey,
   toFirestoreTiddler,
   toStandardTiddler,
-} from '../../../shared/firestore/firestore-tiddler';
-import { asyncMap } from '../../../shared/util/map';
+} from '@tw5-firebase/shared/src/firestore/firestore-tiddler';
+import { asyncMap } from '@tw5-firebase/shared/src/util/map';
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;

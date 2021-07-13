@@ -1,8 +1,8 @@
 import { inject, injectable } from 'inversify';
-import { PartialTiddlerData, Tiddler } from '../../shared/model/tiddler';
-import { User, username } from '../../shared/model/user';
-import { DEFAULT_TIDDLER_TYPE } from '../../constants';
-import { getTimestamp as _getTimestamp } from '../../shared/util/time';
+import { PartialTiddlerData, Tiddler } from '@tw5-firebase/shared/src/model/tiddler';
+import { User, username } from '@tw5-firebase/shared/src/model/user';
+import { DEFAULT_TIDDLER_TYPE } from '@tw5-firebase/shared/src/constants';
+import { getTimestamp as _getTimestamp } from '@tw5-firebase/shared/src/util/time';
 import { Component } from './ioc/components';
 
 @injectable()

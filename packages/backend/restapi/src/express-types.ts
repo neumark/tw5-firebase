@@ -1,4 +1,4 @@
-import { User } from '../../shared/src/model/user';
+import { User } from '@tw5-firebase/shared/src/model/user';
 
 declare global {
   namespace Express {

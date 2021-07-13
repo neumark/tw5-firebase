@@ -3,9 +3,9 @@ import { ContainerModule, interfaces } from 'inversify';
 import { FirestoreTransactionRunner } from '../persistence/firestore-persistence';
 import { TransactionRunner } from '../persistence/interfaces';
 import { Component } from './components';
-import { getTimestamp } from '../../../shared/util/time';
-import { Logger } from '../../../shared/util/logger';
-import { FirebaseLogger } from '../../../backend/api/firebase-logger';
+import { getTimestamp } from '@tw5-firebase/shared/src/util/time';
+import { Logger } from '@tw5-firebase/shared/src/util/logger';
+import { FirebaseLogger } from '../firebase-logger';
 
 export const productionComponents = (app: admin.app.App) =>
   new ContainerModule((bind: interfaces.Bind) => {

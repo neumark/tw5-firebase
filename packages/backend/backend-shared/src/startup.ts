@@ -1,10 +1,9 @@
-import 'source-map-support/register';
 import * as admin from 'firebase-admin';
 import { Container } from 'inversify';
-import { productionComponents } from './ioc/prod';
-import { getContainer } from './ioc/components';
-
+import 'source-map-support/register';
 import { baseComponents } from './ioc/base';
+import { getContainer } from './ioc/components';
+import { productionComponents } from './ioc/prod';
 
 export const productionStartup = (appOptions?: admin.AppOptions): Container => {
   const app = admin.initializeApp(appOptions);

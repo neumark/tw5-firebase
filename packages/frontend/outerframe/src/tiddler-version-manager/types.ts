@@ -1,6 +1,6 @@
 import { TW5FirebaseError } from '../../../../shared/src/model/errors';
 import { Revision } from '../../../../shared/src/model/revision';
-import { SingleWikiNamespacedTiddler } from '../../../../shared/src/model/store';
+import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 import { TiddlerWithRevision } from '../../../../shared/src/model/tiddler';
 
 export enum ChangeOrigin {

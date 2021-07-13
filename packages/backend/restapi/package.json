@@ -10,13 +10,14 @@
     "test": "echo 'No tests'"
   },
   "dependencies": {
-    "@tw5-firebase/backend-shared": "^0.0.0",
-    "@tw5-firebase/shared": "^0.0.0",
+    "@tw5-firebase/backend-shared": "link:../backend-shared",
+    "@tw5-firebase/shared": "link:../../shared",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "firebase-admin": "^9.10.0",
-    "firebase-functions": "^3.13.2",
+    "firebase-functions": "^3.14.1",
     "inversify": "^5.1.1",
+    "reflect-metadata": "^0.1.13",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -34,7 +35,7 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^5.1.0",
-    "firebase-tools": "^9.8.0",
+    "firebase": "^8.7.1",
     "jasmine": "^3.7.0",
     "nyc": "^15.1.0",
     "pnp-webpack-plugin": "^1.6.4",

@@ -1,9 +1,9 @@
 import { Schema } from 'ajv';
 import { inject, injectable } from 'inversify';
-import { JSON_TIDDLER_TYPE } from '../../../constants';
-import { Revision } from '../../../shared/model/revision';
-import { TiddlerNamespace } from '../../../shared/model/tiddler';
-import { User } from '../../../shared/model/user';
+import { JSON_TIDDLER_TYPE } from '@tw5-firebase/shared/src/constants';
+import { Revision } from '@tw5-firebase/shared/src/model/revision';
+import { TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
+import { User } from '@tw5-firebase/shared/src/model/user';
 import { Component } from '../ioc/components';
 import { TiddlerFactory } from '../tiddler-factory';
 import { getValidator } from '../validator';

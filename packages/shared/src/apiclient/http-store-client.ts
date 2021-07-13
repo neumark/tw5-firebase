@@ -1,4 +1,4 @@
-import { BagApi, SingleWikiNamespacedTiddler } from '../model/store';
+import { BagApi, SingleWikiNamespacedTiddler } from '../api/bag-api';
 import { HTTPNamespacedTiddler, PartialTiddlerData, TiddlerData } from '../model/tiddler';
 import { mapOrApply } from '../util/map';
 import { HTTPAPIRequest, HTTPTransport } from './http-transport';

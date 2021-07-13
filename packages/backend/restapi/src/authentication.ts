@@ -1,10 +1,8 @@
 import * as express from 'express';
 import * as admin from 'firebase-admin';
 import { inject, injectable } from 'inversify';
-import { JWT_ROLE_CLAIM_PREFIX } from '../../constants';
-import { ROLE } from '../../../shared/src/model/roles';
-import { User, WikiRoles } from '../../../shared/src/model/user';
-import { Component } from '../../backend-shared/src/ioc/components';
+import { User} from '@tw5-firebase/shared/src/model/user';
+import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import {} from './express-types';
 
 // Express middleware that validates Firebase ID Tokens passed in the Authorization HTTP header.
@@ -32,17 +30,7 @@ const ANONYMOUS_USER: User = {
   email_verified: false,
   name: 'anonymous',
   picture: undefined,
-  roles: {},
 };
-
-export const getWikiRoles = (obj?: { [key: string]: any }): WikiRoles =>
-  Object.entries((obj as WikiRoles) || {}).reduce((acc: WikiRoles, [maybeWiki, role]: [string, ROLE]) => {
-    // remove '_' prefix from name of wiki added to avoid clash with reserved claims
-    if (maybeWiki.startsWith(JWT_ROLE_CLAIM_PREFIX)) {
-      acc[maybeWiki.substr(JWT_ROLE_CLAIM_PREFIX.length)] = role;
-    }
-    return acc;
-  }, {} as WikiRoles);
 
 @injectable()
 export class AuthenticatorMiddleware {
@@ -63,7 +51,6 @@ export class AuthenticatorMiddleware {
       email_verified: decodedToken.email_verified,
       name: decodedToken['name'],
       picture: decodedToken.picture,
-      roles: getWikiRoles(decodedToken),
     };
   }
 

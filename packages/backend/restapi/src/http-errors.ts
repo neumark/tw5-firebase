@@ -1,6 +1,6 @@
 import * as express from 'express';
-import { TW5FirebaseError, TW5FirebaseErrorToHTTPErrorCode } from '../../shared/src/model/errors';
-import { Logger } from '../../shared/src/util/logger';
+import { TW5FirebaseError, TW5FirebaseErrorToHTTPErrorCode } from '@tw5-firebase/shared/src/model/errors';
+import { Logger } from '@tw5-firebase/shared/src/util/logger';
 
 export const HTTP_INTERNAL_ERROR = 500;
 
