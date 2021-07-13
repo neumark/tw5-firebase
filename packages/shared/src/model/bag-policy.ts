@@ -1,10 +1,10 @@
-import { BUILTIN_BAG_CONTENT, BUILTIN_BAG_SYSTEM, PERSONAL_BAG_PREFIX } from '../constants';
+import { BUILTIN_BAG_CONTENT, BUILTIN_BAG_ETC, BUILTIN_BAG_SYSTEM, PERSONAL_BAG_PREFIX } from '../constants';
 import { ROLE } from './roles';
 import { User, UserId } from './user';
 
 export type AccessType = 'read' | 'write';
 export type Grantee = {userId: UserId} | { role: ROLE };
-export type BagPolicy = { [key in AccessType]: Grantee[] };
+export type BagPolicy = { [key in AccessType]: Grantee[] } & {optional?: boolean};
 
 export enum PolicyRejectReason {
   INSUFFICIENT_PERMISSION = 'insufficient_permissions',
@@ -20,11 +20,11 @@ export const standardPolicies: { [bag: string]: BagPolicy } = {
     write: [{ role: ROLE.admin }],
     read: [{ role: ROLE.anonymous }]
   },
-};
-
-export const defaultCustomBagPolicy: BagPolicy = {
-  write: [{ role: ROLE.admin }],
-  read: [{ role: ROLE.admin }],
+  [BUILTIN_BAG_ETC]: {
+    write: [{ role: ROLE.admin }],
+    read: [{ role: ROLE.admin }],
+    optional: true
+  },
 };
 
 export const getPersonalBagPolicy = (userId: string): BagPolicy => ({

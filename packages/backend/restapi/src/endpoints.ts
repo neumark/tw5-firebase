@@ -2,7 +2,7 @@ import cors from 'cors';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
 import { FirebaseConfig } from '@tw5-firebase/shared/src/model/config';
-import { TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model//errors';
+import { BodyValidationError, TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model//errors';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 import { HTTPNamespacedTiddler, PartialTiddlerData } from '@tw5-firebase/shared/src/model/tiddler';
 import { Logger } from '@tw5-firebase/shared/src/util/logger';
@@ -66,7 +66,7 @@ export class APIEndpointFactory {
     if (!tiddlerValidation.valid) {
       throw new TW5FirebaseError({
         code: TW5FirebaseErrorCode.INVALID_REQUEST_BODY,
-        data: { body, errors: tiddlerValidation.errors },
+        data: { body, errors: tiddlerValidation.errors  as BodyValidationError[]},
       });
     }
     const tiddlerData = body as PartialTiddlerData;

@@ -10,7 +10,7 @@ import { MaybeArray } from '@tw5-firebase/shared/src/util/useful-types';
 import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import { TiddlerPersistence, TransactionRunner } from '@tw5-firebase/backend-shared/src/persistence/interfaces';
 import { TiddlerFactory } from '@tw5-firebase/backend-shared/src/tiddler-factory';
-import { PolicyChecker } from './policy-checker';
+import { PolicyChecker } from '@tw5-firebase/backend-shared/src/policy-checker';
 
 const deduplicate = (tiddlers: SingleWikiNamespacedTiddler[]): SingleWikiNamespacedTiddler[] => {
   const encounteredTitles = new Set<string>();
@@ -82,7 +82,7 @@ class TiddlerStoreImpl implements BagApi {
   }
 
   private async doReadTiddlers(persistence: TiddlerPersistence, bags: string[], title?: string) {
-    const permissions = await this.policyChecker.verifyReadAccess(persistence, this.user, this.wiki, bags);
+    const permissions = await this.policyChecker.verifyReadAccess(this.user, this.wiki, bags);
     if (!permissions.every((p) => p.allowed)) {
       if (bags.length === 1) {
         throw new TW5FirebaseError({
@@ -179,7 +179,7 @@ class TiddlerStoreImpl implements BagApi {
   del(bag: string, title: string, expectedRevision: string): Promise<boolean> {
     // break this up into two transactions
     return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
-      const [removePermission] = await this.policyChecker.verifyRemoveAccess(persistence, this.user, this.wiki, [bag]);
+      const [removePermission] = await this.policyChecker.verifyRemoveAccess(this.user, this.wiki, [bag]);
       if (!removePermission.allowed) {
         throw new TW5FirebaseError({
           code: TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG,

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es2020",
-    "lib": ["es2020"]
+    "lib": ["es2020"],
+    "declarationDir": "dist/types",
+    "outDir": "dist"
   },
-  "include": ["src"]
+  "include": ["src", "../packages/backend/backend-shared/src/policy-checker.ts"]
 }

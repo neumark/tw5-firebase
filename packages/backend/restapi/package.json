@@ -10,8 +10,8 @@
     "test": "echo 'No tests'"
   },
   "dependencies": {
-    "@tw5-firebase/backend-shared": "link:../backend-shared",
-    "@tw5-firebase/shared": "link:../../shared",
+    "@tw5-firebase/backend-shared": "^0.0.0",
+    "@tw5-firebase/shared": "^0.0.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "firebase-admin": "^9.10.0",
@@ -49,5 +49,8 @@
     "webpack": "^5.24.3",
     "webpack-cli": "^4.5.0",
     "webpack-node-externals": "^2.5.2"
+  },
+  "installConfig": {
+    "hoistingLimits": "workspaces"
   }
 }

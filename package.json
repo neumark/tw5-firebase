@@ -20,12 +20,14 @@
     "packages": [
       "packages/shared",
       "packages/backend/cli",
+      "packages/backend/restapi",
       "packages/backend/backend-shared",
       "packages/frontend/outerframe",
       "packages/frontend/frontend-shared",
       "packages/frontend/tw5-shared",
       "packages/frontend/tw5-preboot",
-      "packages/frontend/tw5-plugins/**"
+      "packages/frontend/tw5-plugins/**",
+      "packages/functions"
     ]
   },
   "devDependencies": {

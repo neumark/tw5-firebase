@@ -77,6 +77,8 @@ export interface RecipePermissionError {
   permissions: BagPermission[];
 }
 
+export type BodyValidationError = ErrorObject<string, Record<string, any>, unknown>
+
 export type TW5FirebaseErrorPayload =
   // 0XX
   | {
@@ -92,7 +94,7 @@ export type TW5FirebaseErrorPayload =
       code: TW5FirebaseErrorCode.INVALID_REQUEST_BODY;
       data: {
         body: any;
-        errors: undefined | null | ErrorObject[];
+        errors: BodyValidationError[] | null | undefined;
       };
     }
   | {

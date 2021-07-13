@@ -2,7 +2,7 @@ const webpack = require('webpack');
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const fs = require('fs');
-const PnpPlugin = require("pnp-webpack-plugin");
+// const PnpPlugin = require("pnp-webpack-plugin");
 
 const getBaseConfig = ({
   input,
@@ -35,10 +35,10 @@ const getBaseConfig = ({
     ]
   },
   resolveLoader: {
-    plugins: [PnpPlugin.moduleLoader(module)],
+    // plugins: [PnpPlugin.moduleLoader(module)],
   },
   resolve: {
-    plugins: [PnpPlugin],
+    // plugins: [PnpPlugin],
     extensions: ['.json', '.js', '.tsx', '.ts'],
   },
   node: {
@@ -58,7 +58,9 @@ const getNodeConfig = (baseOptions) => {
     externalsPresets: {
       node: true,
     },
-    externals: [nodeExternals()],
+    externals: [nodeExternals({
+        allowlist: [/^@tw5-firebase/]
+    })],
   });
   Object.assign(nodeConfig.output, {
     libraryTarget: 'this',

@@ -1,5 +1,5 @@
-import { Tiddler, TiddlerNamespace } from '../../../shared/model/tiddler';
-import { Revision } from '../../../shared/model/revision';
+import { Tiddler, TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
+import { Revision } from '@tw5-firebase/shared/src/model/revision';
 
 export type MaybePromise<T> = T | Promise<T>;
 

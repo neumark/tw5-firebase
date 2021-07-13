@@ -1498,6 +1498,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@firebase/database@npm:0.10.7":
+  version: 0.10.7
+  resolution: "@firebase/database@npm:0.10.7"
+  dependencies:
+    "@firebase/auth-interop-types": 0.1.6
+    "@firebase/component": 0.5.4
+    "@firebase/database-types": 0.7.2
+    "@firebase/logger": 0.2.6
+    "@firebase/util": 1.1.0
+    faye-websocket: 0.11.3
+    tslib: ^2.1.0
+  checksum: cc1415faeaa96fc52c1e48b8118af348d88b7005f7fcbf071ca79d6c98eed0f0cc7728e3630c21cf018856f9e6b8faeb5ef5f93e1a926fbb6f50284a7c3ce1f7
+  languageName: node
+  linkType: hard
+
 "@firebase/firestore-types@npm:2.3.0":
   version: 2.3.0
   resolution: "@firebase/firestore-types@npm:2.3.0"
@@ -2147,7 +2162,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tw5-firebase/backend-shared@workspace:packages/backend/backend-shared":
+"@tw5-firebase/backend-shared@^0.0.0, @tw5-firebase/backend-shared@workspace:packages/backend/backend-shared":
   version: 0.0.0-use.local
   resolution: "@tw5-firebase/backend-shared@workspace:packages/backend/backend-shared"
   dependencies:
@@ -2287,6 +2302,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@tw5-firebase/restapi@workspace:packages/backend/restapi":
+  version: 0.0.0-use.local
+  resolution: "@tw5-firebase/restapi@workspace:packages/backend/restapi"
+  dependencies:
+    "@istanbuljs/nyc-config-typescript": ^1.0.1
+    "@tw5-firebase/backend-shared": ^0.0.0
+    "@tw5-firebase/shared": ^0.0.0
+    "@types/cors": ^2.8.10
+    "@types/express": ^4.17.11
+    "@types/jasmine": ^3.7.1
+    "@types/node": ^16.0.0
+    "@types/sinon": ^10.0.2
+    "@typescript-eslint/eslint-plugin": ^4.27.0
+    "@typescript-eslint/parser": ^4.27.0
+    "@yarnpkg/pnpify": ^3.0.0-rc.10
+    ajv-cli: ^5.0.0
+    cors: ^2.8.5
+    eslint: ^7.30.0
+    eslint-config-prettier: ^8.3.0
+    eslint-plugin-prettier: ^3.4.0
+    eslint-plugin-promise: ^5.1.0
+    express: ^4.17.1
+    firebase: ^8.7.1
+    firebase-admin: ^9.10.0
+    firebase-functions: ^3.14.1
+    inversify: ^5.1.1
+    jasmine: ^3.7.0
+    nyc: ^15.1.0
+    pnp-webpack-plugin: ^1.6.4
+    prettier: ^2.3.1
+    reflect-metadata: ^0.1.13
+    sinon: ^10.0.0
+    source-map-support: ^0.5.19
+    terser-webpack-plugin: ^5.1.4
+    ts-loader: ^8.0.17
+    ts-node: ^10.0.0
+    tslib: ^2.3.0
+    typescript: ^4.3.5
+    webpack: ^5.24.3
+    webpack-cli: ^4.5.0
+    webpack-node-externals: ^2.5.2
+  languageName: unknown
+  linkType: soft
+
 "@tw5-firebase/shared@^0.0.0, @tw5-firebase/shared@workspace:packages/shared":
   version: 0.0.0-use.local
   resolution: "@tw5-firebase/shared@workspace:packages/shared"
@@ -2365,6 +2424,13 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: 4b04cae4bc8e0d0637240b0303e5e6c5a081f85873bb338a02dae95bdfcad5c178be03e41d47f8194675cea0c67ffbfce1530b6633040b908d20139745cb338f
+  languageName: node
+  linkType: hard
+
+"@types/cors@npm:^2.8.10":
+  version: 2.8.12
+  resolution: "@types/cors@npm:2.8.12"
+  checksum: f3b62196df42c286282b9dbda26e24d2264211d932e7d9c2240f361e27ef693a5cb03790daeb3610fd958a0690f4d31d45ef7848b0df7a0dd2afc698a4f9df76
   languageName: node
   linkType: hard
 
@@ -2448,7 +2514,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:*":
+"@types/express@npm:*, @types/express@npm:^4.17.11":
   version: 4.17.13
   resolution: "@types/express@npm:4.17.13"
   dependencies:
@@ -5505,7 +5571,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^7.28.0":
+"eslint@npm:^7.28.0, eslint@npm:^7.30.0":
   version: 7.30.0
   resolution: "eslint@npm:7.30.0"
   dependencies:
@@ -6044,7 +6110,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"firebase-functions@npm:^3.13.2":
+"firebase-functions@npm:^3.13.2, firebase-functions@npm:^3.14.1":
   version: 3.14.1
   resolution: "firebase-functions@npm:3.14.1"
   dependencies:
@@ -6145,6 +6211,29 @@ __metadata:
     "@firebase/storage": 0.5.6
     "@firebase/util": 1.1.0
   checksum: f34cc6be6a0a25326d1968b51672e25ea41d328b8755787ff517e79d46a180130e1fbaf005c4f61c331ed9f047a4795c8fbdee0873bdbc71153ab18c2cac6f60
+  languageName: node
+  linkType: hard
+
+"firebase@npm:^8.7.1":
+  version: 8.7.1
+  resolution: "firebase@npm:8.7.1"
+  dependencies:
+    "@firebase/analytics": 0.6.14
+    "@firebase/app": 0.6.28
+    "@firebase/app-check": 0.2.0
+    "@firebase/app-types": 0.6.2
+    "@firebase/auth": 0.16.8
+    "@firebase/database": 0.10.7
+    "@firebase/firestore": 2.3.8
+    "@firebase/functions": 0.6.13
+    "@firebase/installations": 0.4.30
+    "@firebase/messaging": 0.7.14
+    "@firebase/performance": 0.4.16
+    "@firebase/polyfill": 0.3.36
+    "@firebase/remote-config": 0.1.41
+    "@firebase/storage": 0.5.6
+    "@firebase/util": 1.1.0
+  checksum: 58fb51a62ee7c4870898f0fa5b8b36bc62556d54a71eabb5d3ed43f446494ab98162cf364bc9106ecd5b75056ec0f7a83ac5a3c293a0890d9d39114dfe15d076
   languageName: node
   linkType: hard
 
@@ -7141,7 +7230,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"inversify@npm:^5.0.5":
+"inversify@npm:^5.0.5, inversify@npm:^5.1.1":
   version: 5.1.1
   resolution: "inversify@npm:5.1.1"
   checksum: d7408be98812314cdca719827dac76b5ea58d786e58dd2753fa5adf5b6c90ef62b742791fbaa3020cc655237077a3d5e4a1f9e92761064107c5ce60df85ceabf

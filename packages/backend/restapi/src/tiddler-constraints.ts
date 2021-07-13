@@ -8,8 +8,8 @@ import {
   PERSONAL_TAG,
   PERSONAL_TIDDLERS,
   SYSTEM_TITLE_PREFIX,
-} from '../../constants';
-import { PartialTiddlerData } from '../../shared/src/model/tiddler';
+} from '@tw5-firebase/shared/src/constants';
+import { PartialTiddlerData } from '@tw5-firebase/shared/src/model/tiddler';
 
 type TiddlerDataConstraint = (title: string, tiddlerData: PartialTiddlerData) => boolean;
 
