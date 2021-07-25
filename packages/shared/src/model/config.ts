@@ -12,6 +12,15 @@ export interface FirebaseConfig {
   measurementId?: string;
 }
 
+/**
+ * Defaults for the given tw5-firebase environment
+ */
+export interface TW5FirebaseEnvironmentConfig {
+  defaultWikiName: string;
+}
+
+export type FrontendConfig = FirebaseConfig & TW5FirebaseEnvironmentConfig;
+
 export interface BackendConfig {
   apiRegion: string;
   timeoutSeconds?: number; // max number of seconds to allow cloud function to run
@@ -23,7 +32,7 @@ export interface BackendConfig {
 /**
  * Served to frontend when wiki loads by ':wiki/config' endpoint
  */
- export interface FrontendWikiConfig {
+ export interface WikiInitConfig {
   role: ROLE
   resolvedRecipe: ResolvedRecipe
 }

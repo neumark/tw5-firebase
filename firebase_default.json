@@ -5,6 +5,9 @@
   "firestore": {
     "rules": "etc/firestore.rules"
   },
+  "functions": {
+    "source": "packages/backend/restapi/dist"
+  },
   "hosting": {
     "public": "public",
     "ignore": ["firebase*.json", "**/.*", "**/node_modules/**"],

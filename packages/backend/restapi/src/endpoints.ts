@@ -1,7 +1,7 @@
 import cors from 'cors';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
-import { FirebaseConfig } from '@tw5-firebase/shared/src/model/config';
+import { FrontendConfig } from '@tw5-firebase/shared/src/model/config';
 import { BodyValidationError, TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model//errors';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 import { HTTPNamespacedTiddler, PartialTiddlerData } from '@tw5-firebase/shared/src/model/tiddler';
@@ -10,10 +10,11 @@ import { mapOrApply, maybeApply } from '@tw5-firebase/shared/src/util/map';
 import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import { tiddlerDataSchema } from '@tw5-firebase/shared/src/schema';
 import { getValidator } from '@tw5-firebase/backend-shared/src/validator';
-import { firebaseConfig } from '@tw5-firebase/backend-shared/src/config-reader';
+import { frontendConfig } from '@tw5-firebase/backend-shared/src/config-reader';
 import { AuthenticatorMiddleware } from './authentication';
 import { sendErr } from './http-errors';
 import { TiddlerStoreFactory } from './tiddler-store';
+import { CONFIG_VAR_FRONTEND_CONFIG } from '../../../shared/src/constants';
 
 const toHTTPNamespacedTiddler = (namespacedTiddler: SingleWikiNamespacedTiddler): HTTPNamespacedTiddler => ({
   bag: namespacedTiddler.bag,
@@ -105,8 +106,8 @@ export class APIEndpointFactory {
     });
   }
 
-  private async firebaseConfig(req: express.Request):Promise<FirebaseConfig> {
-    return firebaseConfig;
+  private async frontendConfig(req: express.Request):Promise<FrontendConfig> {
+    return frontendConfig;
   }
 
   private bindAndSerialize(fn: (req: express.Request) => Promise<any>) {
@@ -135,7 +136,7 @@ export class APIEndpointFactory {
     api.use(cors({ origin: true }));
     const authHandler = this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware);
     const write = this.bindAndSerialize(this.write);
-    api.get('/firebase-config', this.bindAndSerialize(this.firebaseConfig)); // create
+    api.get(`/${CONFIG_VAR_FRONTEND_CONFIG}`, this.bindAndSerialize(this.frontendConfig)); // create
     api.post('/:wiki/bags/:bag/tiddlers/:title', authHandler, write); // create
     api.get('/:wiki/bags/:bag/tiddlers/:title?', authHandler, this.bindAndSerialize(this.read)); // read
     api.post('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', authHandler, write); // update

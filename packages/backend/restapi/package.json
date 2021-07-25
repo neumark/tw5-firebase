@@ -12,6 +12,7 @@
   "dependencies": {
     "@tw5-firebase/backend-shared": "^0.0.0",
     "@tw5-firebase/shared": "^0.0.0",
+    "ajv": "^8.6.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "firebase-admin": "^9.10.0",
@@ -36,6 +37,7 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^5.1.0",
     "firebase": "^8.7.1",
+    "firebase-tools": "^9.16.0",
     "jasmine": "^3.7.0",
     "nyc": "^15.1.0",
     "pnp-webpack-plugin": "^1.6.4",

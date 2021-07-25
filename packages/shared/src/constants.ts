@@ -36,6 +36,6 @@ export const SYSTEM_TITLE_PREFIX = '$:/';
 export const ETC_TITLE_PREFIX = '/etc/';
 export const VARIABLE_PERSONAL_BAG = 'PERSONAL_BAG';
 
-export const ENV_VAR_OVERRIDE_BACKEND_CONFIG = 'BACKEND_CONFIG';
-export const ENV_VAR_FIREBASE_CONFIG = 'FIREBASE_CONFIG';
+export const CONFIG_VAR_BACKEND_CONFIG = 'backendconfig';
+export const CONFIG_VAR_FRONTEND_CONFIG = 'frontendconfig';
 export const DEFAULT_TIMEOUT_SECONDS = 300;

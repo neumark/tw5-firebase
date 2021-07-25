@@ -17,5 +17,8 @@
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.19",
     "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^9.16.0"
   }
 }

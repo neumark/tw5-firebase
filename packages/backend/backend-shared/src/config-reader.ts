@@ -1,30 +1,28 @@
-import { BackendConfig, FirebaseConfig} from '@tw5-firebase/shared/src/model/config';
+import { BackendConfig, FrontendConfig} from '@tw5-firebase/shared/src/model/config';
 import { assertValid } from '@tw5-firebase/backend-shared/src/validator';
-import { ENV_VAR_OVERRIDE_BACKEND_CONFIG, ENV_VAR_FIREBASE_CONFIG } from '@tw5-firebase/shared/src/constants';
+import { CONFIG_VAR_BACKEND_CONFIG, CONFIG_VAR_FRONTEND_CONFIG } from '@tw5-firebase/shared/src/constants';
 import * as functions from 'firebase-functions';
 import { configSchema } from '@tw5-firebase/shared/src/schema';
+import { objMap } from '../../../shared/src/util/map';
 
-const readEnvVar = (varName:string, allowMissing = false):string|undefined => {
-    if (!(varName in process.env)) {
-        if (allowMissing) {
-            return undefined;
-        }
-        else {
-            throw new Error(`no env var name '${varName}' found`);
-        }
-    }
-    return JSON.parse(process.env[ENV_VAR_OVERRIDE_BACKEND_CONFIG]!);
-};
-const getBackendConfig:() => BackendConfig = () => {
-    let config = readEnvVar(ENV_VAR_OVERRIDE_BACKEND_CONFIG, true);
-    if (config === undefined) {
-      config = functions.config().tw5firebase.backendconfig;
-    }
-    if (!config) {
-      throw new Error(`backend config not found in either ${ENV_VAR_OVERRIDE_BACKEND_CONFIG} env var or firebase function config.`)
-    }
-    return assertValid<BackendConfig>(JSON.parse(config), configSchema, 'BackendConfig');
+const jsonDecodeFields = (serialized:Record<string, string>):Record<string, any> => objMap(
+  (k:string, v:string) => [k, JSON.parse(v)],
+  serialized)
+
+const readConfigVar = (varName:string, allowMissing = false):Record<string, any> => {
+  const value = functions.config().tw5firebase?.[varName];
+  if (value===undefined) {
+      if (!allowMissing) {
+          throw new Error(`no function config var named '${varName}' found`);
+      }
+  }
+  return value ? jsonDecodeFields(value) : value;
 };
 
-export const backendConfig = getBackendConfig();
-export const firebaseConfig = assertValid<FirebaseConfig>(JSON.parse(readEnvVar(ENV_VAR_FIREBASE_CONFIG)!), configSchema, 'FirebaseConfig');
+const readConfigWithFallback = <T>(configVarName: string, definition:string):T => {
+  const configValue = readConfigVar(configVarName);
+  return assertValid(configValue as T, configSchema, definition);
+}
+
+export const backendConfig = readConfigWithFallback<BackendConfig>(CONFIG_VAR_BACKEND_CONFIG, 'BackendConfig');
+export const frontendConfig = readConfigWithFallback<FrontendConfig>(CONFIG_VAR_FRONTEND_CONFIG, 'FrontendConfig');

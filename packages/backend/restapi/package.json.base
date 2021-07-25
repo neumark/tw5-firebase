@@ -1,0 +1,9 @@
+{
+  "name": "restapi",
+  "description": "restrict HTTPS functions to Firebase users",
+  "dependencies": {
+  },
+  "devDependencies": { },
+  "engines": { "node": "14" },
+  "private": true
+}

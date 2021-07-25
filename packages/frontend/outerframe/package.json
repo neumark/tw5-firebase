@@ -6,7 +6,7 @@
   "author": "Peter Neumark",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "run webpack -c webpack.config.js --mode $MODE",
+    "build": "run webpack -c webpack.config.js --mode production",
     "frontend": "run serve -n -d --no-port-switching --symlinks -p 8080 public",
     "test": "echo 'No tests'"
   },
@@ -29,6 +29,7 @@
     "@yarnpkg/pnpify": "^3.0.0-rc.10",
     "ajv-cli": "^5.0.0",
     "babel-loader": "^8.2.2",
+    "browserslist": "^4.16.6",
     "core-js": "^3.15.2",
     "css-loader": "^5.2.0",
     "eslint": "^7.28.0",

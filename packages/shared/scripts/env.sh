@@ -15,8 +15,8 @@ function read_json() {
     fi
 }
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-ETCDIR="$DIR/../../../etc"
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ETCDIR="$MYDIR/../../../etc"
 # default env is testwiki
 ENV="${ENV:-$(read_json "$ETCDIR/config.json" '.defaultEnv' )}"
 
@@ -26,15 +26,15 @@ if [ ! -f "$FIREBASESETTINGSPATH" ]; then
   FIREBASESETTINGSPATH="$ETCDIR/../firebase_default.json"
 fi
 
-# the JSON file pointed to be the FIREBASE_CONFIG env var is read by firebase-admin
+# the JSON file pointed to be the FRONTEND_CONFIG env var is read by firebase-admin
 # and it is set by the production cloud function runtime
-FIREBASE_CONFIG="$(read_json "$ETCDIR/$ENV/firebase.json")"
+FRONTEND_CONFIG="$(read_json "$ETCDIR/$ENV/frontend.json")"
 BACKEND_CONFIG="$(read_json "$ETCDIR/$ENV/backend.json")"
 BUILD_CONFIG="$(read_json "$ETCDIR/$ENV/build.json")"
 
-APIKEY="$(echo "$FIREBASE_CONFIG" | jq -r ".apiKey")"
-GCP_PROJECT="$(echo "$FIREBASE_CONFIG" | jq -r ".projectId")"
-REFERRER="$(echo "$FIREBASE_CONFIG" | jq -r ".authDomain")"
+APIKEY="$(echo "$FRONTEND_CONFIG" | jq -r ".apiKey")"
+GCP_PROJECT="$(echo "$FRONTEND_CONFIG" | jq -r ".projectId")"
+REFERRER="$(echo "$FRONTEND_CONFIG" | jq -r ".authDomain")"
 TOKEN="$(read_json "$ETCDIR/$ENV/keys.json" '.firebaseToken')"
 SERVICE_ACCOUNT_KEY="$ETCDIR/$ENV/service-account-key.json"
 
@@ -45,8 +45,11 @@ function run_node() {
 }
 
 function firebase_cli() {
-    pushd "$DIR/../"
-    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" yarn run firebase --config "$FIREBASESETTINGSPATH" --project "$GCP_PROJECT" --token "$TOKEN" $@
+    pushd "$DIR/../../"
+    GOOGLE_APPLICATION_CREDENTIALS="$SERVICE_ACCOUNT_KEY" \
+    FRONTEND_CONFIG="$FRONTEND_CONFIG" \
+    BACKEND_CONFIG="$BACKEND_CONFIG" \
+    yarn workspace @tw5-firebase/restapi firebase --config "$FIREBASESETTINGSPATH" --project "$GCP_PROJECT" --token "$TOKEN" $@
     popd
 }
 
