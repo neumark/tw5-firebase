@@ -24,22 +24,14 @@ import {} from './express-types';
  }
  */
 
-const ANONYMOUS_USER: User = {
-  userId: '',
-  email: undefined,
-  email_verified: false,
-  name: 'anonymous',
-  picture: undefined,
-};
-
 @injectable()
 export class AuthenticatorMiddleware {
   private auth: admin.auth.Auth;
 
-  private async getUserFromToken(req: express.Request): Promise<User> {
+  private async getUserFromToken(req: express.Request): Promise<User|undefined> {
     // No bearer token means we have an anonymous visitor
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-      return ANONYMOUS_USER;
+      return undefined;
     }
 
     // Read the ID Token from the Authorization header.

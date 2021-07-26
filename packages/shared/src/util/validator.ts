@@ -1,7 +1,6 @@
 import Ajv, { Schema } from 'ajv';
 
 export const getValidator = (schema: Schema, definition?:string) => {
-  console.log(`getValidator(${schema}, ${definition})`)
   const ajv = new Ajv({ allErrors: true });
   try {
     if (definition) {

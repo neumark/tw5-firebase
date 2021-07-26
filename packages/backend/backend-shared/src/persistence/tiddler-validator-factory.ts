@@ -6,7 +6,7 @@ import { TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
 import { User } from '@tw5-firebase/shared/src/model/user';
 import { Component } from '../ioc/components';
 import { TiddlerFactory } from '../tiddler-factory';
-import { getValidator } from '../validator';
+import { getValidator } from '../../../../shared/src/util/validator';
 import { TiddlerPersistence } from './interfaces';
 
 export class TiddlerValidator<T> {

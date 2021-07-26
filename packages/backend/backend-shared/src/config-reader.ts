@@ -1,6 +1,6 @@
-import { BackendConfig, FrontendConfig} from '@tw5-firebase/shared/src/model/config';
-import { assertValid } from '@tw5-firebase/backend-shared/src/validator';
-import { CONFIG_VAR_BACKEND_CONFIG, CONFIG_VAR_FRONTEND_CONFIG } from '@tw5-firebase/shared/src/constants';
+import { BackendConfig, FirebaseConfig} from '@tw5-firebase/shared/src/model/config';
+import { assertValid } from '@tw5-firebase/shared/src/util/validator';
+import { CONFIG_VAR_BACKEND_CONFIG, CONFIG_VAR_FIREBASE_CONFIG } from '@tw5-firebase/shared/src/constants';
 import * as functions from 'firebase-functions';
 import { configSchema } from '@tw5-firebase/shared/src/schema';
 import { objMap } from '../../../shared/src/util/map';
@@ -25,4 +25,4 @@ const readConfigWithFallback = <T>(configVarName: string, definition:string):T =
 }
 
 export const backendConfig = readConfigWithFallback<BackendConfig>(CONFIG_VAR_BACKEND_CONFIG, 'BackendConfig');
-export const frontendConfig = readConfigWithFallback<FrontendConfig>(CONFIG_VAR_FRONTEND_CONFIG, 'FrontendConfig');
+export const firebaseConfig = readConfigWithFallback<FirebaseConfig>(CONFIG_VAR_FIREBASE_CONFIG, 'FirebaseConfig');

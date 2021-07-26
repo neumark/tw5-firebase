@@ -5,9 +5,9 @@ const PnpPlugin = require("pnp-webpack-plugin");
 const supportedBrowsers = require('./supported_browsers.json');
 const fs = require('fs');
 
-const getDefaultWikiLocation = () => {
+const getBuildConfig = () => {
     const buildConfig = JSON.parse(process.env.BUILD_CONFIG ?? '{}');
-    return buildConfig.defaultWikiLocation ?? {};
+    return buildConfig ?? {};
 }
 
 const tsConfig = path.resolve(__dirname, 'tsconfig.json');
@@ -73,7 +73,7 @@ const getBaseConfig = ({
   },
   plugins: [
       new webpack.DefinePlugin({
-      "__DEFAULT_WIKI_LOCATION__":JSON.stringify(JSON.stringify(getDefaultWikiLocation()))
+      "__BUILD_CONFIG__":JSON.stringify(JSON.stringify(getBuildConfig()))
     })],
 });
 
@@ -121,9 +121,8 @@ const getTW5PluginConfig = (baseOptions) => {
   ];
   pluginConfig.plugins.push(
     new webpack.SourceMapDevToolPlugin({
-      filename: '[file].map',
-      publicPath: '/sourcemaps/',
-      //fileContext: 'dist',
+      filename: 'sourcemaps/[file].map',
+      //publicPath: '/sourcemaps/',
     }),
   );
   // BannerPlugin is only used in dev mode

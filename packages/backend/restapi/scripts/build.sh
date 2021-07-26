@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-# set up env, note that this overwrites $DIR
 . "$DIR/../../../shared/scripts/env.sh"
 
 # build backend (firebase functions)

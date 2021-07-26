@@ -9,12 +9,13 @@ import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import { mapOrApply, maybeApply } from '@tw5-firebase/shared/src/util/map';
 import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import { tiddlerDataSchema } from '@tw5-firebase/shared/src/schema';
-import { getValidator } from '@tw5-firebase/backend-shared/src/validator';
-import { frontendConfig } from '@tw5-firebase/backend-shared/src/config-reader';
+import { getValidator } from '@tw5-firebase/shared/src/util/validator';
+import { firebaseConfig } from '@tw5-firebase/backend-shared/src/config-reader';
 import { AuthenticatorMiddleware } from './authentication';
 import { sendErr } from './http-errors';
 import { TiddlerStoreFactory } from './tiddler-store';
-import { CONFIG_VAR_FRONTEND_CONFIG } from '../../../shared/src/constants';
+import { ROLE } from '@tw5-firebase/shared/src/model/roles';
+import { User } from '@tw5-firebase/shared/src/model/user';
 
 const toHTTPNamespacedTiddler = (namespacedTiddler: SingleWikiNamespacedTiddler): HTTPNamespacedTiddler => ({
   bag: namespacedTiddler.bag,
@@ -33,20 +34,30 @@ export class APIEndpointFactory {
   private tiddlerDataValidator = getValidator(tiddlerDataSchema);
   private tiddlerStoreFactory: TiddlerStoreFactory;
 
-  private assertWikiInPath(params: express.Request['params']): void {
+  private assertWikiInPath(params: express.Request['params']): string {
     if (!params['wiki']) {
       throw new TW5FirebaseError({
         code: TW5FirebaseErrorCode.INVALID_WIKI,
       });
     }
+    return decodeURIComponent(params['wiki']);
+  }
+
+  private assertAuthenticatedUser(user:User|undefined): User {
+    if (!user) {
+      throw new TW5FirebaseError({
+        code: TW5FirebaseErrorCode.NO_AUTHENTICATED_USER,
+      });
+    }
+    return user;
   }
 
   private async read(req: express.Request) {
-    this.assertWikiInPath(req.params);
-    const wiki = decodeURIComponent(req.params['wiki']);
+    const wiki = this.assertWikiInPath(req.params);
     const bag = maybeApply(decodeURIComponent, req.params['bag']);
     const title = maybeApply(decodeURIComponent, req.params['title']);
-    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(
+      this.assertAuthenticatedUser(req.user), wiki);
     if (bag) {
       return mapOrApply(toHTTPNamespacedTiddler, await store.read(bag, title));
     }
@@ -57,8 +68,7 @@ export class APIEndpointFactory {
   }
 
   private async write(req: express.Request) {
-    this.assertWikiInPath(req.params);
-    const wiki = decodeURIComponent(req.params['wiki']);
+    const wiki = this.assertWikiInPath(req.params);
     const bag = maybeApply(decodeURIComponent, req.params['bag']);
     const title = decodeURIComponent(req.params['title']);
     const expectedRevision = maybeApply(decodeURIComponent, req.params['revision']);
@@ -71,7 +81,7 @@ export class APIEndpointFactory {
       });
     }
     const tiddlerData = body as PartialTiddlerData;
-    const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(this.assertAuthenticatedUser(req.user), wiki);
     if (bag) {
       if (expectedRevision) {
         return toHTTPNamespacedTiddler(await store.update(bag, title, tiddlerData, expectedRevision));
@@ -85,13 +95,12 @@ export class APIEndpointFactory {
   }
 
   private async remove(req: express.Request) {
-    this.assertWikiInPath(req.params);
-    const wiki = decodeURIComponent(req.params['wiki']);
+    const wiki = this.assertWikiInPath(req.params);
     const bag = decodeURIComponent(req.params['bag']);
     const title = decodeURIComponent(req.params['title']);
     const expectedRevision = decodeURIComponent(req.params['revision']);
     if (wiki && bag && title && expectedRevision) {
-      const store = this.tiddlerStoreFactory.createTiddlerStore(req.user, wiki);
+      const store = this.tiddlerStoreFactory.createTiddlerStore(this.assertAuthenticatedUser(req.user), wiki);
       this.logger.info(`about to delete ${title}`);
       try {
         const result = await store.del(bag, title, expectedRevision);
@@ -107,7 +116,16 @@ export class APIEndpointFactory {
   }
 
   private async frontendConfig(req: express.Request):Promise<FrontendConfig> {
-    return frontendConfig;
+    this.assertWikiInPath(req.params);
+    return {
+      firebase: firebaseConfig,
+      // TODO:
+      role: ROLE.admin,
+      resolvedRecipe: {
+        read: [],
+        write: []
+      }
+    }
   }
 
   private bindAndSerialize(fn: (req: express.Request) => Promise<any>) {
@@ -133,14 +151,15 @@ export class APIEndpointFactory {
 
   createAPI() {
     const api = express.default();
+    // TODO: only allow requests from whitelisted domains
     api.use(cors({ origin: true }));
-    const authHandler = this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware);
+    api.use(this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware));
     const write = this.bindAndSerialize(this.write);
-    api.get(`/${CONFIG_VAR_FRONTEND_CONFIG}`, this.bindAndSerialize(this.frontendConfig)); // create
-    api.post('/:wiki/bags/:bag/tiddlers/:title', authHandler, write); // create
-    api.get('/:wiki/bags/:bag/tiddlers/:title?', authHandler, this.bindAndSerialize(this.read)); // read
-    api.post('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', authHandler, write); // update
-    api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', authHandler, this.bindAndSerialize(this.remove)); // delete
+    api.get(`/:wiki/frontendconfig`, this.bindAndSerialize(this.frontendConfig)); // create
+    api.post('/:wiki/bags/:bag/tiddlers/:title', write); // create
+    api.get('/:wiki/bags/:bag/tiddlers/:title?', this.bindAndSerialize(this.read)); // read
+    api.post('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', write); // update
+    api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', this.bindAndSerialize(this.remove)); // delete
     return api;
   }
 }

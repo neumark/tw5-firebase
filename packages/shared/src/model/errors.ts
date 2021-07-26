@@ -12,15 +12,16 @@ export enum TW5FirebaseErrorCode {
   ATTEMPTED_UPDATE_IN_RECIPE = 4,
 
   // 1XX: tiddler store errors
-  READ_ACCESS_DENIED_TO_BAG = 101,
-  WRITE_ACCESS_DENIED_TO_BAG = 102,
-  NO_WRITABLE_BAG_IN_RECIPE = 103,
-  UNREADABLE_BAG_IN_RECIPE = 104,
-  TIDDLER_NOT_FOUND = 105,
-  RECIPE_NOT_FOUND = 106,
+  NO_AUTHENTICATED_USER = 101,
+  READ_ACCESS_DENIED_TO_BAG = 102,
+  WRITE_ACCESS_DENIED_TO_BAG = 103,
+  NO_WRITABLE_BAG_IN_RECIPE = 104,
+  UNREADABLE_BAG_IN_RECIPE = 105,
+  TIDDLER_NOT_FOUND = 106,
+  RECIPE_NOT_FOUND = 107,
 
   // 2XX: persistence errors
-  //    22X: write errors
+  // 22X: write errors
   UNKNOWN_WRITE_ERROR = 220,
   REVISION_CONFLICT = 221,
   UPDATE_MISSING_TIDDLER = 222,
@@ -35,6 +36,7 @@ export const TW5FirebaseErrorToHTTPErrorCode: Partial<Record<TW5FirebaseErrorCod
   [TW5FirebaseErrorCode.INVALID_REQUEST_BODY]: 400,
   [TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE]: 400,
   // 1XX
+  [TW5FirebaseErrorCode.NO_AUTHENTICATED_USER]: 403,
   [TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG]: 403,
   [TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG]: 403,
   [TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE]: 401,
@@ -55,6 +57,7 @@ const TW5FirebaseErrorMessages: Record<TW5FirebaseErrorCode, string> = {
   [TW5FirebaseErrorCode.INVALID_REQUEST_BODY]: 'invalid request body',
   [TW5FirebaseErrorCode.ATTEMPTED_UPDATE_IN_RECIPE]: 'tiddlers cannot be updated in recipes, only bags',
   // 1XX
+  [TW5FirebaseErrorCode.NO_AUTHENTICATED_USER]: 'no authenticated user detected in auth header',
   [TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG]: 'read access denied to bag for current user',
   [TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG]: 'write access denied to bag for current user',
   [TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE]:
@@ -77,7 +80,7 @@ export interface RecipePermissionError {
   permissions: BagPermission[];
 }
 
-export type BodyValidationError = ErrorObject<string, Record<string, any>, unknown>
+export type BodyValidationError = ErrorObject<string, Record<string, any>, unknown>;
 
 export type TW5FirebaseErrorPayload =
   // 0XX
@@ -104,6 +107,9 @@ export type TW5FirebaseErrorPayload =
       };
     }
   // 1XX
+  | {
+      code: TW5FirebaseErrorCode.NO_AUTHENTICATED_USER;
+    }
   | {
       code: TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG;
       data: BagPermissionError;

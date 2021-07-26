@@ -5,7 +5,7 @@ module.exports = (env, webpackArgs) => {
   return [
     getOuterConfig({
       input: 'src/outer-main.ts',
-      outputDir: 'public',
+      outputDir: '../dist',
       outputFilename: 'outer-main.js',
       ...common,
     })

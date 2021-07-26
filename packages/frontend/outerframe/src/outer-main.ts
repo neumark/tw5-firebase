@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import firebase from 'firebase';
 import * as firebaseui from 'firebaseui';
-import { FirebaseConfig, WikiLocation } from '@tw5-firebase/shared/src/model/config';
+import { FrontendConfig, OuterFrameBuildConfig, WikiLocation } from '@tw5-firebase/shared/src/model/config';
 import { deleteAccount, handleConfigChange, handleSignedInUser, handleSignedOutUser, signInWithPopup } from './login';
-declare let __DEFAULT_WIKI_LOCATION__: string;
+declare let __BUILD_CONFIG__: string;
 
 let ui: firebaseui.auth.AuthUI;
 
@@ -33,33 +33,43 @@ const parseQueryString = (queryString: string) => {
 
 const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
 
-const initFirebase = async () => {
-  // start with hardcoded default api endpoint url
-  const wikiLocationJson:string = __DEFAULT_WIKI_LOCATION__;
-  const defaultWikiLocation = JSON.parse(wikiLocationJson) as WikiLocation;
+const getMergedBuildConfig = ():OuterFrameBuildConfig => {
+// start with hardcoded configuration
+const buildConfigJSON:string = __BUILD_CONFIG__;
+const config = JSON.parse(buildConfigJSON) as OuterFrameBuildConfig;
   // extend with hash parameters
-  const urlHashConfig = parseQueryString(location.search) as Partial<WikiLocation>;
-  const wikiLocation = Object.assign({}, defaultWikiLocation, urlHashConfig);
+  const urlHashConfig = parseQueryString(location.search) as Partial<OuterFrameBuildConfig>;
+  Object.assign(config, urlHashConfig);
   // override wiki name based on path part of url if set
   const wikiNameInPath = window.location.pathname.match(RE_WIKI_NAME);
   if (wikiNameInPath) {
-    wikiLocation.wikiName = wikiNameInPath[1];
+    config.wikiName = wikiNameInPath[1];
   }
-  // fetch firebase config from backend
-  const firebaseConfig = await (await fetch(wikiLocation.apiEndpoint+'firebase-config')).json() as FirebaseConfig;
+  return config;
+}
+
+const getFrontendConfig = async (wikiLocation: WikiLocation):Promise<FrontendConfig> => {
+  // fetch frontend config from backend
+  return await (await fetch(`${wikiLocation.apiEndpoint}${wikiLocation.wikiName}/frontendconfig`)).json();
+}
+
+const initFirebase = async () => {
+
+  const wikiLocation = getMergedBuildConfig();
+  const frontendConfig = await getFrontendConfig(wikiLocation);
   // init firebase:
-  firebase.initializeApp(firebaseConfig);
-  return wikiLocation;
+  firebase.initializeApp(frontendConfig.firebase);
+  return {frontendConfig, wikiLocation};
 };
 
 /**
  * Initializes the app.
  */
 const initApp = async () => {
-  const wikiLocation: WikiLocation = await initFirebase()
+  const {frontendConfig, wikiLocation} = await initFirebase()
 
   const startTW5 = (user: firebase.User ) => {
-    console.log("this is where TW5 would start...", user, wikiLocation);
+    console.log("this is where TW5 would start...", frontendConfig, user, wikiLocation);
   };
   // Listen to change in auth state so it displays the correct UI for when
   // the user is signed in or not.

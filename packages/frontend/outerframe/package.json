@@ -6,7 +6,7 @@
   "author": "Peter Neumark",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "run webpack -c webpack.config.js --mode production",
+    "build": "./scripts/build.sh",
     "frontend": "run serve -n -d --no-port-switching --symlinks -p 8080 public",
     "test": "echo 'No tests'"
   },

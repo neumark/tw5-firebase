@@ -18,5 +18,8 @@
     "ts-json-schema-generator": "^0.88.0",
     "tslib": "^2.3.0",
     "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "ts-node": "^10.1.0"
   }
 }

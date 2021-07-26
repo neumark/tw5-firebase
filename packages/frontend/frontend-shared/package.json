@@ -6,7 +6,9 @@
   "author": "Peter Neumark",
   "license": "MIT",
   "scripts": {
-    "test": "echo 'No tests'"
+    "test": "echo 'No tests'",
+    "deploy": "./scripts/deploy.sh",
+    "local": "./scripts/local.sh"
   },
   "dependencies": {
     "@tw5-firebase/shared": "^0.0.0"

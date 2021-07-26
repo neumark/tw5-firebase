@@ -16,40 +16,43 @@ export interface FirebaseConfig {
  * Defaults for the given tw5-firebase environment
  */
 export interface TW5FirebaseEnvironmentConfig {
-  defaultWikiName: string;
-}
-
-export type FrontendConfig = FirebaseConfig & TW5FirebaseEnvironmentConfig;
-
-export interface BackendConfig {
-  apiRegion: string;
-  timeoutSeconds?: number; // max number of seconds to allow cloud function to run
-  allowedDomains?: string[] // CORS-enbled origin domains
-  cloudFunctions?: string[] // firebase deploy should deploy these functions
-  hostingSites?: string[] // firebase deploy should deploy these hosting sites
+  defaultEnv: string;
 }
 
 /**
  * Served to frontend when wiki loads by ':wiki/config' endpoint
  */
- export interface WikiInitConfig {
+export interface FrontendConfig {
+  firebase: FirebaseConfig,
+  resolvedRecipe: ResolvedRecipe,
   role: ROLE
-  resolvedRecipe: ResolvedRecipe
+}
+
+export interface BackendConfig {
+  apiRegion: string;
+  timeoutSeconds?: number; // max number of seconds to allow cloud function to run
+  allowedDomains?: string[] // CORS-enbled origin domains
+}
+
+export interface DeploymentConfig {
+  cloudFunctions?: string[] // firebase deploy should deploy these functions
+  hostingSites?: string[] // firebase deploy should deploy these hosting sites
 }
 
 export interface WikiLocation {
   wikiName: string,
   apiEndpoint: string,
 }
-
-export interface BuildConfig {
-  defaultWikiLocation: WikiLocation
-}
+/**
+ * Webpack hard-codes this into the outer-frame JS.
+ * Note: can '&' this with other interfaces if required later.
+ */
+export type OuterFrameBuildConfig = WikiLocation;
 
 /**
  * Secret keys, in etc/keys*json
  */
 export interface Keys {
   firebaseToken: string;
-  refreshToken: string;
+  refreshToken?: string;
 }

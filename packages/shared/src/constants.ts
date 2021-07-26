@@ -37,5 +37,5 @@ export const ETC_TITLE_PREFIX = '/etc/';
 export const VARIABLE_PERSONAL_BAG = 'PERSONAL_BAG';
 
 export const CONFIG_VAR_BACKEND_CONFIG = 'backendconfig';
-export const CONFIG_VAR_FRONTEND_CONFIG = 'frontendconfig';
+export const CONFIG_VAR_FIREBASE_CONFIG = 'firebaseconfig';
 export const DEFAULT_TIMEOUT_SECONDS = 300;
