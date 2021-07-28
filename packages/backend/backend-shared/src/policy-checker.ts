@@ -7,21 +7,24 @@ import {
   Grantee,
   isPersonalBag,
   PolicyRejectReason,
-  standardPolicies,
+  DEFAULT_BAG_POLICIES,
 } from '@tw5-firebase/shared/src/model/bag-policy';
 import { PERSONAL_BAG_PREFIX } from '@tw5-firebase/shared/src/constants';
 import { ROLE } from '@tw5-firebase/shared/src/model/roles';
 import { TiddlerData } from '@tw5-firebase/shared/src/model/tiddler';
 import { User } from '@tw5-firebase/shared/src/model/user';
-import { TiddlerPersistence } from '@tw5-firebase/backend-shared/src/persistence/interfaces';
 //import { KNOWN_BAG_CONSTRAINTS, PERSONAL_BAG_CONSTRAINT } from './tiddler-constraints';
 
 /*
-  Permission Checker
+  Policy Checker
   There are two kinds of operations: READ and WRITE
   There are 5 roles as defined in src/model/roles:ROLES
 
 */
+
+export const granteeMatches = (grantee:Grantee, user:User, role:ROLE) => ('userId' in grantee && grantee.userId === user.userId) || ('role' in grantee && grantee.role <= role);
+
+export const verifyHasAccess = (user: User, role:ROLE, accessType: AccessType, policy: BagPolicy) => policy[accessType].some(grantee => granteeMatches(grantee, user, role));
 
 const granteesInclude = (wiki: string, grantees: Grantee[], user: User): boolean =>
   grantees.some((grantee) => {
@@ -37,7 +40,7 @@ const granteesInclude = (wiki: string, grantees: Grantee[], user: User): boolean
 export class PolicyChecker {
 
   private async checkPolicies(
-    user: User,
+    user: User|undefined,
     wiki: string,
     bags: string[],
     accessType: AccessType,
@@ -48,8 +51,8 @@ export class PolicyChecker {
     // 3) a tiddler called 'policy' within the bag
     const policiesToCheck: { [bag: string]: BagPolicy } = {};
     for (const bag of bags) {
-      if (bag in standardPolicies) {
-        policiesToCheck[bag] = standardPolicies[bag];
+      if (bag in DEFAULT_BAG_POLICIES) {
+        policiesToCheck[bag] = DEFAULT_BAG_POLICIES[bag];
       } else if (isPersonalBag(bag)) {
         policiesToCheck[bag] = getPersonalBagPolicy(bag.substr(PERSONAL_BAG_PREFIX.length));
       } else {
@@ -63,7 +66,8 @@ export class PolicyChecker {
         // this shouldn't happen because we should have a fallback policy for any bag
         throw new Error(`Unexpected undefined bag policy for wiki ${wiki} bag ${bag}`);
       }
-      if (!granteesInclude(wiki, policy[accessType], user)) {
+      // if no user set, then we're being called as superuser
+      if (user && !granteesInclude(wiki, policy[accessType], user)) {
         allowed = false;
         reason = PolicyRejectReason.INSUFFICIENT_PERMISSION;
       }
@@ -107,8 +111,7 @@ export class PolicyChecker {
    * Gets first writable bag (if any) and returns any error message encoundered along the way.
    */
   async verifyWriteAccess(
-    persistence: TiddlerPersistence,
-    user: User,
+    user: User|undefined,
     wiki: string,
     bags: string[],
     tiddlerTitle: string,

@@ -7,7 +7,7 @@ export type HTTPAPIRequest = {
 };
 
 export interface HTTPTransport {
-  request: (httpApiRequest: HTTPAPIRequest) => Promise<any>;
+  request: <T=any>(httpApiRequest: HTTPAPIRequest) => Promise<T>;
 }
 
 export class NetworkError extends Error {

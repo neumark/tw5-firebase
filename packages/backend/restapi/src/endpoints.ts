@@ -1,21 +1,23 @@
 import cors from 'cors';
 import * as express from 'express';
 import { inject, injectable } from 'inversify';
-import { FrontendConfig } from '@tw5-firebase/shared/src/model/config';
+import { WikiInitState } from '@tw5-firebase/shared/src/model/config';
 import { BodyValidationError, TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model//errors';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 import { HTTPNamespacedTiddler, PartialTiddlerData } from '@tw5-firebase/shared/src/model/tiddler';
 import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import { mapOrApply, maybeApply } from '@tw5-firebase/shared/src/util/map';
 import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
+import { resolveDefaultRecipe } from '@tw5-firebase/backend-shared/src/recipe-resolver';
 import { tiddlerDataSchema } from '@tw5-firebase/shared/src/schema';
 import { getValidator } from '@tw5-firebase/shared/src/util/validator';
-import { firebaseConfig } from '@tw5-firebase/backend-shared/src/config-reader';
 import { AuthenticatorMiddleware } from './authentication';
 import { sendErr } from './http-errors';
 import { TiddlerStoreFactory } from './tiddler-store';
-import { ROLE } from '@tw5-firebase/shared/src/model/roles';
+import { getRoleName } from '@tw5-firebase/shared/src/model/roles';
 import { User } from '@tw5-firebase/shared/src/model/user';
+import { ROUTES } from '@tw5-firebase/shared/src/api/routes';
+import {getRole} from '@tw5-firebase/backend-shared/src/role-io'
 
 const toHTTPNamespacedTiddler = (namespacedTiddler: SingleWikiNamespacedTiddler): HTTPNamespacedTiddler => ({
   bag: namespacedTiddler.bag,
@@ -57,7 +59,8 @@ export class APIEndpointFactory {
     const bag = maybeApply(decodeURIComponent, req.params['bag']);
     const title = maybeApply(decodeURIComponent, req.params['title']);
     const store = this.tiddlerStoreFactory.createTiddlerStore(
-      this.assertAuthenticatedUser(req.user), wiki);
+      wiki,
+      this.assertAuthenticatedUser(req.user));
     if (bag) {
       return mapOrApply(toHTTPNamespacedTiddler, await store.read(bag, title));
     }
@@ -81,7 +84,7 @@ export class APIEndpointFactory {
       });
     }
     const tiddlerData = body as PartialTiddlerData;
-    const store = this.tiddlerStoreFactory.createTiddlerStore(this.assertAuthenticatedUser(req.user), wiki);
+    const store = this.tiddlerStoreFactory.createTiddlerStore(wiki, this.assertAuthenticatedUser(req.user));
     if (bag) {
       if (expectedRevision) {
         return toHTTPNamespacedTiddler(await store.update(bag, title, tiddlerData, expectedRevision));
@@ -100,7 +103,7 @@ export class APIEndpointFactory {
     const title = decodeURIComponent(req.params['title']);
     const expectedRevision = decodeURIComponent(req.params['revision']);
     if (wiki && bag && title && expectedRevision) {
-      const store = this.tiddlerStoreFactory.createTiddlerStore(this.assertAuthenticatedUser(req.user), wiki);
+      const store = this.tiddlerStoreFactory.createTiddlerStore(wiki, this.assertAuthenticatedUser(req.user));
       this.logger.info(`about to delete ${title}`);
       try {
         const result = await store.del(bag, title, expectedRevision);
@@ -115,16 +118,13 @@ export class APIEndpointFactory {
     });
   }
 
-  private async frontendConfig(req: express.Request):Promise<FrontendConfig> {
-    this.assertWikiInPath(req.params);
+  private async init(req: express.Request):Promise<WikiInitState> {
+    const user = this.assertAuthenticatedUser(req.user);
+    const store = await this.tiddlerStoreFactory.createTiddlerStore(this.assertWikiInPath(req.params));
+    const role = await getRole(store, user);
     return {
-      firebase: firebaseConfig,
-      // TODO:
-      role: ROLE.admin,
-      resolvedRecipe: {
-        read: [],
-        write: []
-      }
+      role: getRoleName(role),
+      resolvedRecipe: resolveDefaultRecipe(user, role)
     }
   }
 
@@ -155,11 +155,11 @@ export class APIEndpointFactory {
     api.use(cors({ origin: true }));
     api.use(this.authenticatorMiddleware.authenticate.bind(this.authenticatorMiddleware));
     const write = this.bindAndSerialize(this.write);
-    api.get(`/:wiki/frontendconfig`, this.bindAndSerialize(this.frontendConfig)); // create
-    api.post('/:wiki/bags/:bag/tiddlers/:title', write); // create
-    api.get('/:wiki/bags/:bag/tiddlers/:title?', this.bindAndSerialize(this.read)); // read
-    api.post('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', write); // update
-    api.delete('/:wiki/bags/:bag/tiddlers/:title/revisions/:revision', this.bindAndSerialize(this.remove)); // delete
+    api.get(ROUTES.RESTAPI_INIT, this.bindAndSerialize(this.init)); // get firebase config for client sdk
+    api.post(ROUTES.RESTAPI_CREATE, write); // create
+    api.get(ROUTES.RESTAPI_READ, this.bindAndSerialize(this.read)); // read
+    api.post(ROUTES.RESTAPI_UPDATE_DELETE, write); // update
+    api.delete(ROUTES.RESTAPI_UPDATE_DELETE, this.bindAndSerialize(this.remove)); // delete
     return api;
   }
 }

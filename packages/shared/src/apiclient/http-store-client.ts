@@ -1,6 +1,5 @@
 import { BagApi, SingleWikiNamespacedTiddler } from '../api/bag-api';
 import { HTTPNamespacedTiddler, PartialTiddlerData, TiddlerData } from '../model/tiddler';
-import { mapOrApply } from '../util/map';
 import { HTTPAPIRequest, HTTPTransport } from './http-transport';
 
 const fromHTTPNamespacedTiddler = (namespacedTiddler: HTTPNamespacedTiddler): SingleWikiNamespacedTiddler => ({
@@ -84,19 +83,7 @@ export class HTTPStoreClient implements BagApi {
       method: 'DELETE',
     });
   }
-  async readFromRecipe(
-    recipe: string,
-    key?: string | undefined,
-  ): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]> {
-    return mapOrApply(
-      fromHTTPNamespacedTiddler,
-      await this.httpTransport.request(this.getReadRequest('recipe', recipe, key)),
-    );
-  }
-  async read(bag: string, key?: string): Promise<SingleWikiNamespacedTiddler | SingleWikiNamespacedTiddler[]> {
-    return mapOrApply(
-      fromHTTPNamespacedTiddler,
-      await this.httpTransport.request(this.getReadRequest('bag', bag, key)),
-    );
+  async read(bag: string, key?: string): Promise<SingleWikiNamespacedTiddler[]> {
+    return (await this.httpTransport.request<HTTPNamespacedTiddler[]>(this.getReadRequest('bag', bag, key))).map(fromHTTPNamespacedTiddler);
   }
 }

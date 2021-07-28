@@ -1,5 +1,5 @@
 import { ResolvedRecipe } from "./recipe";
-import { ROLE } from "./roles";
+import { RoleName } from "./roles";
 
 export interface FirebaseConfig {
   apiKey: string;
@@ -22,10 +22,9 @@ export interface TW5FirebaseEnvironmentConfig {
 /**
  * Served to frontend when wiki loads by ':wiki/config' endpoint
  */
-export interface FrontendConfig {
-  firebase: FirebaseConfig,
+export interface WikiInitState {
   resolvedRecipe: ResolvedRecipe,
-  role: ROLE
+  role: RoleName
 }
 
 export interface BackendConfig {
@@ -43,11 +42,8 @@ export interface WikiLocation {
   wikiName: string,
   apiEndpoint: string,
 }
-/**
- * Webpack hard-codes this into the outer-frame JS.
- * Note: can '&' this with other interfaces if required later.
- */
-export type OuterFrameBuildConfig = WikiLocation;
+
+export type OuterFrameBuildConfig = WikiLocation & FirebaseConfig;
 
 /**
  * Secret keys, in etc/keys*json

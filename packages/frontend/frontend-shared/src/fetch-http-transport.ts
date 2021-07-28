@@ -9,9 +9,9 @@ export class FetchHTTPTransport implements HTTPTransport {
     this.getApiToken = getApiToken;
   }
 
-  async request(httpApiRequest: HTTPAPIRequest): Promise<any> {
+  async request<T>(httpApiRequest: HTTPAPIRequest): Promise<T> {
     const { urlPath, body, method } = httpApiRequest;
-    const headers: { [key: string]: string } = {};
+    const headers: Record<string, string> = {};
     if (body) {
       headers['Content-Type'] = 'application/json';
     }
@@ -28,6 +28,6 @@ export class FetchHTTPTransport implements HTTPTransport {
         apiRequest: httpApiRequest,
       });
     }
-    return responseBody;
+    return responseBody as T;
   }
 }

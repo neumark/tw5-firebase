@@ -10,14 +10,19 @@ service cloud.firestore {
     }
     // for all other bags, the user's role must be verified
     match /wikis/{wikiName}/bags/{bagName}/tiddlers/{document=**} {
-        function hasAccessByRole() {
+        function hasReadAccessByRole() {
           // don't allow access to personal bags in this match clause
           let isPersonalBag = bagName.matches('^user%3A.*');
           // anybody with at least reader can read non-personal bags
-          let allowedByRole = get(/databases/$(database)/documents/wikis/$(wikiName)/users/$(request.auth.uid)).data.role >= 2;
-          return !isPersonalBag && allowedByRole;
+          let role = get(/databases/$(database)/documents/wikis/$(wikiName)/bags/etc/tiddlers/$('user%3A' + request.auth.uid)).data.fields.role;
+          // personal bags use the other match clause
+          return !isPersonalBag &&
+            // allow reader and above roles to read content and system bags
+            ((role in ['reader', 'editor', 'admin'] && bagName in ['content', 'system']) ||
+            // only admins can read the etc bag
+            (role == 'admin' && bagName == 'etc'));
         }
-        allow get, list: if request.auth != null && hasAccessByRole();
+        allow get, list: if request.auth != null && hasReadAccessByRole();
     }
   }
 }

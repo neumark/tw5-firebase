@@ -7,6 +7,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "./scripts/build.sh",
+    "deploy": "./scripts/deploy.sh",
     "local": "./scripts/local.sh",
     "test": "echo 'No tests'"
   },

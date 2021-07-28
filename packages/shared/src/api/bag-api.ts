@@ -1,4 +1,3 @@
-import { MaybeArray } from '../util/useful-types';
 import { Revision } from '../model/revision';
 import { PartialTiddlerData, Tiddler } from '../model/tiddler';
 
@@ -10,7 +9,7 @@ export type SingleWikiNamespacedTiddler = {
 
 export interface BagApi {
   create: (bag: string, title: string, tiddlerData: PartialTiddlerData) => Promise<SingleWikiNamespacedTiddler>;
-  read(bag: string, title?: string): Promise<MaybeArray<SingleWikiNamespacedTiddler>>;
+  read(bag: string, title?: string): Promise<Array<SingleWikiNamespacedTiddler>>;
   update: (
     bag: string,
     title: string,

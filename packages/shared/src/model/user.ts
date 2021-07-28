@@ -10,4 +10,4 @@ export interface User {
   name?: string;
 }
 
-export const username = (user: User) => user.name || user.userId;
+export const username = (user?: User) => user?.name ?? user?.userId ?? 'unknown';

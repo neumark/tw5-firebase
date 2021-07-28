@@ -5,10 +5,10 @@ const PnpPlugin = require("pnp-webpack-plugin");
 const supportedBrowsers = require('./supported_browsers.json');
 const fs = require('fs');
 
-const getBuildConfig = () => {
-    const buildConfig = JSON.parse(process.env.BUILD_CONFIG ?? '{}');
-    return buildConfig ?? {};
-}
+const getBuildConfig = () => Object.assign(
+        {},
+        JSON.parse(process.env.WIKI_LOCATION ?? '{}'),
+        JSON.parse(process.env.FIREBASE_CONFIG ?? '{}'));
 
 const tsConfig = path.resolve(__dirname, 'tsconfig.json');
 

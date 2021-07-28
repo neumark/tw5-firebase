@@ -12,7 +12,7 @@ export class TiddlerFactory {
     this.getTimestamp = getTimestamp;
   }
 
-  createTiddler(creator: User, title: string, type?: string, tiddlerData?: PartialTiddlerData): Tiddler {
+  createTiddler(creator: User|undefined, title: string, type?: string, tiddlerData?: PartialTiddlerData): Tiddler {
     const date = this.getTimestamp();
     return Object.assign(
       {

@@ -6,7 +6,6 @@ import { PartialTiddlerData, Tiddler, TiddlerData, TiddlerNamespace } from '@tw5
 import { User } from '@tw5-firebase/shared/src/model/user';
 import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import { getTimestamp as _getTimestamp } from '@tw5-firebase/shared/src/util/time';
-import { MaybeArray } from '@tw5-firebase/shared/src/util/useful-types';
 import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import { TiddlerPersistence, TransactionRunner } from '@tw5-firebase/backend-shared/src/persistence/interfaces';
 import { TiddlerFactory } from '@tw5-firebase/backend-shared/src/tiddler-factory';
@@ -44,7 +43,7 @@ const first = <T>(predicate: (e: T) => boolean, arr: T[]): T | undefined => {
 };
 
 class TiddlerStoreImpl implements BagApi {
-  private user: User;
+  private user?: User;
   private wiki: string;
   private transactionRunner: TransactionRunner;
   private policyChecker: PolicyChecker;
@@ -52,20 +51,8 @@ class TiddlerStoreImpl implements BagApi {
   private tiddlerFactory: TiddlerFactory;
   private logger: Logger;
 
-  private async getWriteableBag(
-    persistence: TiddlerPersistence,
-    bags: string[],
-    title: string,
-    tiddlerData: PartialTiddlerData,
-  ): Promise<string> {
-    const permissions = await this.policyChecker.verifyWriteAccess(
-      persistence,
-      this.user,
-      this.wiki,
-      bags,
-      title,
-      tiddlerData,
-    );
+  private async getWriteableBag(bags: string[], title: string, tiddlerData: PartialTiddlerData): Promise<string> {
+    const permissions = await this.policyChecker.verifyWriteAccess(this.user, this.wiki, bags, title, tiddlerData);
     const allowPermission = first((p) => p.allowed, permissions);
     if (!allowPermission) {
       throw new TW5FirebaseError({
@@ -82,45 +69,23 @@ class TiddlerStoreImpl implements BagApi {
   }
 
   private async doReadTiddlers(persistence: TiddlerPersistence, bags: string[], title?: string) {
-    const permissions = await this.policyChecker.verifyReadAccess(this.user, this.wiki, bags);
-    if (!permissions.every((p) => p.allowed)) {
-      if (bags.length === 1) {
-        throw new TW5FirebaseError({
-          code: TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG,
-          data: {
-            user: this.user,
-            ...permissions[0],
-          },
-        });
-      } else {
-        throw new TW5FirebaseError({
-          code: TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE,
-          data: {
-            user: this.user,
-            permissions,
-            title,
-          },
-        });
+    // when no user is set, we're in 'superuser' mode, no permission checks necessary
+    if (this.user) {
+      const permissions = await this.policyChecker.verifyReadAccess(this.user, this.wiki, bags);
+      if (!permissions.every((p) => p.allowed)) {
+          throw new TW5FirebaseError({
+            code: TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG,
+            data: {
+              user: this.user,
+              ...permissions[0],
+            },
+          });
       }
     }
-    if (title) {
-      const tiddlers = await persistence.readTiddlers(
-        bags.map((bag) => ({ namespace: { wiki: this.wiki, bag }, title })),
-      );
-      if (tiddlers.length < 1) {
-        throw new TW5FirebaseError({
-          code: TW5FirebaseErrorCode.TIDDLER_NOT_FOUND,
-          data: {
-            title,
-            bags,
-          },
-        });
-      }
-      return convert(tiddlers[0]);
-    } else {
-      const tiddlers = await persistence.readBags(bags.map((bag) => ({ wiki: this.wiki, bag })));
-      return deduplicate(tiddlers.map(convert));
-    }
+    const tiddlers = title
+      ? await persistence.readTiddlers(bags.map((bag) => ({ namespace: { wiki: this.wiki, bag }, title })))
+      : await persistence.readBags(bags.map((bag) => ({ wiki: this.wiki, bag })));
+    return deduplicate(tiddlers.map(convert));
   }
 
   private async doCreateTiddler(
@@ -129,7 +94,7 @@ class TiddlerStoreImpl implements BagApi {
     title: string,
     tiddlerData: PartialTiddlerData,
   ) {
-    const bag = await this.getWriteableBag(persistence, bags, title, tiddlerData);
+    const bag = await this.getWriteableBag(bags, title, tiddlerData);
     const revision = getRevision(this.user, this.getTimestamp());
     const tiddler = this.tiddlerFactory.createTiddler(this.user, title, tiddlerData.type, tiddlerData);
     await persistence.createTiddler({ wiki: this.wiki, bag }, tiddler, revision);
@@ -143,7 +108,7 @@ class TiddlerStoreImpl implements BagApi {
     tiddlerData: PartialTiddlerData,
     expectedRevision: Revision,
   ) {
-    const bag = await this.getWriteableBag(persistence, bags, title, tiddlerData);
+    const bag = await this.getWriteableBag(bags, title, tiddlerData);
     const revision = getRevision(this.user, this.getTimestamp());
     const { tiddler } = await persistence.updateTiddler(
       { wiki: this.wiki, bag },
@@ -159,8 +124,8 @@ class TiddlerStoreImpl implements BagApi {
   }
 
   constructor(
-    user: User,
     wiki: string,
+    user: User | undefined,
     transactionRunner: TransactionRunner,
     policyChecker: PolicyChecker,
     getTimestamp: typeof _getTimestamp,
@@ -176,18 +141,20 @@ class TiddlerStoreImpl implements BagApi {
     this.logger = logger;
   }
 
-  del(bag: string, title: string, expectedRevision: string): Promise<boolean> {
-    // break this up into two transactions
+  async del(bag: string, title: string, expectedRevision: string): Promise<boolean> {
     return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
-      const [removePermission] = await this.policyChecker.verifyRemoveAccess(this.user, this.wiki, [bag]);
-      if (!removePermission.allowed) {
-        throw new TW5FirebaseError({
-          code: TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG,
-          data: {
-            user: this.user,
-            ...removePermission,
-          },
-        });
+      // when no user is set, we're in 'superuser' mode, no permission checks necessary
+      if (this.user) {
+        const [removePermission] = await this.policyChecker.verifyRemoveAccess(this.user, this.wiki, [bag]);
+        if (!removePermission.allowed) {
+          throw new TW5FirebaseError({
+            code: TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG,
+            data: {
+              user: this.user,
+              ...removePermission,
+            },
+          });
+        }
       }
       this.logger.info(`tiddler-store.ts:deleteFromBag(): about to delete ${title}`);
       try {
@@ -200,13 +167,13 @@ class TiddlerStoreImpl implements BagApi {
     });
   }
 
-  create(bag: string, title: string, tiddlerData: Partial<TiddlerData>): Promise<SingleWikiNamespacedTiddler> {
+  async create(bag: string, title: string, tiddlerData: Partial<TiddlerData>): Promise<SingleWikiNamespacedTiddler> {
     return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
       return this.doCreateTiddler(persistence, [bag], title, tiddlerData);
     });
   }
 
-  update(
+  async update(
     bag: string,
     title: string,
     tiddlerData: Partial<TiddlerData>,
@@ -217,7 +184,7 @@ class TiddlerStoreImpl implements BagApi {
     });
   }
 
-  read(bag: string, title?: string): Promise<MaybeArray<SingleWikiNamespacedTiddler>> {
+  async read(bag: string, title?: string): Promise<Array<SingleWikiNamespacedTiddler>> {
     return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
       return await this.doReadTiddlers(persistence, [bag], title);
     });
@@ -246,10 +213,10 @@ export class TiddlerStoreFactory {
     this.logger = logger;
   }
 
-  createTiddlerStore(user: User, wiki: string): BagApi {
+  createTiddlerStore(wiki: string, user?: User): BagApi {
     return new TiddlerStoreImpl(
-      user,
       wiki,
+      user,
       this.transactionRunner,
       this.policyChecker,
       this.getTimestamp,

@@ -1,7 +1,7 @@
 import firebase from 'firebase';
 import * as firebaseui from 'firebaseui';
 
-type StartTW5 = (user: firebase.User) => void;
+type StartTW5 = (user: firebase.User) => Promise<void>;
 
 let ui: firebaseui.auth.AuthUI;
 
@@ -120,7 +120,7 @@ export const handleSignedInUser = async function (startTW5: StartTW5, user: fire
   }
 
   // --- start tiddlywiki ---
-  startTW5(user);
+  await startTW5(user);
 };
 
 /**

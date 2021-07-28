@@ -1,8 +1,8 @@
 import { Tiddler, TiddlerNamespace } from '../model/tiddler';
 import { Modify } from '../util/useful-types';
 import { Revision } from '../model/revision';
-import { JSON_TIDDLER_TYPE } from '../constants';
 import firebase from 'firebase';
+import { replaceUrlEncoded } from '../util/templates';
 
 export type FirestoreSerializedTiddler = Omit<
   Modify<
@@ -31,7 +31,7 @@ export const toStandardTiddler = (
   return {
     ...rest,
     type,
-    text: type === JSON_TIDDLER_TYPE ? JSON.stringify(text) : (text as string),
+    text,
     title: decodeURIComponent(docId),
     created: timestampConverter(created),
     modified: timestampConverter(modified),
@@ -47,17 +47,16 @@ export const toFirestoreTiddler = (
   return {
     ...rest,
     type,
-    text: text && type === JSON_TIDDLER_TYPE ? JSON.parse(text) : text,
+    text,
     created: timestampConverter(created),
     modified: timestampConverter(modified),
     revision,
   };
 };
 
-export const makeKey = (ns: TiddlerNamespace, title?: string) => {
-  const collectionPath = `wikis/${encodeURIComponent(ns.wiki)}/bags/${encodeURIComponent(ns.bag)}/tiddlers`;
-  if (title) {
-    return `${collectionPath}/${encodeURIComponent(title)}`;
-  }
-  return collectionPath;
-};
+export enum PATH_TEMPLATE {
+  BAG = 'wikis/:wiki/bags/:bag/tiddlers',
+  TIDDLER = 'wikis/:wiki/bags/:bag/tiddlers/:title'
+}
+
+export const makeKey = (ns: TiddlerNamespace, title?: string) => title ? replaceUrlEncoded(PATH_TEMPLATE.TIDDLER, {title, ...ns}) : replaceUrlEncoded(PATH_TEMPLATE.BAG, {...ns})

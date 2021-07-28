@@ -1,42 +1,21 @@
 import 'reflect-metadata';
 import firebase from 'firebase';
 import * as firebaseui from 'firebaseui';
-import { FrontendConfig, OuterFrameBuildConfig, WikiLocation } from '@tw5-firebase/shared/src/model/config';
+import { WikiInitState, OuterFrameBuildConfig } from '@tw5-firebase/shared/src/model/config';
+import { parseQueryString } from '@tw5-firebase/shared/src/util/querystring';
 import { deleteAccount, handleConfigChange, handleSignedInUser, handleSignedOutUser, signInWithPopup } from './login';
+import { replaceUrlEncoded } from '@tw5-firebase/shared/src/util/templates';
+import { ROUTES } from '@tw5-firebase/shared/src/api/routes';
+import { FetchHTTPTransport } from '@tw5-firebase/frontend-shared/src/fetch-http-transport';
 declare let __BUILD_CONFIG__: string;
 
 let ui: firebaseui.auth.AuthUI;
-
-/**
- * @param {string} queryString The full query string.
- * @return {!Object<string, string>} The parsed query parameters.
- */
-const parseQueryString = (queryString: string) => {
-  // Remove first character if it is ? or #.
-  const config: Record<string, string> = {};
-  if (!queryString) {
-    return config;
-  }
-  if (queryString.charAt(0) === '#' || queryString.charAt(0) === '?') {
-    queryString = queryString.substring(1);
-  }
-
-  const pairs = queryString.split('&');
-  for (let i = 0; i < pairs.length; i++) {
-    const pair = pairs[i].split('=');
-    if (pair.length == 2) {
-      config[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
-    }
-  }
-  return config;
-}
 
 const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
 
 const getMergedBuildConfig = ():OuterFrameBuildConfig => {
 // start with hardcoded configuration
-const buildConfigJSON:string = __BUILD_CONFIG__;
-const config = JSON.parse(buildConfigJSON) as OuterFrameBuildConfig;
+const config = JSON.parse(__BUILD_CONFIG__) as OuterFrameBuildConfig;
   // extend with hash parameters
   const urlHashConfig = parseQueryString(location.search) as Partial<OuterFrameBuildConfig>;
   Object.assign(config, urlHashConfig);
@@ -48,28 +27,27 @@ const config = JSON.parse(buildConfigJSON) as OuterFrameBuildConfig;
   return config;
 }
 
-const getFrontendConfig = async (wikiLocation: WikiLocation):Promise<FrontendConfig> => {
-  // fetch frontend config from backend
-  return await (await fetch(`${wikiLocation.apiEndpoint}${wikiLocation.wikiName}/frontendconfig`)).json();
+const getWikiInitState = async (config:OuterFrameBuildConfig, user:firebase.User):Promise<WikiInitState> => {
+  const transport = new FetchHTTPTransport(config.apiEndpoint, () => user.getIdToken());
+  const wikiInitState:WikiInitState = await transport.request({
+    // remove trailing slash
+    urlPath: replaceUrlEncoded(ROUTES.RESTAPI_INIT, {wiki: config.wikiName}).substr(1)
+  })
+  return wikiInitState;
 }
 
-const initFirebase = async () => {
-
-  const wikiLocation = getMergedBuildConfig();
-  const frontendConfig = await getFrontendConfig(wikiLocation);
-  // init firebase:
-  firebase.initializeApp(frontendConfig.firebase);
-  return {frontendConfig, wikiLocation};
-};
+const initFirebase = (config:OuterFrameBuildConfig) => firebase.initializeApp(config);
 
 /**
  * Initializes the app.
  */
 const initApp = async () => {
-  const {frontendConfig, wikiLocation} = await initFirebase()
+  const config = getMergedBuildConfig();
+  initFirebase(config);
 
-  const startTW5 = (user: firebase.User ) => {
-    console.log("this is where TW5 would start...", frontendConfig, user, wikiLocation);
+  const startTW5 = async (user: firebase.User ) => {
+    const wikiInitState = await getWikiInitState(config, user);
+    console.log('WikiInitState', wikiInitState, config, user);
   };
   // Listen to change in auth state so it displays the correct UI for when
   // the user is signed in or not.

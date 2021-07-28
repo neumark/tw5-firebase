@@ -1,5 +1,5 @@
 import { ErrorObject } from 'ajv';
-import { BagPermission } from './bag-policy';
+import { AccessType, BagPermission } from './bag-policy';
 import { Revision } from './revision';
 import { PartialTiddlerData } from './tiddler';
 import { User } from './user';
@@ -15,10 +15,7 @@ export enum TW5FirebaseErrorCode {
   NO_AUTHENTICATED_USER = 101,
   READ_ACCESS_DENIED_TO_BAG = 102,
   WRITE_ACCESS_DENIED_TO_BAG = 103,
-  NO_WRITABLE_BAG_IN_RECIPE = 104,
-  UNREADABLE_BAG_IN_RECIPE = 105,
   TIDDLER_NOT_FOUND = 106,
-  RECIPE_NOT_FOUND = 107,
 
   // 2XX: persistence errors
   // 22X: write errors
@@ -27,6 +24,11 @@ export enum TW5FirebaseErrorCode {
   UPDATE_MISSING_TIDDLER = 222,
   CREATE_EXISTING_TIDDLER = 223,
   FIRESTORE_LISTENER_ERROR = 224,
+
+  // 3XX: recipe resolution errors
+  RECIPE_NOT_FOUND = 301,
+  NO_WRITABLE_BAG_IN_RECIPE = 302,
+  RECIPE_MANDATORY_BAG_NO_ACCESS = 303,
 }
 
 export const TW5FirebaseErrorToHTTPErrorCode: Partial<Record<TW5FirebaseErrorCode, number>> = {
@@ -40,7 +42,7 @@ export const TW5FirebaseErrorToHTTPErrorCode: Partial<Record<TW5FirebaseErrorCod
   [TW5FirebaseErrorCode.READ_ACCESS_DENIED_TO_BAG]: 403,
   [TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG]: 403,
   [TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE]: 401,
-  [TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE]: 403,
+  [TW5FirebaseErrorCode.RECIPE_MANDATORY_BAG_NO_ACCESS]: 403,
   [TW5FirebaseErrorCode.TIDDLER_NOT_FOUND]: 404,
   [TW5FirebaseErrorCode.RECIPE_NOT_FOUND]: 404,
   // 2XX
@@ -62,7 +64,8 @@ const TW5FirebaseErrorMessages: Record<TW5FirebaseErrorCode, string> = {
   [TW5FirebaseErrorCode.WRITE_ACCESS_DENIED_TO_BAG]: 'write access denied to bag for current user',
   [TW5FirebaseErrorCode.NO_WRITABLE_BAG_IN_RECIPE]:
     'write attempted to recipe which contained no bags to which tiddler could be written',
-  [TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE]: 'requested recipe contains at least one bag which could not be read',
+  [TW5FirebaseErrorCode.RECIPE_MANDATORY_BAG_NO_ACCESS]:
+    'requested recipe contains at least one mandatory bag which could not be accessed',
   [TW5FirebaseErrorCode.TIDDLER_NOT_FOUND]: 'requested tiddler not found',
   [TW5FirebaseErrorCode.RECIPE_NOT_FOUND]: 'requested recipe not found',
   // 2XX
@@ -73,9 +76,10 @@ const TW5FirebaseErrorMessages: Record<TW5FirebaseErrorCode, string> = {
   [TW5FirebaseErrorCode.FIRESTORE_LISTENER_ERROR]: 'error in firestore listener',
 };
 
-export type BagPermissionError = BagPermission & { user: User };
+export type BagPermissionError = BagPermission & { user?: User };
+
 export interface RecipePermissionError {
-  user: User;
+  user?: User;
   title?: string;
   permissions: BagPermission[];
 }
@@ -123,8 +127,11 @@ export type TW5FirebaseErrorPayload =
       data: RecipePermissionError & { tiddlerData: PartialTiddlerData };
     }
   | {
-      code: TW5FirebaseErrorCode.UNREADABLE_BAG_IN_RECIPE;
-      data: RecipePermissionError;
+      code: TW5FirebaseErrorCode.RECIPE_MANDATORY_BAG_NO_ACCESS;
+      data: {
+        accessType: AccessType;
+        bag: string;
+      };
     }
   | {
       code: TW5FirebaseErrorCode.TIDDLER_NOT_FOUND;

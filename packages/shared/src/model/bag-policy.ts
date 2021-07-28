@@ -11,7 +11,7 @@ export enum PolicyRejectReason {
   CONTRAINTS = 'constraints',
 }
 
-export const standardPolicies: { [bag: string]: BagPolicy } = {
+export const DEFAULT_BAG_POLICIES: Record<string, BagPolicy> = {
   [BUILTIN_BAG_CONTENT]: {
     write: [{ role: ROLE.editor }],
     read: [{ role: ROLE.reader }]

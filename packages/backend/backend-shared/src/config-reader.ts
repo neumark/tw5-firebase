@@ -6,7 +6,7 @@ import { configSchema } from '@tw5-firebase/shared/src/schema';
 import { objMap } from '../../../shared/src/util/map';
 
 const jsonDecodeFields = (serialized:Record<string, string>):Record<string, any> => objMap(
-  (k:string, v:string) => [k, JSON.parse(v)],
+  ([k, v]) => [k, JSON.parse(v)],
   serialized)
 
 const readConfigVar = (varName:string, allowMissing = false):Record<string, any> => {
