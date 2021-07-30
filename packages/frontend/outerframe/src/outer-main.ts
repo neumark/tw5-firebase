@@ -12,11 +12,24 @@ import { TiddlerVersionManager } from './tiddler-version-manager/tvm';
 import type {MiniIframeRPC} from 'mini-iframe-rpc';
 import { batchMap } from '@tw5-firebase/shared/src/util/map';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
+import { User } from '@tw5-firebase/shared/src/model/user';
+import { isVoid } from '@tw5-firebase/shared/src/util/is-void';
 declare let __BUILD_CONFIG__: string;
 
 let ui: firebaseui.auth.AuthUI;
 
 const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
+
+const unNullable = (s:string|null):string|undefined => isVoid(s) ? undefined : s as string;
+
+const firebaseToNativeUser = (user:firebase.User):User => ({
+  userId: user.uid,
+  phone_number: unNullable(user.phoneNumber),
+  email: unNullable(user.email),
+  email_verified: user.emailVerified,
+  picture: unNullable(user.photoURL),
+  name: unNullable(user.displayName)
+})
 
 const getMergedBuildConfig = (): OuterFrameBuildConfig => {
   // start with hardcoded configuration
@@ -53,6 +66,9 @@ const createWikiIframe = () => {
   iframe.width = String(
     window.innerWidth ?? window.document?.documentElement?.clientWidth ?? window.document?.body?.clientWidth,
   );
+  iframe.height = String(
+    window.innerHeight ?? window.document?.documentElement?.clientHeight ?? window.document?.body?.clientHeight,
+  );
   parentElement?.appendChild(iframe);
   return iframe;
 };
@@ -82,7 +98,7 @@ const initApp = async () => {
       await batchMap(async (tiddlers:SingleWikiNamespacedTiddler[]) => {
         await rpc.invoke(iframe.contentWindow!, null, 'saveTiddlers', [tiddlers])
       },data, 50);
-      await rpc.invoke(iframe.contentWindow!, null, 'initWiki', [data])
+      await rpc.invoke(iframe.contentWindow!, null, 'initWiki', [{user: firebaseToNativeUser(user)}])
     })
     tvm.setupListeners();
     // TODO: based on wikiInitState.lastTiddlers, we could figure out when the last tiddler in each bag has be read,

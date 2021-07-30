@@ -1,0 +1,5 @@
+title: $:/pn-wiki/html-head.html
+
+`
+  <script src="mini-iframe-rpc.js"></script>
+`

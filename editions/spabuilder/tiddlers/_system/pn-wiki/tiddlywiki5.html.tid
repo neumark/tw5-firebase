@@ -19,7 +19,7 @@ title: $:/pn-wiki/tiddlywiki5.html
 <meta name="copyright" content="`{{$:/core/copyright.txt}}`" />
 <link id="faviconLink" rel="shortcut icon" href="/favicon.png">
 <!-- transclude tiddler to do stuff prior to tw5 boot -->
-`{{$:/pn-wiki/firebase-head.html}}`
+`{{$:/pn-wiki/html-head.html}}`
 
 <title>`{{$:/core/wiki/title}}`</title>
 <!--~~ This is a Tiddlywiki file. The points of interest in the file are marked with this pattern ~~-->

@@ -50,6 +50,7 @@
     "source-map-support": "^0.5.19",
     "style-loader": "^2.0.0",
     "terser-webpack-plugin": "^5.1.4",
+    "tiddlywiki": "^5.1.23",
     "ts-json-schema-generator": "^0.88.0",
     "ts-loader": "^8.0.17",
     "ts-node": "^10.0.0",

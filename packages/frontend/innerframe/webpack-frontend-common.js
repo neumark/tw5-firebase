@@ -5,11 +5,6 @@ const PnpPlugin = require("pnp-webpack-plugin");
 const supportedBrowsers = require('./supported_browsers.json');
 const fs = require('fs');
 
-const getBuildConfig = () => Object.assign(
-        {},
-        JSON.parse(process.env.WIKI_LOCATION ?? '{}'),
-        JSON.parse(process.env.FIREBASE_CONFIG ?? '{}'));
-
 const tsConfig = path.resolve(__dirname, 'tsconfig.json');
 
 const tsLoader = {
@@ -93,9 +88,10 @@ const getTW5PluginConfig = (baseOptions) => {
   Object.assign(pluginConfig, {
     externals: [
       {
-        // make firebase and firebase-ui external
+          /*
         firebase: 'global firebase',
         firebaseui: 'global firebaseui',
+        */
       }
     ],
   });
@@ -143,7 +139,7 @@ const getTW5PluginConfig = (baseOptions) => {
           new TerserPlugin({
             terserOptions: {
               output: {
-                // preamble: getBanner(),
+                preamble: getBanner(),
                 comments: false,
               },
             },
