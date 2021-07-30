@@ -31,6 +31,7 @@ export interface TiddlerPersistence {
     }>,
     expectedRevision?: Revision,
   ) => Promise<{ tiddler: Tiddler; revision: Revision }>;
+  getLastTiddlerTitle: (collections: TiddlerNamespace[]) => Promise<{namespace: TiddlerNamespace, title: string}[]>;
 }
 
 export interface TransactionRunner {

@@ -2,7 +2,6 @@ import { Container } from 'inversify';
 
 export const enum Component {
   BackendConfig = 'BackendConfig',
-  FirebaseConfig = 'FirebaseConfig',
   FirebaseApp = 'FirebaseApp',
   FireStoreDB = 'FireStoreDB',
   FirebaseAuth = 'FirebaseAuth',

@@ -4,7 +4,6 @@ import * as firebaseui from 'firebaseui';
 import 'firebaseui/dist/firebaseui.css';
 import { FirebaseConfig, WikiLocation } from '../../../shared/src/model/config';
 import { startTW5 } from './tw5-starter';
-import { CONFIG_VAR_FIREBASE_CONFIG } from '@tw5-firebase/shared/src/constants';
 
 declare let __DEFAULT_WIKI_LOCATION__: string;
 
@@ -224,7 +223,7 @@ const initFirebase = async () => {
     wikiLocation.wikiName = wikiNameInPath[1];
   }
   // fetch firebase config from backend
-  const firebaseConfig = await (await fetch(wikiLocation.apiEndpoint+CONFIG_VAR_FIREBASE_CONFIG)).json() as FirebaseConfig;
+  const firebaseConfig = await (await fetch(wikiLocation.apiEndpoint)).json() as FirebaseConfig;
   // init firebase:
   firebase.initializeApp(firebaseConfig);
   return wikiLocation;

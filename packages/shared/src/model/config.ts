@@ -24,7 +24,9 @@ export interface TW5FirebaseEnvironmentConfig {
  */
 export interface WikiInitState {
   resolvedRecipe: ResolvedRecipe,
-  role: RoleName
+  role: RoleName,
+  // maps bag name => last tiddler by id for each bag
+  lastTiddlers: Record<string, string>
 }
 
 export interface BackendConfig {

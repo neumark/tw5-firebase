@@ -1,0 +1,1 @@
+export const sleep = async (ms:number) => new Promise((resolve, _reject) => setInterval(resolve, ms));

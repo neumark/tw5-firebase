@@ -44,3 +44,7 @@ export interface BagPermission {
   reason?: PolicyRejectReason;
   policy: BagPolicy;
 }
+
+export interface BagMetadata {
+  lastDocumentId: string
+}

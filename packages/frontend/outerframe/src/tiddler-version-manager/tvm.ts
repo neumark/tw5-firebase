@@ -1,25 +1,20 @@
-import { TiddlerWithRevision } from '../../../../shared/src/model/tiddler';
-import { ChangeType, TiddlerChange, ChangeResult, ChangeListener, LocalTiddler, ChangeOrigin } from './types';
+import { TiddlerWithRevision } from '@tw5-firebase/shared/src/model/tiddler';
+import { ChangeType, TiddlerChange, ChangeResult, ChangeListener } from './types';
 import { registerListener as _registerListener } from './remote-change-listener';
 import { interactiveMerge as _interactiveMerge } from './interactive-merge';
-import { PickRequired } from '../../../../shared/src/util/useful-types';
-import { Logger } from '../../../../shared/src/util/logger';
-import { Wiki } from '../../../tw5-shared/src/tw5-types';
-import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../../../shared/src/model/errors';
+import { Logger } from '@tw5-firebase/shared/src/util/logger';
+import { TW5FirebaseError } from '@tw5-firebase/shared/src/model/errors';
 import { assertUnreachable } from '@tw5-firebase/shared/src/util/switch';
-
-export type ReferencedRevision = TiddlerWithRevision & { referencedBy: string };
+import { SingleWikiNamespacedTiddler } from '../../../../shared/src/api/bag-api';
 
 export interface TiddlerState {
-  // revisions referred to by draft tiddlers are stored in referencedRevisions
-  referencedRevisions: ReferencedRevision[];
-  lastKnownServerRevision: TiddlerWithRevision;
-  writeQueue: TiddlerChange[];
+  lastKnownRemoteRevision: TiddlerWithRevision;
   currentWriteOperation?: Promise<ChangeResult>;
 }
 
 type BagState = {
   tiddlerStates: Record<string, TiddlerState>;
+  lastTiddlerRead: boolean;
   unregisterListener?: () => void;
 };
 
@@ -50,24 +45,14 @@ type BagState = {
  *
  */
 export class TiddlerVersionManager implements ChangeListener {
-  private wikiName: string;
-  private bagsInRecipe: string[];
+  private wiki: string;
+  private bags: string[];
   private registerListener: typeof _registerListener;
   private logger: Logger;
-  // private interactiveMerge: typeof _interactiveMerge;
 
-  // recipeState: {bag name => bag state}
-  private localTiddlers: Record<string, LocalTiddler> = {};
+
   private bagStates: Record<string, BagState> = {};
 
-  private setupListeners() {
-    for (const bag of this.bagsInRecipe) {
-      this.bagStates[bag] = {
-        tiddlerStates: {},
-      };
-      this.bagStates[bag].unregisterListener = this.registerListener({ wiki: this.wikiName, bag }, this);
-    }
-  }
 
   /*
   private saveServerRevision(bag: string, tiddler: Tiddler, revision: string) {
@@ -89,34 +74,45 @@ export class TiddlerVersionManager implements ChangeListener {
   */
 
   constructor(
+    wiki:string,
+    bags:string[],
     {
-      wikiName,
-      bagsInRecipe,
       registerListener = _registerListener,
       logger = globalThis.console,
-      interactiveMerge = _interactiveMerge,
-    } = {} as PickRequired<
+    } = {} as Partial<
       {
-        wikiName: string;
-        bagsInRecipe: string[];
-        wiki: Wiki;
         registerListener: typeof _registerListener;
         logger: Logger;
-        interactiveMerge: typeof _interactiveMerge;
-      },
-      'wikiName' | 'bagsInRecipe'
+      }
     >,
   ) {
-    this.wikiName = wikiName;
-    this.bagsInRecipe = bagsInRecipe;
+    this.wiki = wiki;
+    this.bags = bags;
     this.registerListener = registerListener;
     this.logger = logger;
-    //this.interactiveMerge = interactiveMerge;
-    this.setupListeners();
   }
 
-  getLocalTiddler(title: string): LocalTiddler | undefined {
-    return this.localTiddlers[title];
+  setupListeners() {
+    for (const bag of this.bags) {
+      this.bagStates[bag] = {
+        lastTiddlerRead: false,
+        tiddlerStates: {},
+      };
+      this.bagStates[bag].unregisterListener = this.registerListener({ wiki: this.wiki, bag }, this);
+    }
+  }
+
+  getAllTiddlers(): SingleWikiNamespacedTiddler[] {
+    const result:Record<string, SingleWikiNamespacedTiddler> = {};
+    for (let bag of this.bags.reverse()) {
+      Object.entries(this.bagStates[bag].tiddlerStates).reduce((acc, [title, tiddlerState]) => {
+        if (!(title in acc)) {
+          acc[title] = {...tiddlerState.lastKnownRemoteRevision, bag};
+        }
+        return acc;
+      }, result)
+    }
+    return Object.values(result);
   }
 
   onError(error: TW5FirebaseError): void {
@@ -127,22 +123,14 @@ export class TiddlerVersionManager implements ChangeListener {
   onChange(change: TiddlerChange): void {
     switch (change.changeType) {
       case ChangeType.create: {
-        // CONFLICT: local create when tiddler already exists (due to remotely issued create)
-        if (change.changeOrigin === ChangeOrigin.local && this.getLocalTiddler(change.tiddler.title)) {
-          // Local tiddler create is unlikely to result in conflict,
-          // as the syncAdaptor checks whether the tiddler already exists (and issues an update if it does).
-          // Still, theoretically a race condition is possible where the syncadaptor doesn't yet know about
-          // the tiddler, issues a 'create' type change, but a remote change arrives for the given tiddler
-          // in parallel to the processing of a local 'create' change.
-          return this.onError(
-            new TW5FirebaseError({
-              code: TW5FirebaseErrorCode.CREATE_EXISTING_TIDDLER,
-              data: { title: change.tiddler.title },
-            }),
-          );
-        }
-        // CONFLICT: remote create when tiddler already exists locally (due to local create).
-        if (change.changeOrigin === ChangeOrigin.remote && this.getLocalTiddler(change.tiddler.title)) {
+        // if a tiddler has been created remotely, update the last known remote revision
+        if (change.changeOrigin === 'remote') {
+          // TODO: what if there's an in-progress write?
+          this.bagStates[change.bag].tiddlerStates[change.tiddler.title] = this.bagStates[change.bag].tiddlerStates[change.tiddler.title] ?? {};
+          this.bagStates[change.bag].tiddlerStates[change.tiddler.title].lastKnownRemoteRevision = {
+            tiddler: change.tiddler,
+            revision: change.revision
+          }
         }
         break;
       }
@@ -153,8 +141,7 @@ export class TiddlerVersionManager implements ChangeListener {
         break;
       }
       default:
-        const { changeType } = change;
-        assertUnreachable(changeType);
+        assertUnreachable(change);
     }
   }
 }

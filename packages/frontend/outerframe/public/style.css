@@ -2,6 +2,10 @@ body {
   margin: 0;
 }
 
+#wiki-frame-parent iframe {
+  border-width: 0px
+}
+
 #container {
   max-width: 600px;
   margin: 0 auto;

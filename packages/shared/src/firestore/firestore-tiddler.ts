@@ -55,8 +55,9 @@ export const toFirestoreTiddler = (
 };
 
 export enum PATH_TEMPLATE {
-  BAG = 'wikis/:wiki/bags/:bag/tiddlers',
+  BAG_DOCUMENT = 'wikis/:wiki/bags/:bag',
+  BAG_COLLECTION = 'wikis/:wiki/bags/:bag/tiddlers',
   TIDDLER = 'wikis/:wiki/bags/:bag/tiddlers/:title'
 }
 
-export const makeKey = (ns: TiddlerNamespace, title?: string) => title ? replaceUrlEncoded(PATH_TEMPLATE.TIDDLER, {title, ...ns}) : replaceUrlEncoded(PATH_TEMPLATE.BAG, {...ns})
+export const makeKey = (ns: TiddlerNamespace, title?: string) => title ? replaceUrlEncoded(PATH_TEMPLATE.TIDDLER, {title, ...ns}) : replaceUrlEncoded(PATH_TEMPLATE.BAG_COLLECTION, {...ns})

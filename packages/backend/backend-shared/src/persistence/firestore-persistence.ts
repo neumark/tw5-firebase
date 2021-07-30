@@ -10,10 +10,13 @@ import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import {
   FirestoreSerializedTiddler,
   makeKey,
+  PATH_TEMPLATE,
   toFirestoreTiddler,
   toStandardTiddler,
 } from '@tw5-firebase/shared/src/firestore/firestore-tiddler';
 import { asyncMap } from '@tw5-firebase/shared/src/util/map';
+import { BagMetadata } from '@tw5-firebase/shared/src/model/bag-policy';
+import { replaceUrlEncoded } from '@tw5-firebase/shared/src/util/templates';
 
 type Transaction = admin.firestore.Transaction;
 type Database = admin.firestore.Firestore;
@@ -25,6 +28,25 @@ export class FirestorePersistence implements TiddlerPersistence {
   private tx: Transaction;
   private db: Database;
   private logger: Logger;
+
+  private async readDocs<T>(
+    paths: string[],
+    convert: (docId: string, docData: FirebaseFirestore.DocumentData, ix: number) => T,
+    docFilter: (doc:FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) => boolean = doc => doc.exists
+  ): Promise<T[]> {
+    const refs = paths.map((path) => this.db.doc(path));
+    return (
+      (await this.tx.getAll(...refs))
+        // associate each doc with it's index
+        .map((doc, ix) => ({ doc, ix }))
+        // filter out docs which don't exist in firestore
+        .filter(({ doc }) => docFilter(doc))
+        // return in format of interface
+        .map(({ doc, ix }) => {
+          return convert(doc.id, doc.data()!, ix);
+        })
+    );
+  }
 
   constructor(tx: Transaction, db: Database, logger: Logger) {
     this.tx = tx;
@@ -67,22 +89,30 @@ export class FirestorePersistence implements TiddlerPersistence {
       revision: Revision;
     }[]
   > {
-    const refs = namespacedTitles.map((docKey) => this.db.doc(makeKey(docKey.namespace, docKey.title)));
-    return (
-      (await this.tx.getAll(...refs))
-        // associate each doc with it's index
-        .map((doc, ix) => ({ doc, ix }))
-        // filter out docs which don't exist in firestore
-        .filter(({ doc }) => doc.exists)
-        // return in format of interface
-        .map(({ doc, ix }) => {
-          const firestoreTiddler = doc.data() as FirestoreSerializedTiddler;
-          return {
-            revision: firestoreTiddler.revision,
-            tiddler: toStandardTiddler(doc.id, firestoreTiddler, firestoreTimestampToDate),
-            namespace: namespacedTitles[ix].namespace,
-          };
-        })
+    return await this.readDocs(
+      namespacedTitles.map((docKey) => makeKey(docKey.namespace, docKey.title)),
+      (docId, docData, ix) => {
+        const firestoreTiddler = docData as FirestoreSerializedTiddler;
+        return {
+          revision: firestoreTiddler.revision,
+          tiddler: toStandardTiddler(docId, firestoreTiddler, firestoreTimestampToDate),
+          namespace: namespacedTitles[ix].namespace,
+        };
+      },
+    );
+  }
+
+  async getLastTiddlerTitle(namespaces: TiddlerNamespace[]): Promise<{ namespace: TiddlerNamespace; title: string }[]> {
+    return await this.readDocs(
+      namespaces.map(ns => replaceUrlEncoded(PATH_TEMPLATE.BAG_DOCUMENT, {...ns})),
+      (_docId, docData, ix) => {
+        const bagMetadata = docData as BagMetadata;
+        return {
+          title: decodeURIComponent(bagMetadata.lastDocumentId),
+          namespace: namespaces[ix],
+        };
+      },
+      doc => doc.exists && ('lastDocumentId' in doc.data()!)
     );
   }
 

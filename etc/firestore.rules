@@ -14,7 +14,7 @@ service cloud.firestore {
           // don't allow access to personal bags in this match clause
           let isPersonalBag = bagName.matches('^user%3A.*');
           // anybody with at least reader can read non-personal bags
-          let role = get(/databases/$(database)/documents/wikis/$(wikiName)/bags/etc/tiddlers/$('user%3A' + request.auth.uid)).data.fields.role;
+          let role = get(/databases/$(database)/documents/wikis/$(wikiName)/bags/etc/tiddlers/$('%2Fetc%2Fusers%2F' + request.auth.uid)).data.fields.role;
           // personal bags use the other match clause
           return !isPersonalBag &&
             // allow reader and above roles to read content and system bags

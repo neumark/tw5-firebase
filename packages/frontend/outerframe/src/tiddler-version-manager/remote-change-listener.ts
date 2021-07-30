@@ -62,6 +62,7 @@ export const registerListener = (ns: TiddlerNamespace, listener: ChangeListener)
         }
       },
       error: (err: firebase.firestore.FirestoreError): void => {
+        console.error(err);
         if (listener.onError) {
           listener.onError(
             new TW5FirebaseError({

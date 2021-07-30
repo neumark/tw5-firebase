@@ -122,9 +122,12 @@ export class APIEndpointFactory {
     const user = this.assertAuthenticatedUser(req.user);
     const store = await this.tiddlerStoreFactory.createTiddlerStore(this.assertWikiInPath(req.params));
     const role = await getRole(store, user);
+    const resolvedRecipe = resolveDefaultRecipe(user, role);
+    const lastTiddlers = await store.getLastTiddlers!(resolvedRecipe.read)
     return {
       role: getRoleName(role),
-      resolvedRecipe: resolveDefaultRecipe(user, role)
+      resolvedRecipe,
+      lastTiddlers
     }
   }
 

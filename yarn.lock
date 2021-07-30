@@ -2249,6 +2249,60 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@tw5-firebase/innerframe@workspace:packages/frontend/innerframe":
+  version: 0.0.0-use.local
+  resolution: "@tw5-firebase/innerframe@workspace:packages/frontend/innerframe"
+  dependencies:
+    "@babel/core": ^7.14.0
+    "@babel/plugin-proposal-export-default-from": ^7.14.5
+    "@babel/plugin-transform-modules-commonjs": ^7.14.5
+    "@babel/plugin-transform-runtime": ^7.14.0
+    "@babel/preset-env": ^7.14.0
+    "@babel/preset-typescript": ^7.14.5
+    "@babel/runtime-corejs3": ^7.14.0
+    "@istanbuljs/nyc-config-typescript": ^1.0.1
+    "@tw5-firebase/frontend-shared": ^0.0.0
+    "@tw5-firebase/shared": ^0.0.0
+    "@types/jasmine": ^3.7.1
+    "@types/node": ^16.0.0
+    "@types/sinon": ^10.0.2
+    "@typescript-eslint/eslint-plugin": ^4.27.0
+    "@typescript-eslint/parser": ^4.27.0
+    "@yarnpkg/pnpify": ^3.0.0-rc.10
+    ajv-cli: ^5.0.0
+    babel-loader: ^8.2.2
+    browserslist: ^4.16.6
+    core-js: ^3.15.2
+    css-loader: ^5.2.0
+    eslint: ^7.28.0
+    eslint-config-prettier: ^8.3.0
+    eslint-plugin-prettier: ^3.4.0
+    eslint-plugin-promise: ^5.1.0
+    eslint-plugin-react: ^7.24.0
+    firebase: ^8.7.0
+    firebase-tools: ^9.8.0
+    firebaseui: ^4.8.0
+    jasmine: ^3.7.0
+    mini-iframe-rpc: ^1.6.1
+    nyc: ^15.1.0
+    pnp-webpack-plugin: ^1.6.4
+    prettier: ^2.3.1
+    reflect-metadata: ^0.1.13
+    serve: ^12.0.0
+    sinon: ^10.0.0
+    source-map-support: ^0.5.19
+    style-loader: ^2.0.0
+    terser-webpack-plugin: ^5.1.4
+    ts-json-schema-generator: ^0.88.0
+    ts-loader: ^8.0.17
+    ts-node: ^10.0.0
+    tslib: ^2.3.0
+    typescript: ^4.2.3
+    webpack: ^5.24.3
+    webpack-cli: ^4.5.0
+  languageName: unknown
+  linkType: soft
+
 "@tw5-firebase/outerframe@workspace:packages/frontend/outerframe":
   version: 0.0.0-use.local
   resolution: "@tw5-firebase/outerframe@workspace:packages/frontend/outerframe"
@@ -2354,6 +2408,7 @@ __metadata:
   resolution: "@tw5-firebase/shared@workspace:packages/shared"
   dependencies:
     "@types/jasmine": ^3.7.1
+    "@types/node": ^16.4.7
     "@types/sinon": ^10.0.2
     ajv: ^8.6.1
     firebase: ^8.7.0
@@ -2613,6 +2668,13 @@ __metadata:
   version: 13.13.52
   resolution: "@types/node@npm:13.13.52"
   checksum: 702db7930d333cc56e38d1ffb0ac394c2ccaae3be41ad6d92d84e5225f2ccf7a69fc19bd9eceafd0c00189876add6464460c5fd47ce4bdc14f6f9b0a7212aee0
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^16.4.7":
+  version: 16.4.7
+  resolution: "@types/node@npm:16.4.7"
+  checksum: ab6fab8feedb42eeb1a1cbe2217083da4cdc3fed351bd7daf1ad44ad1e24ffa8ace944a2fc885721a2a0fa16d4ded3af282001bb55cf56930feb7abd9d15394c
   languageName: node
   linkType: hard
 

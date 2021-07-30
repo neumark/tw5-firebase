@@ -17,6 +17,7 @@ export const CONTENT_TIDDLER_TYPES = new Set([
   JSON_TIDDLER_TYPE,
   'text/markdown',
   'text/x-markdown',
+  'application/pdf',
   'application/x-tiddler',
   'application/x-tiddlers',
   'text/plain',
@@ -37,5 +38,4 @@ export const ETC_TITLE_PREFIX = '/etc/';
 export const VARIABLE_PERSONAL_BAG = 'PERSONAL_BAG';
 
 export const CONFIG_VAR_BACKEND_CONFIG = 'backendconfig';
-export const CONFIG_VAR_FIREBASE_CONFIG = 'firebaseconfig';
 export const DEFAULT_TIMEOUT_SECONDS = 300;

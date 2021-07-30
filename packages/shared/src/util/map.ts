@@ -40,3 +40,11 @@ export const objMerge = <K extends string|number|symbol, V>(input:Record<K, V>[]
 );
 
 export const asyncMap = async <T, R = any>(list: T[], fn: (e: T) => Promise<R>) => await Promise.all(list.map(fn));
+
+export const batchMap = async <T, R=any> (fn:(l: T[]) => Promise<R>, list:T[], batchSize = 1):Promise<R[]> => {
+  const results = [];
+  for (let startpos = 0; startpos < list.length; startpos += batchSize) {
+    results.push(await fn(list.slice(startpos, startpos + batchSize)));
+  }
+  return results;
+};

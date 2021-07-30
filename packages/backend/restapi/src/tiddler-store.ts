@@ -10,6 +10,7 @@ import { Component } from '@tw5-firebase/backend-shared/src/ioc/components';
 import { TiddlerPersistence, TransactionRunner } from '@tw5-firebase/backend-shared/src/persistence/interfaces';
 import { TiddlerFactory } from '@tw5-firebase/backend-shared/src/tiddler-factory';
 import { PolicyChecker } from '@tw5-firebase/backend-shared/src/policy-checker';
+import { objBuild } from '../../../shared/src/util/map';
 
 const deduplicate = (tiddlers: SingleWikiNamespacedTiddler[]): SingleWikiNamespacedTiddler[] => {
   const encounteredTitles = new Set<string>();
@@ -187,6 +188,14 @@ class TiddlerStoreImpl implements BagApi {
   async read(bag: string, title?: string): Promise<Array<SingleWikiNamespacedTiddler>> {
     return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
       return await this.doReadTiddlers(persistence, [bag], title);
+    });
+  }
+
+  async getLastTiddlers(bags: string[]): Promise<Record<string, string>> {
+    return this.transactionRunner.runTransaction(async (persistence: TiddlerPersistence) => {
+      return objBuild(
+        ({namespace, title}) => [namespace.bag, title],
+        await persistence.getLastTiddlerTitle(bags.map(bag => ({bag, wiki: this.wiki}))))
     });
   }
 }

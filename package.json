@@ -23,6 +23,7 @@
       "packages/backend/restapi",
       "packages/backend/backend-shared",
       "packages/frontend/outerframe",
+      "packages/frontend/innerframe",
       "packages/frontend/frontend-shared",
       "packages/frontend/tw5-shared",
       "packages/frontend/tw5-preboot",

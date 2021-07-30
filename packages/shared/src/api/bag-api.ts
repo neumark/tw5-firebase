@@ -17,4 +17,5 @@ export interface BagApi {
     expectedRevision: Revision,
   ) => Promise<SingleWikiNamespacedTiddler>;
   del: (bag: string, title: string, expectedRevision: string) => Promise<boolean>;
+  getLastTiddlers?: (bags: string[]) => Promise<Record<string, string>>;
 }
