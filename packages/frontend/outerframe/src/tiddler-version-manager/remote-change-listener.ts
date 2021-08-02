@@ -1,7 +1,7 @@
 import firebase from 'firebase';
-import { FirestoreSerializedTiddler, makeKey, toStandardTiddler } from '../../../../shared/src/firestore/firestore-tiddler';
-import { TW5FirebaseError, TW5FirebaseErrorCode } from '../../../../shared/src/model/errors';
-import { TiddlerNamespace } from '../../../../shared/src/model/tiddler';
+import { FirestoreSerializedTiddler, makeKey, toStandardTiddler } from '@tw5-firebase/shared/src/firestore/firestore-tiddler';
+import { TW5FirebaseError, TW5FirebaseErrorCode } from '@tw5-firebase/shared/src/model/errors';
+import { TiddlerNamespace } from '@tw5-firebase/shared/src/model/tiddler';
 import { ChangeListener, ChangeOrigin, ChangeType, TiddlerChange } from './types';
 import {assertUnreachable} from '@tw5-firebase/shared/src/util/switch'
 

@@ -8,17 +8,22 @@ import { replaceUrlEncoded } from '@tw5-firebase/shared/src/util/templates';
 import { sleep } from '@tw5-firebase/shared/src/util/sleep';
 import { ROUTES } from '@tw5-firebase/shared/src/api/routes';
 import { FetchHTTPTransport } from '@tw5-firebase/frontend-shared/src/fetch-http-transport';
+import { HTTPStoreClient } from '@tw5-firebase/shared/src/apiclient/http-store-client';
+import { defineOuterFrameAPIMethod, makeInnerFrameAPIClient, makeRPC } from '@tw5-firebase/frontend-shared/src/interframe';
 import { TiddlerVersionManager } from './tiddler-version-manager/tvm';
-import type {MiniIframeRPC} from 'mini-iframe-rpc';
 import { batchMap } from '@tw5-firebase/shared/src/util/map';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 import { User } from '@tw5-firebase/shared/src/model/user';
 import { isVoid } from '@tw5-firebase/shared/src/util/is-void';
+import { HTTPTransport } from '@tw5-firebase/shared/src/apiclient/http-transport';
+import { OuterFrameStoreProxy } from './tiddler-version-manager/local-change-listener';
 declare let __BUILD_CONFIG__: string;
 
 let ui: firebaseui.auth.AuthUI;
 
 const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
+
+const INTERFRAME_TIDDLER_TRANSFER_BATCH_SIZE = 50;
 
 const unNullable = (s:string|null):string|undefined => isVoid(s) ? undefined : s as string;
 
@@ -45,8 +50,7 @@ const getMergedBuildConfig = (): OuterFrameBuildConfig => {
   return config;
 };
 
-const getWikiInitState = async (config: OuterFrameBuildConfig, user: firebase.User): Promise<WikiInitState> => {
-  const transport = new FetchHTTPTransport(config.apiEndpoint, () => user.getIdToken());
+const getWikiInitState = async (transport:HTTPTransport, config: OuterFrameBuildConfig, user: firebase.User): Promise<WikiInitState> => {
   const wikiInitState: WikiInitState = await transport.request({
     // remove trailing slash
     urlPath: replaceUrlEncoded(ROUTES.RESTAPI_INIT, { wiki: config.wikiName }).substr(1),
@@ -81,25 +85,27 @@ const initApp = async () => {
   initFirebase(config);
 
   const startTW5 = async (user: firebase.User) => {
-    const wikiInitState = await getWikiInitState(config, user);
+    const transport = new FetchHTTPTransport(config.apiEndpoint, () => user.getIdToken());
+    const wikiInitState = await getWikiInitState(transport, config, user);
+    const storeClient = new HTTPStoreClient(config.wikiName, transport);
     const tvm = new TiddlerVersionManager(config.wikiName, wikiInitState.resolvedRecipe.read);
-    const rpc = new (window as any)["mini-iframe-rpc"].MiniIframeRPC({
-      defaultInvocationOptions: {
-        retryAllFailures: false,
-        timeout: 0,
-        retryLimit: 0,
-      },
-    }) as MiniIframeRPC;
+    const outerFrameStoreProxy = new OuterFrameStoreProxy(tvm, storeClient);
+    const rpc = makeRPC();
     let iframe:HTMLIFrameElement;
-    rpc.register('innerIframeReady', async () => {
+    defineOuterFrameAPIMethod(rpc, 'create', outerFrameStoreProxy.create.bind(outerFrameStoreProxy));
+    defineOuterFrameAPIMethod(rpc, 'update', outerFrameStoreProxy.update.bind(outerFrameStoreProxy));
+    defineOuterFrameAPIMethod(rpc, 'del', outerFrameStoreProxy.del.bind(outerFrameStoreProxy));
+    defineOuterFrameAPIMethod(rpc, 'innerIframeReady', async () => {
+      const client = makeInnerFrameAPIClient(rpc, iframe.contentWindow!);
       console.log("inner iframe ready");
+      // TODO: wait until the last tiddler in the bag is read, not 1 sec.
       await sleep(1000);
       const data = tvm.getAllTiddlers();
       await batchMap(async (tiddlers:SingleWikiNamespacedTiddler[]) => {
-        await rpc.invoke(iframe.contentWindow!, null, 'saveTiddlers', [tiddlers])
-      },data, 50);
-      await rpc.invoke(iframe.contentWindow!, null, 'initWiki', [{user: firebaseToNativeUser(user)}])
-    })
+        await client('saveTiddlers', [tiddlers])
+      }, data, INTERFRAME_TIDDLER_TRANSFER_BATCH_SIZE);
+      await client('initWiki', [{user: firebaseToNativeUser(user)}])
+    });
     tvm.setupListeners();
     // TODO: based on wikiInitState.lastTiddlers, we could figure out when the last tiddler in each bag has be read,
     // but not worrying about this right now.

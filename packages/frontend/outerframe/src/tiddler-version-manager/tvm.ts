@@ -1,11 +1,10 @@
 import { TiddlerWithRevision } from '@tw5-firebase/shared/src/model/tiddler';
 import { ChangeType, TiddlerChange, ChangeResult, ChangeListener } from './types';
 import { registerListener as _registerListener } from './remote-change-listener';
-import { interactiveMerge as _interactiveMerge } from './interactive-merge';
 import { Logger } from '@tw5-firebase/shared/src/util/logger';
 import { TW5FirebaseError } from '@tw5-firebase/shared/src/model/errors';
 import { assertUnreachable } from '@tw5-firebase/shared/src/util/switch';
-import { SingleWikiNamespacedTiddler } from '../../../../shared/src/api/bag-api';
+import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
 
 export interface TiddlerState {
   lastKnownRemoteRevision: TiddlerWithRevision;

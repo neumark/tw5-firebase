@@ -1,7 +1,6 @@
 import { TW5FirebaseError } from '@tw5-firebase/shared/src/model/errors';
 import { Revision } from '@tw5-firebase/shared/src/model/revision';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
-import { TiddlerWithRevision } from '@tw5-firebase/shared/src/model/tiddler';
 
 export enum ChangeOrigin {
   remote = 'remote',
@@ -12,13 +11,6 @@ export enum ChangeType {
   create = 'create',
   update = 'update',
   delete = 'delete',
-}
-
-/**
- * Stores information required by the SyncAdaptor to be stored for each tiddler
- */
-export interface LocalTiddler extends TiddlerWithRevision {
-  bag:string;
 }
 
 export interface TiddlerChangeBase {changeOrigin: ChangeOrigin};
