@@ -3,13 +3,19 @@ import { User } from '@tw5-firebase/shared/src/model/user';
 import type { MiniIframeRPC } from 'mini-iframe-rpc';
 import { BagApi } from '../../../shared/src/api/bag-api';
 
-export const makeRPC = () => new (window as any)["mini-iframe-rpc"].MiniIframeRPC({
-  defaultInvocationOptions: {
-    retryAllFailures: false,
-    timeout: 0,
-    retryLimit: 0,
-  },
-}) as MiniIframeRPC;
+export const makeRPC = () =>
+  new (window as any)['mini-iframe-rpc'].MiniIframeRPC({
+    defaultInvocationOptions: {
+      retryAllFailures: false,
+      timeout: 0,
+      retryLimit: 0,
+    },
+  }) as MiniIframeRPC;
+
+// Only preserves fields of an interface which have function type
+type FuncFields<T> = {
+  [P in keyof T]: T[P] extends (...args: any[]) => any ? T[P] : never;
+};
 
 export interface InnerFrameAPIMethods {
   saveTiddlers: (incoming: TiddlerWithRevision[]) => Promise<void>;
@@ -17,28 +23,16 @@ export interface InnerFrameAPIMethods {
   test: (a: string, b: string) => Promise<number>;
 }
 
-export interface OuterFrameAPIMethods extends Omit<BagApi, 'getLastTiddlers'|'read'>{
+export interface OuterFrameAPIMethods extends Omit<BagApi, 'getLastTiddlers' | 'read'> {
   innerIframeReady: () => Promise<void>;
 }
 
-export const makeInnerFrameAPIClient =
-  (rpc: MiniIframeRPC, iframe: Window) =>
-  <K extends keyof InnerFrameAPIMethods>(method: K, args: Parameters<InnerFrameAPIMethods[K]>) =>
-    rpc.invoke(iframe, null, method, args) as ReturnType<InnerFrameAPIMethods[K]>;
+export const makeAPIClient =
+  <T>(rpc: MiniIframeRPC, iframe: Window) =>
+  <K extends keyof FuncFields<T>>(method: K, args: Parameters<FuncFields<T>[K]>) =>
+    rpc.invoke(iframe, null, method as string, args) as ReturnType<FuncFields<T>[K]>;
 
-export const makeOuterFrameAPIClient =
-  (rpc: MiniIframeRPC, iframe: Window) =>
-  <K extends keyof OuterFrameAPIMethods>(method: K, args: Parameters<OuterFrameAPIMethods[K]>) =>
-    rpc.invoke(iframe, null, method, args) as ReturnType<OuterFrameAPIMethods[K]>;
-
-export const defineInnerFrameAPIMethod = <K extends keyof InnerFrameAPIMethods>(
-  rpc: MiniIframeRPC,
-  procedureName: K,
-  implementation: InnerFrameAPIMethods[K],
-): void => rpc.register(procedureName, implementation);
-
-export const defineOuterFrameAPIMethod = <K extends keyof OuterFrameAPIMethods>(
-  rpc: MiniIframeRPC,
-  procedureName: K,
-  implementation: OuterFrameAPIMethods[K],
-): void => rpc.register(procedureName, implementation);
+export const apiDefiner =
+  <T>(rpc: MiniIframeRPC) =>
+  <K extends keyof FuncFields<T>>(procedureName: K, implementation: FuncFields<T>[K]): void =>
+    rpc.register(procedureName as string, implementation);

@@ -9,7 +9,13 @@ import { sleep } from '@tw5-firebase/shared/src/util/sleep';
 import { ROUTES } from '@tw5-firebase/shared/src/api/routes';
 import { FetchHTTPTransport } from '@tw5-firebase/frontend-shared/src/fetch-http-transport';
 import { HTTPStoreClient } from '@tw5-firebase/shared/src/apiclient/http-store-client';
-import { defineOuterFrameAPIMethod, makeInnerFrameAPIClient, makeRPC } from '@tw5-firebase/frontend-shared/src/interframe';
+import {
+  apiDefiner,
+  InnerFrameAPIMethods,
+  makeAPIClient,
+  makeRPC,
+  OuterFrameAPIMethods,
+} from '@tw5-firebase/frontend-shared/src/interframe';
 import { TiddlerVersionManager } from './tiddler-version-manager/tvm';
 import { batchMap } from '@tw5-firebase/shared/src/util/map';
 import { SingleWikiNamespacedTiddler } from '@tw5-firebase/shared/src/api/bag-api';
@@ -25,16 +31,16 @@ const RE_WIKI_NAME = /^\/w\/([A-Za-z0-9-_]+)\/?$/;
 
 const INTERFRAME_TIDDLER_TRANSFER_BATCH_SIZE = 50;
 
-const unNullable = (s:string|null):string|undefined => isVoid(s) ? undefined : s as string;
+const unNullable = (s: string | null): string | undefined => (isVoid(s) ? undefined : (s as string));
 
-const firebaseToNativeUser = (user:firebase.User):User => ({
+const firebaseToNativeUser = (user: firebase.User): User => ({
   userId: user.uid,
   phone_number: unNullable(user.phoneNumber),
   email: unNullable(user.email),
   email_verified: user.emailVerified,
   picture: unNullable(user.photoURL),
-  name: unNullable(user.displayName)
-})
+  name: unNullable(user.displayName),
+});
 
 const getMergedBuildConfig = (): OuterFrameBuildConfig => {
   // start with hardcoded configuration
@@ -50,7 +56,11 @@ const getMergedBuildConfig = (): OuterFrameBuildConfig => {
   return config;
 };
 
-const getWikiInitState = async (transport:HTTPTransport, config: OuterFrameBuildConfig, user: firebase.User): Promise<WikiInitState> => {
+const getWikiInitState = async (
+  transport: HTTPTransport,
+  config: OuterFrameBuildConfig,
+  user: firebase.User,
+): Promise<WikiInitState> => {
   const wikiInitState: WikiInitState = await transport.request({
     // remove trailing slash
     urlPath: replaceUrlEncoded(ROUTES.RESTAPI_INIT, { wiki: config.wikiName }).substr(1),
@@ -91,20 +101,25 @@ const initApp = async () => {
     const tvm = new TiddlerVersionManager(config.wikiName, wikiInitState.resolvedRecipe.read);
     const outerFrameStoreProxy = new OuterFrameStoreProxy(tvm, storeClient);
     const rpc = makeRPC();
-    let iframe:HTMLIFrameElement;
-    defineOuterFrameAPIMethod(rpc, 'create', outerFrameStoreProxy.create.bind(outerFrameStoreProxy));
-    defineOuterFrameAPIMethod(rpc, 'update', outerFrameStoreProxy.update.bind(outerFrameStoreProxy));
-    defineOuterFrameAPIMethod(rpc, 'del', outerFrameStoreProxy.del.bind(outerFrameStoreProxy));
-    defineOuterFrameAPIMethod(rpc, 'innerIframeReady', async () => {
-      const client = makeInnerFrameAPIClient(rpc, iframe.contentWindow!);
-      console.log("inner iframe ready");
+    let iframe: HTMLIFrameElement;
+    const def = apiDefiner<OuterFrameAPIMethods>(rpc);
+    def('create', outerFrameStoreProxy.create.bind(outerFrameStoreProxy));
+    def('update', outerFrameStoreProxy.update.bind(outerFrameStoreProxy));
+    def('del', outerFrameStoreProxy.del.bind(outerFrameStoreProxy));
+    def('innerIframeReady', async () => {
+      const client = makeAPIClient<InnerFrameAPIMethods>(rpc, iframe.contentWindow!);
+      console.log('inner iframe ready');
       // TODO: wait until the last tiddler in the bag is read, not 1 sec.
       await sleep(1000);
       const data = tvm.getAllTiddlers();
-      await batchMap(async (tiddlers:SingleWikiNamespacedTiddler[]) => {
-        await client('saveTiddlers', [tiddlers])
-      }, data, INTERFRAME_TIDDLER_TRANSFER_BATCH_SIZE);
-      await client('initWiki', [{user: firebaseToNativeUser(user)}])
+      await batchMap(
+        async (tiddlers: SingleWikiNamespacedTiddler[]) => {
+          await client('saveTiddlers', [tiddlers]);
+        },
+        data,
+        INTERFRAME_TIDDLER_TRANSFER_BATCH_SIZE,
+      );
+      await client('initWiki', [{ user: firebaseToNativeUser(user) }]);
     });
     tvm.setupListeners();
     // TODO: based on wikiInitState.lastTiddlers, we could figure out when the last tiddler in each bag has be read,
