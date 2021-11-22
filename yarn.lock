@@ -1321,6 +1321,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cspotcode/source-map-consumer@npm:0.8.0":
+  version: 0.8.0
+  resolution: "@cspotcode/source-map-consumer@npm:0.8.0"
+  checksum: fc32215a353c7b3d039f5d4b93329200264daeabb0739dcf53eb78f779e37e5f5c281aad281f86781c930011d354612aafab887304451a46f16b10f0f919297f
+  languageName: node
+  linkType: hard
+
+"@cspotcode/source-map-support@npm:0.7.0":
+  version: 0.7.0
+  resolution: "@cspotcode/source-map-support@npm:0.7.0"
+  dependencies:
+    "@cspotcode/source-map-consumer": 0.8.0
+  checksum: 3a0093418424729e9ab0a0f032f16946cb1cd7659bdee7d017e564189a8447eda961e5f7bed370699e94d5228f3b8cd84cb366af5fd38518b2ce833c3e138cb6
+  languageName: node
+  linkType: hard
+
 "@dabh/diagnostics@npm:^2.0.2":
   version: 2.0.2
   resolution: "@dabh/diagnostics@npm:2.0.2"
@@ -2346,10 +2362,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tsconfig/node16@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@tsconfig/node16@npm:1.0.1"
-  checksum: c389a4a81c291a27b96705de7fbe46d29aa4eb771450a41dfc075d89e1fdd63141898043a0d9f627460a1c409d06635a044dc4b3a4516173769a7d0a1558c51d
+"@tsconfig/node16@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "@tsconfig/node16@npm:1.0.2"
+  checksum: 57310e88858be59b36603e5d9bd7bd1714d16402ef1e536c01521ad3b207833a2fc64d260d362cae07bf4e50759a3aba3958c2faf9c42b52c4c817be60a93123
   languageName: node
   linkType: hard
 
@@ -2423,7 +2439,7 @@ __metadata:
     tiddlywiki: ^5.1.23
     ts-json-schema-generator: ^0.88.0
     ts-loader: ^8.0.17
-    ts-node: ^10.0.0
+    ts-node: ^10.4.0
     typescript: ^4.2.3
     webpack: ^5.64.2
     webpack-cli: ^4.9.1
@@ -2487,7 +2503,7 @@ __metadata:
     tiddlywiki: ^5.1.23
     ts-json-schema-generator: ^0.88.0
     ts-loader: ^8.0.17
-    ts-node: ^10.0.0
+    ts-node: ^10.4.0
     tslib: ^2.3.0
     typescript: ^4.2.3
     webpack: ^5.64.2
@@ -2541,7 +2557,7 @@ __metadata:
     terser-webpack-plugin: ^5.1.4
     ts-json-schema-generator: ^0.88.0
     ts-loader: ^8.0.17
-    ts-node: ^10.0.0
+    ts-node: ^10.4.0
     tslib: ^2.3.0
     typescript: ^4.2.3
     webpack: ^5.64.2
@@ -2586,7 +2602,7 @@ __metadata:
     source-map-support: ^0.5.19
     terser-webpack-plugin: ^5.1.4
     ts-loader: ^8.0.17
-    ts-node: ^10.0.0
+    ts-node: ^10.4.0
     tslib: ^2.3.0
     typescript: ^4.3.5
     webpack: ^5.64.2
@@ -2607,7 +2623,7 @@ __metadata:
     jasmine: ^3.7.0
     sinon: ^10.0.0
     ts-json-schema-generator: ^0.88.0
-    ts-node: ^10.1.0
+    ts-node: ^10.4.0
     tslib: ^2.3.0
     typescript: ^4.3.5
   languageName: unknown
@@ -2795,6 +2811,13 @@ __metadata:
   version: 4.0.1
   resolution: "@types/http-cache-semantics@npm:4.0.1"
   checksum: 16b8d0c7ea707bda68eeb009fe3c43b5af806882d31b13c436e23477e511f0b1a234f11f0c707293d649489e2f21941d11af06f091ce35d8a3dc8e8ac9a52afe
+  languageName: node
+  linkType: hard
+
+"@types/jasmine@npm:^3.10.2":
+  version: 3.10.2
+  resolution: "@types/jasmine@npm:3.10.2"
+  checksum: 1bb4e184d18b8f7192059974727feb310d2d9e0dcc036f07b348054a646ffad5cf54a333b40334177f8b166da3bb6476052a34579b9d21ba0592c9f513b7ba79
   languageName: node
   linkType: hard
 
@@ -3436,6 +3459,13 @@ __metadata:
   peerDependencies:
     acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
   checksum: 5925bc5d79a2821a8f7250b6de2b02bb86c0470dcb78cf68a603855291c5e50602b9eaf294aba2efbf3ee7063c80a9074b520b2330cc1aef80b849bfc7a041c0
+  languageName: node
+  linkType: hard
+
+"acorn-walk@npm:^8.1.1":
+  version: 8.2.0
+  resolution: "acorn-walk@npm:8.2.0"
+  checksum: 93ffbdb8b35dda04313f1d6a94bdfdf8f929337f742e3a6d51b3026ced8471feb6a522646240809da44b0f576f4902ff2fa0c64292b3216478992aefcbde3278
   languageName: node
   linkType: hard
 
@@ -7992,6 +8022,21 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
+"jasmine-ts@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "jasmine-ts@npm:0.4.0"
+  dependencies:
+    yargs: ^17.0.1
+  peerDependencies:
+    jasmine: ">=3.4"
+    ts-node: ">=3.2.0 <=11"
+    typescript: ">=3.5.2"
+  bin:
+    jasmine-ts: lib/index.js
+  checksum: 11cf8fde8eea2bd10953f1a836e712eaa6bb4a3650147bf58f7f3f50f84acd49e1e26ffd16d3beffc351da4c2efd242a770a1e77e365cb40874c6bf2d37d929a
+  languageName: node
+  linkType: hard
+
 "jasmine@npm:^3.7.0":
   version: 3.8.0
   resolution: "jasmine@npm:3.8.0"
@@ -11349,7 +11394,7 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:^0.5.17, source-map-support@npm:^0.5.19, source-map-support@npm:~0.5.19":
+"source-map-support@npm:^0.5.19, source-map-support@npm:~0.5.19":
   version: 0.5.19
   resolution: "source-map-support@npm:0.5.19"
   dependencies:
@@ -12124,53 +12169,21 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"ts-node@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "ts-node@npm:10.0.0"
+"ts-node@npm:^10.4.0":
+  version: 10.4.0
+  resolution: "ts-node@npm:10.4.0"
   dependencies:
+    "@cspotcode/source-map-support": 0.7.0
     "@tsconfig/node10": ^1.0.7
     "@tsconfig/node12": ^1.0.7
     "@tsconfig/node14": ^1.0.0
-    "@tsconfig/node16": ^1.0.1
+    "@tsconfig/node16": ^1.0.2
+    acorn: ^8.4.1
+    acorn-walk: ^8.1.1
     arg: ^4.1.0
     create-require: ^1.1.0
     diff: ^4.0.1
     make-error: ^1.1.1
-    source-map-support: ^0.5.17
-    yn: 3.1.1
-  peerDependencies:
-    "@swc/core": ">=1.2.45"
-    "@swc/wasm": ">=1.2.45"
-    "@types/node": "*"
-    typescript: ">=2.7"
-  peerDependenciesMeta:
-    "@swc/core":
-      optional: true
-    "@swc/wasm":
-      optional: true
-  bin:
-    ts-node: dist/bin.js
-    ts-node-cwd: dist/bin-cwd.js
-    ts-node-script: dist/bin-script.js
-    ts-node-transpile-only: dist/bin-transpile.js
-    ts-script: dist/bin-script-deprecated.js
-  checksum: dc461e2b9b931b00ff065530a0247f86da1d035e72a7ef6d7ed072dd8e6b236d1879f113dcc73a354d240c81b6b845445c3d32b16eeb68022ed27ab6d130c049
-  languageName: node
-  linkType: hard
-
-"ts-node@npm:^10.1.0":
-  version: 10.1.0
-  resolution: "ts-node@npm:10.1.0"
-  dependencies:
-    "@tsconfig/node10": ^1.0.7
-    "@tsconfig/node12": ^1.0.7
-    "@tsconfig/node14": ^1.0.0
-    "@tsconfig/node16": ^1.0.1
-    arg: ^4.1.0
-    create-require: ^1.1.0
-    diff: ^4.0.1
-    make-error: ^1.1.1
-    source-map-support: ^0.5.17
     yn: 3.1.1
   peerDependencies:
     "@swc/core": ">=1.2.50"
@@ -12188,7 +12201,7 @@ resolve@^2.0.0-next.3:
     ts-node-script: dist/bin-script.js
     ts-node-transpile-only: dist/bin-transpile.js
     ts-script: dist/bin-script-deprecated.js
-  checksum: d1b582dc3624061d86c2657507e21c3875919b7d108db16cde5507f2aa75b025be2e09b35ec607900eb525e429ebd14f0cf1c5f4b81292a191c0f8c7bfdf0720
+  checksum: 3c2797b6ca6a3811c04b194f9423f98db0ef218504f5246306ab2b45efe95f494a6e4b3b7f6ffdca97faee53b9a07568cb2a3fb9b7cc0f5d49e7e522646412dc
   languageName: node
   linkType: hard
 
@@ -12253,7 +12266,7 @@ resolve@^2.0.0-next.3:
     "@babel/runtime-corejs3": ^7.13.10
     "@firebase/rules-unit-testing": ^2.0.1
     "@istanbuljs/nyc-config-typescript": ^1.0.1
-    "@types/jasmine": ^3.7.1
+    "@types/jasmine": ^3.10.2
     "@types/node": ^16.0.0
     "@types/sinon": ^10.0.2
     "@typescript-eslint/eslint-plugin": ^4.27.0
@@ -12268,8 +12281,10 @@ resolve@^2.0.0-next.3:
     eslint-plugin-prettier: ^3.4.0
     eslint-plugin-promise: ^5.1.0
     eslint-plugin-react: ^7.24.0
+    firebase: ^9.5.0
     firebase-tools: ^9.23.0
     jasmine: ^3.7.0
+    jasmine-ts: ^0.4.0
     nyc: ^15.1.0
     pnp-webpack-plugin: ^1.6.4
     prettier: ^2.3.1
@@ -12280,7 +12295,7 @@ resolve@^2.0.0-next.3:
     tiddlywiki: ^5.2.0
     ts-json-schema-generator: ^0.88.0
     ts-loader: ^8.0.17
-    ts-node: ^10.0.0
+    ts-node: ^10.4.0
     typescript: ^4.3.5
     webpack: ^5.64.2
     webpack-cli: ^4.9.1
@@ -13142,6 +13157,21 @@ typescript@~4.2.2:
     y18n: ^5.0.5
     yargs-parser: ^20.2.2
   checksum: a79ce1f043021cd645de1ffebb6149541d382ba68f4a6b5eca5d2ad65af51893371bbd78e240dc3b6cf0cbb419511ba5bda715dec992e4266e6863ea49f14feb
+  languageName: node
+  linkType: hard
+
+"yargs@npm:^17.0.1":
+  version: 17.2.1
+  resolution: "yargs@npm:17.2.1"
+  dependencies:
+    cliui: ^7.0.2
+    escalade: ^3.1.1
+    get-caller-file: ^2.0.5
+    require-directory: ^2.1.1
+    string-width: ^4.2.0
+    y18n: ^5.0.5
+    yargs-parser: ^20.2.2
+  checksum: b0fafd66d1b095c36d6cc9798b160ebd348f5356ca6f3c1d23e266229341905f1686e3255b3a108534b48d74e371eb65a91d89a93d6c59e2780bff42d40b370c
   languageName: node
   linkType: hard
 

@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const { readFileSync, createWriteStream } = require('fs');
-const http = require("http");
+import {} from "jasmine";
 
-const testing = require('@firebase/rules-unit-testing');
-const { initializeTestEnvironment, assertFails, assertSucceeds } = testing;
+import { readFileSync, createWriteStream } from 'fs';
+import http from "http";
 
-const { doc, getDoc, setDoc, serverTimestamp, setLogLevel } = require('firebase/firestore');
+import { initializeTestEnvironment, assertFails, assertSucceeds, RulesTestEnvironment } from '@firebase/rules-unit-testing';
+
+import { doc, getDoc, setDoc, serverTimestamp, setLogLevel } from 'firebase/firestore';
 
 /** @type testing.RulesTestEnvironment */
-let testEnv;
+let testEnv:RulesTestEnvironment;
 
 beforeAll(async () => {
   // Silence expected rules rejections from Firestore SDK. Unexpected rejections
@@ -45,7 +46,7 @@ afterAll(async () => {
   const coverageFile = 'firestore-coverage.html';
   const fstream = createWriteStream(coverageFile);
   await new Promise((resolve, reject) => {
-    const { host, port } = testEnv.emulators.firestore;
+    const { host, port } = testEnv.emulators.firestore ?? {host: "localhost", port: 8080};
     const quotedHost = host.includes(':') ? `[${host}]` : host;
     http.get(`http://${quotedHost}:${port}/emulator/v1/projects/${testEnv.projectId}:ruleCoverage.html`, (res) => {
       res.pipe(fstream, { end: true });
@@ -86,7 +87,7 @@ describe("Public user profiles", () => {
   });
 
   it('should not allow users to read from a random collection', async () => {
-    unauthedDb = testEnv.unauthenticatedContext().firestore();
+    const unauthedDb = testEnv.unauthenticatedContext().firestore();
 
     await assertFails(getDoc(doc(unauthedDb, 'foo/bar')));
   });
