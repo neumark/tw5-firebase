@@ -1,6 +1,98 @@
 rules_version = '2';
 service cloud.firestore {
+
   match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    function hasBagPermission(wiki, bag, userId, permission) {
+      return get(/databases/$(database)/documents/tw5-firestore-wikis/$(wiki)/bags/$(bag)/permissions/$(userId)).data[permission] == true;
+    }
+
+    function tiddlerVersionFirst() {
+      return request.resource.data.version == 0;
+    }
+
+    function tiddlerVersionIncremented() {
+      return (resource.data.version + 1) == request.resource.data.version;
+    }
+
+    function tiddlerMatchesSchema() {
+      // TODO remaining fields!
+      let fields = request.resource.data.keys();
+      return (
+        // 'tags' field is optional
+        (!('tags' in fields) || request.resource.data.tags is list)
+        // 'fields' field is optional
+        && (!('fields' in fields) || request.resource.data.fields is map)
+        // text field is mandatory
+        && (request.resource.data.text is string)
+      );
+    }
+
+    // --- DENY BY DEFAULT ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- TIDDLER ACCESS: PERSONAL BAG ---
+    match /tw5-firestore-wikis/{wiki}/bags/{bagName}/tiddlers/{tiddler} {
+      // Note: delete doesn't currently participate in the version-based locking mechanism.
+      // Theoretically, this could allow users to accidentally delete tiddlers updated by others.
+      // Since changes are propagated through the subscription, this is not a major concern in practice.
+      allow create: if isSignedIn() && (bagName == 'user:' + request.auth.uid) && tiddlerMatchesSchema() && tiddlerVersionFirst();
+      allow read, delete: if isSignedIn() && (bagName == 'user:' + request.auth.uid);
+      allow update: if isSignedIn() && (bagName == 'user:' + request.auth.uid) && tiddlerMatchesSchema() && tiddlerVersionIncremented();
+    }
+    // Note: no option to set custom bag permissions on personal bag
+
+    // --- TIDDLER ACCESS: PUBLIC BAG ---
+    match /tw5-firestore-wikis/{wiki}/bags/public/tiddlers/{tiddler} {
+      allow create: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "write")) && tiddlerMatchesSchema() && tiddlerVersionFirst();
+      allow read: if true;
+      allow update: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "write")) && tiddlerMatchesSchema() && tiddlerVersionIncremented();
+      allow delete: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "write"));
+    }
+
+    // --- PERMISSION ACCESS: PUBLIC BAG --
+    match /tw5-firestore-wikis/{wiki}/bags/public/permissions/{otherUser} {
+      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "grant"))
+    }
+
+    // --- TIDDLER ACCESS: CONTENT BAG ---
+    match /tw5-firestore-wikis/{wiki}/bags/content/tiddlers/{tiddler} {
+      allow create: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "write")) && tiddlerMatchesSchema() && tiddlerVersionFirst();
+      allow read: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "read"))
+      allow update: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "write")) && tiddlerMatchesSchema() && tiddlerVersionIncremented();
+      allow delete: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "write"))
+    }
+
+    // --- PERMISSION ACCESS: CONTENT BAG --
+    match /tw5-firestore-wikis/{wiki}/bags/content/permissions/{otherUser} {
+      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "grant"))
+    }
+
+    // --- TIDDLER ACCESS: SYSTEM BAG ---
+    match /tw5-firestore-wikis/{wiki}/bags/content/tiddlers/{tiddler} {
+      allow create: if isSignedIn() && isAdmin() && tiddlerMatchesSchema() && tiddlerVersionFirst();
+      // system bag is public, so anonymous users can correctly view published content which may require
+      // javascript, css, macro tiddlers from 'system' to be loaded into the wiki
+      allow read: if true;
+      // only admin can write
+      allow update: if isSignedIn() && isAdmin() && tiddlerMatchesSchema() && tiddlerVersionIncremented();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+    // Note: no option to set custom bag permissions on system bag (hardcoded write: admin, read: anyone).
+
+    // --- TODO: delete this (leftover from unit testing demo) ---
+
     match /users/{userId} {
       allow read;
       allow create: if request.auth.uid == userId && request.resource.data.createdAt == request.time;

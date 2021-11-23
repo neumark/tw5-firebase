@@ -20,10 +20,17 @@ import http from "http";
 
 import { initializeTestEnvironment, assertFails, assertSucceeds, RulesTestEnvironment } from '@firebase/rules-unit-testing';
 
-import { doc, getDoc, setDoc, serverTimestamp, setLogLevel } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, setLogLevel  } from 'firebase/firestore';
 
 /** @type testing.RulesTestEnvironment */
+
 let testEnv:RulesTestEnvironment;
+
+const getUsers = (testEnv:RulesTestEnvironment) => ({
+  anonymousDb: testEnv.unauthenticatedContext().firestore(),
+  userDb: testEnv.authenticatedContext('alice').firestore(),
+  adminDb: testEnv.authenticatedContext('bob', {admin: true}).firestore()
+});
 
 beforeAll(async () => {
   // Silence expected rules rejections from Firestore SDK. Unexpected rejections
@@ -63,15 +70,66 @@ beforeEach(async () => {
   await testEnv.clearFirestore();
 });
 
-// If you want to define global variables for Rules Test Contexts to save some
-// typing, make sure to initialize them for *every test* to avoid cache issues.
-//
-//     let unauthedDb;
-//     beforeEach(() => {
-//       unauthedDb = testEnv.unauthenticatedContext().database();
-//     });
-//
-// Or you can just create them inline to make tests self-contained like below.
+const tiddlerPath = ({
+  wiki="testWiki",
+  bag="user:alice",
+  title="testTiddler"}:Partial<{wiki:string,bag:string,title:string}>={}) => `tw5-firestore-wikis/${wiki}/bags/${bag}/tiddlers/${title}`
+
+describe("Private bag access", () => {
+  it('only user can read their own bag', async function() {
+    // Setup: Create documents in DB for testing (bypassing Security Rules).
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf' });
+    });
+
+    // user can read
+    await assertSucceeds(getDoc(doc(getUsers(testEnv).userDb, tiddlerPath())));
+    // admin is another user, cannot read
+    await assertFails(getDoc(doc(getUsers(testEnv).adminDb, tiddlerPath())));
+    // anonymous cannot read
+    await assertFails(getDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath())));
+  });
+
+  it('only user can write their own bag', async function() {
+    // Setup: Create documents in DB for testing (bypassing Security Rules).
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf', version: 1 });
+    });
+
+
+    // admin is another user, cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), {text: "asdf2", version: 2}));
+    // anonymous cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), {text: "asdf2", version: 2}));
+    // user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 2}));
+  });
+})
+
+describe("tiddler version locking", () => {
+
+  it('updates require version to be incremented by exactly 1', async function() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf', version: 1 });
+    });
+
+    // version is the same: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 1}));
+    // version is too high: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 3}));
+    // version is correct: user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 2}));
+  });
+
+  it('create requires version to be exactly 0', async function() {
+    // version is the same: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 1}));
+    // version is too high: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2"}));
+    // version is correct: user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 0}));
+  });
+})
 
 describe("Public user profiles", () => {
   it('should let anyone read any profile', async function() {
@@ -80,10 +138,8 @@ describe("Public user profiles", () => {
       await setDoc(doc(context.firestore(), 'users/foobar'), { foo: 'bar' });
     });
 
-    const unauthedDb = testEnv.unauthenticatedContext().firestore();
-
     // Then test security rules by trying to read it using the client SDK.
-    await assertSucceeds(getDoc(doc(unauthedDb, 'users/foobar')));
+    await assertSucceeds(getDoc(doc(getUsers(testEnv).anonymousDb, 'users/foobar')));
   });
 
   it('should not allow users to read from a random collection', async () => {
