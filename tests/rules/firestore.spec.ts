@@ -1,18 +1,3 @@
-/**
- * Copyright 2021 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import {} from "jasmine";
 
 import { readFileSync, createWriteStream } from 'fs';
@@ -20,9 +5,19 @@ import http from "http";
 
 import { initializeTestEnvironment, assertFails, assertSucceeds, RulesTestEnvironment } from '@firebase/rules-unit-testing';
 
-import { doc, getDoc, setDoc, serverTimestamp, setLogLevel  } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, setLogLevel, FieldValue } from 'firebase/firestore';
 
-/** @type testing.RulesTestEnvironment */
+interface TiddlerData {
+    tags?: string[];
+    text?: string;
+    type?: string;
+    fields?: Record<string, string>;
+    created?: FieldValue;
+    creator?: string;
+    modified?: FieldValue;
+    modifier?: string;
+    version: number;
+}
 
 let testEnv:RulesTestEnvironment;
 
@@ -75,11 +70,49 @@ const tiddlerPath = ({
   bag="user:alice",
   title="testTiddler"}:Partial<{wiki:string,bag:string,title:string}>={}) => `tw5-firestore-wikis/${wiki}/bags/${bag}/tiddlers/${title}`
 
+const objFilter = <V>(fn: (k: string, v: V) => boolean, input: Record<string, V>): Record<string, V> =>
+  Object.fromEntries(Object.entries(input).filter(([k, v]) => fn(k, v)));
+
+
+const tiddlerData = ({
+  tags=undefined,
+  text="asdf",
+  type="text/vnd.tiddlywiki",
+  fields=undefined,
+  created=undefined,
+  creator=undefined,
+  modified=undefined,
+  modifier=undefined,
+  version=0}:Partial<TiddlerData>={}):TiddlerData => objFilter((k, v) => v !== undefined, {
+    tags,
+    text,
+    type,
+    fields,
+    created,
+    creator,
+    modified,
+    modifier,
+    version
+  }) as unknown as TiddlerData;
+
+const createTiddlerData = ({
+  created=serverTimestamp(),
+  creator="alice",
+  version=0,
+  ...rest
+}:Partial<TiddlerData>={}) => tiddlerData({created, creator, version, ...rest})
+
+const updateTiddlerData = ({
+  modified=serverTimestamp(),
+  modifier="alice",
+  ...rest
+}:Partial<TiddlerData>={}) => tiddlerData({modified, modifier, ...rest})
+
 describe("Private bag access", () => {
   it('only user can read their own bag', async function() {
     // Setup: Create documents in DB for testing (bypassing Security Rules).
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf' });
+      await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData());
     });
 
     // user can read
@@ -93,20 +126,50 @@ describe("Private bag access", () => {
   it('only user can write their own bag', async function() {
     // Setup: Create documents in DB for testing (bypassing Security Rules).
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf', version: 1 });
+      await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1 }));
     });
 
 
     // admin is another user, cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), {text: "asdf2", version: 2}));
+    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), updateTiddlerData({version: 2})));
     // anonymous cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), {text: "asdf2", version: 2}));
+    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), updateTiddlerData({version: 2})));
     // user can write
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 2}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
   });
 })
 
 describe("tiddler version locking", () => {
+
+  it('updates require version to be incremented by exactly 1', async function() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), { ...tiddlerData(), version: 1 });
+    });
+
+    // version is the same: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 1})));
+    // version is too high: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 3})));
+    // version is correct: user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
+  });
+
+  it('create requires version to be exactly 0', async function() {
+    // version is the same: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({text: "asdf2", version: 1})));
+    // version is too high: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({text: "asdf2", version: 100})));
+    // missing version field: cannot write
+    const noVersion:any = createTiddlerData({text: "asdf2"})
+    delete noVersion.version;
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), noVersion as TiddlerData));
+    // version is correct: user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({text: "asdf2", version: 0})));
+  });
+})
+
+/*
+describe("tiddler data checks", () => {
 
   it('updates require version to be incremented by exactly 1', async function() {
     await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -121,81 +184,6 @@ describe("tiddler version locking", () => {
     await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 2}));
   });
 
-  it('create requires version to be exactly 0', async function() {
-    // version is the same: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 1}));
-    // version is too high: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2"}));
-    // version is correct: user can write
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 0}));
-  });
+
 })
-
-describe("Public user profiles", () => {
-  it('should let anyone read any profile', async function() {
-    // Setup: Create documents in DB for testing (bypassing Security Rules).
-    await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), 'users/foobar'), { foo: 'bar' });
-    });
-
-    // Then test security rules by trying to read it using the client SDK.
-    await assertSucceeds(getDoc(doc(getUsers(testEnv).anonymousDb, 'users/foobar')));
-  });
-
-  it('should not allow users to read from a random collection', async () => {
-    const unauthedDb = testEnv.unauthenticatedContext().firestore();
-
-    await assertFails(getDoc(doc(unauthedDb, 'foo/bar')));
-  });
-
-  it("should allow ONLY signed in users to create their own profile with required `createdAt` field", async () => {
-    const aliceDb = testEnv.authenticatedContext('alice').firestore();
-
-    await assertSucceeds(setDoc(doc(aliceDb, 'users/alice'), {
-      birthday: "January 1",
-      createdAt: serverTimestamp(),
-    }));
-
-    // Signed in user with required fields for others' profile
-    await assertFails(setDoc(doc(aliceDb, 'users/bob'), {
-      birthday: "January 1",
-      createdAt: serverTimestamp(),
-    }));
-
-    // Signed in user without required fields
-    await assertFails(setDoc(doc(aliceDb, 'users/alice'), {
-      birthday: "January 1",
-    }));
-
-  });
-});
-
-describe("Chat rooms", () => {
-  it('should ONLY allow users to create a room they own', async function() {
-    const aliceDb = testEnv.authenticatedContext('alice').firestore();
-
-    await assertSucceeds(setDoc(doc(aliceDb, 'rooms/snow'), {
-      owner: "alice",
-      topic: "All Things Snowboarding",
-    }));
-
-  });
-
-  it('should not allow room creation by a non-owner', async function() {
-    const aliceDb = testEnv.authenticatedContext('alice').firestore();
-
-    await assertFails(setDoc(doc(aliceDb, 'rooms/boards'), {
-      owner: "bob",
-      topic: "All Things Snowboarding",
-    }));
-  });
-
-  it('should not allow an update that changes the room owner', async function(){
-    const aliceDb = testEnv.authenticatedContext('alice').firestore();
-
-    await assertFails(setDoc(doc(aliceDb, 'rooms/snow'), {
-      owner: "bob",
-      topic: "All Things Snowboarding",
-    }));
-  });
-});
+*/
