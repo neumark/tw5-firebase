@@ -5,17 +5,17 @@ import http from "http";
 
 import { initializeTestEnvironment, assertFails, assertSucceeds, RulesTestEnvironment } from '@firebase/rules-unit-testing';
 
-import { doc, getDoc, setDoc, serverTimestamp, setLogLevel, FieldValue } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp, setLogLevel, FieldValue } from 'firebase/firestore';
 
 interface TiddlerData {
-    tags?: string[];
-    text?: string;
-    type?: string;
-    fields?: Record<string, string>;
-    created?: FieldValue;
-    creator?: string;
-    modified?: FieldValue;
-    modifier?: string;
+    tags: string[];
+    text: string;
+    type: string;
+    fields: Record<string, string>;
+    created: FieldValue;
+    creator: string;
+    modified: FieldValue;
+    modifier: string;
     version: number;
 }
 
@@ -83,7 +83,7 @@ const tiddlerData = ({
   creator=undefined,
   modified=undefined,
   modifier=undefined,
-  version=0}:Partial<TiddlerData>={}):TiddlerData => objFilter((k, v) => v !== undefined, {
+  version=0}:Partial<TiddlerData>={}):Partial<TiddlerData> => objFilter((k, v) => v !== undefined, {
     tags,
     text,
     type,
@@ -93,7 +93,7 @@ const tiddlerData = ({
     modified,
     modifier,
     version
-  }) as unknown as TiddlerData;
+  });
 
 const createTiddlerData = ({
   created=serverTimestamp(),
@@ -139,19 +139,31 @@ describe("Private bag access", () => {
   });
 })
 
-describe("tiddler version locking", () => {
+describe("create tiddler data checks", () => {
 
-  it('updates require version to be incremented by exactly 1', async function() {
-    await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), tiddlerPath()), { ...tiddlerData(), version: 1 });
-    });
+  it('create requests must have mandatory fields set', async function() {
 
-    // version is the same: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 1})));
-    // version is too high: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 3})));
-    // version is correct: user can write
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp()}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0}));
+  });
+
+  it('create requests must not have update-specific fields set', async function() {
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, modifier: "alice"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, modified: serverTimestamp()}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
+  });
+
+  it('creator must be userid of current user', async function() {
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: serverTimestamp(), version: 0, text: "asdf"}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
+  });
+
+  it('created must be serverTimestamp()', async function() {
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: Timestamp.now(), version: 0, text: "asdf"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: "not even a timestamp", version: 0, text: "asdf"}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
   });
 
   it('create requires version to be exactly 0', async function() {
@@ -166,24 +178,52 @@ describe("tiddler version locking", () => {
     // version is correct: user can write
     await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({text: "asdf2", version: 0})));
   });
-})
 
-/*
-describe("tiddler data checks", () => {
+});
 
-  it('updates require version to be incremented by exactly 1', async function() {
-    await testEnv.withSecurityRulesDisabled(async (context) => {
-      await setDoc(doc(context.firestore(), tiddlerPath()), { text: 'asdf', version: 1 });
-    });
+describe("update tiddler data checks", () => {
 
-    // version is the same: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 1}));
-    // version is too high: cannot write
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 3}));
-    // version is correct: user can write
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {text: "asdf2", version: 2}));
+  const createDoc = async () => testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1}));
   });
 
+  it('update requests must have mandatory fields set', async function() {
+    await createDoc();
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp()}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2}));
+  });
 
-})
-*/
+  it('create requests must not have update-specific fields set', async function() {
+    await createDoc();
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, creator: "alice"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, created: serverTimestamp()}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, text: "asdf"}));
+  });
+
+  it('creator must be userid of current user', async function() {
+    await createDoc();
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({modifier: "NotAlice", version: 2})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({modifier: "alice", version: 2})));
+  });
+
+  it('created must be serverTimestamp()', async function() {
+    await createDoc();
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({modified: Timestamp.now(), version: 2})));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({ modified: "not even a timestamp" as any as Timestamp, version: 2})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({modified: serverTimestamp(), version: 2})));
+  });
+
+  it('updates require version to be incremented by exactly 1', async function() {
+    await createDoc();
+
+    // version is the same: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 1})));
+    // version is too high: cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 3})));
+    // version is correct: user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
+  });
+
+});

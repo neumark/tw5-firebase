@@ -89,6 +89,11 @@ service cloud.firestore {
       );
     }
 
+    function permissionType(validPermissions) {
+      // only $validPermissions permissions can be set and the value must be boolean.
+      return request.resource.data.keys().hasOnly(validPermissions) && request.resource.data.values().hasOnly([true, false]);
+    }
+
     // --- DENY BY DEFAULT ---
     match /{document=**} {
       allow read, write: if false;
@@ -115,7 +120,7 @@ service cloud.firestore {
 
     // --- PERMISSION ACCESS: PUBLIC BAG --
     match /tw5-firestore-wikis/{wiki}/bags/public/permissions/{otherUser} {
-      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "grant"))
+      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "grant")) && permissionType(["write", "grant"]);
     }
 
     // --- TIDDLER ACCESS: CONTENT BAG ---
@@ -128,7 +133,7 @@ service cloud.firestore {
 
     // --- PERMISSION ACCESS: CONTENT BAG --
     match /tw5-firestore-wikis/{wiki}/bags/content/permissions/{otherUser} {
-      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "grant"))
+      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "grant")) && permissionType(["read", "write", "grant"]);
     }
 
     // --- TIDDLER ACCESS: SYSTEM BAG ---
