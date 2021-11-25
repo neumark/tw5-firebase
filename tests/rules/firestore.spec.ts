@@ -5,7 +5,7 @@ import http from "http";
 
 import { initializeTestEnvironment, assertFails, assertSucceeds, RulesTestEnvironment } from '@firebase/rules-unit-testing';
 
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp, setLogLevel, FieldValue } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp, Timestamp, setLogLevel, FieldValue } from 'firebase/firestore';
 
 interface TiddlerData {
     tags: string[];
@@ -70,6 +70,36 @@ const tiddlerPath = ({
   bag="user:alice",
   title="testTiddler"}:Partial<{wiki:string,bag:string,title:string}>={}) => `tw5-firestore-wikis/${wiki}/bags/${bag}/tiddlers/${title}`
 
+const permissionsPath = ({
+  wiki="testWiki",
+  bag="content",
+  userId="alice"}:Partial<{wiki:string,bag:string,userId:string}>={}) => `tw5-firestore-wikis/${wiki}/bags/${bag}/permissions/${userId}`
+
+
+/*
+type MergeFn<I,O=I> = (input:(I|undefined))=>Partial<O>|undefined;
+
+const merge = async <I,O>(firestore: Parameters<typeof runTransaction>[0], docRef:DocumentReference<DocumentData>, mergeFn:MergeFn<I,O>) => {
+  firestore.runTransaction(async tx => {
+    const permissionDocPath = doc(firestore, docRef);
+    const originalDoc = getDoc(permissionDocPath);
+    if (ex)
+    await updateDoc(doc(context.firestore(), ), tiddlerData());
+  }));
+}
+*/
+
+const grant = async (testEnv:RulesTestEnvironment, wiki:string, bag:string, userId: string, permission: string) => await testEnv.withSecurityRulesDisabled(
+  async context => {
+    // TODO: should be in a transaction
+    const permissionDocRef = doc(context.firestore(), permissionsPath({wiki, bag, userId}));
+    const originalDoc = await getDoc(permissionDocRef as any);
+    const permObj:Record<string,boolean> = (originalDoc.exists() ? originalDoc.data()! : {}) as Record<string,boolean>;
+    permObj[permission] = true;
+    await setDoc(permissionDocRef as any, permObj);
+  });
+
+
 const objFilter = <V>(fn: (k: string, v: V) => boolean, input: Record<string, V>): Record<string, V> =>
   Object.fromEntries(Object.entries(input).filter(([k, v]) => fn(k, v)));
 
@@ -108,7 +138,7 @@ const updateTiddlerData = ({
   ...rest
 }:Partial<TiddlerData>={}) => tiddlerData({modified, modifier, ...rest})
 
-describe("Private bag access", () => {
+describe("Personal bag access", () => {
   it('only user can read their own bag', async function() {
     // Setup: Create documents in DB for testing (bypassing Security Rules).
     await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -123,12 +153,11 @@ describe("Private bag access", () => {
     await assertFails(getDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath())));
   });
 
-  it('only user can write their own bag', async function() {
+  it('only user can update docs in their own bag', async function() {
     // Setup: Create documents in DB for testing (bypassing Security Rules).
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1 }));
     });
-
 
     // admin is another user, cannot write
     await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), updateTiddlerData({version: 2})));
@@ -136,6 +165,30 @@ describe("Private bag access", () => {
     await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), updateTiddlerData({version: 2})));
     // user can write
     await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
+  });
+
+  it('only user can create docs in their own bag', async function() {
+
+    // admin is another user, cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), createTiddlerData()));
+    // anonymous cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), createTiddlerData()));
+    // user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData()));
+  });
+
+  it('only user can delete docs in their own bag', async function() {
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1 }));
+    });
+
+    // admin is another user, cannot write
+    await assertFails(deleteDoc(doc(getUsers(testEnv).adminDb, tiddlerPath())));
+    // anonymous cannot write
+    await assertFails(deleteDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath())));
+    // user can write
+    await assertSucceeds(deleteDoc(doc(getUsers(testEnv).userDb, tiddlerPath())));
   });
 })
 
@@ -177,6 +230,11 @@ describe("create tiddler data checks", () => {
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), noVersion as TiddlerData));
     // version is correct: user can write
     await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({text: "asdf2", version: 0})));
+  });
+
+  it('title must come before sentinel doc', async function() {
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath({title: "\uFFFF_last_doc1"})), createTiddlerData()));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath({title: "\uFFFF_last_do"})), createTiddlerData()));
   });
 
 });
@@ -227,3 +285,64 @@ describe("update tiddler data checks", () => {
   });
 
 });
+
+
+describe("Content bag access", () => {
+
+  const createDoc = async () => testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), tiddlerPath({bag: "content"})), createTiddlerData());
+  });
+
+  it('admin or users with read permission can read', async function() {
+    createDoc()
+    // admin can read
+    await assertSucceeds(getDoc(doc(getUsers(testEnv).adminDb, tiddlerPath({bag: "content"}))));
+    // anonymous cannot read
+    await assertFails(getDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath({bag: "content"}))));
+    // alice cannot read without permission grant
+    await assertFails(getDoc(doc(getUsers(testEnv).userDb, tiddlerPath({bag: "content"}))));
+    await grant(testEnv, "testWiki", "content", "alice", "read");
+    await assertSucceeds(getDoc(doc(getUsers(testEnv).userDb, tiddlerPath({bag: "content"}))));
+
+  });
+
+  /*
+  it('only user can update docs in their own bag', async function() {
+    // Setup: Create documents in DB for testing (bypassing Security Rules).
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1 }));
+    });
+
+    // admin is another user, cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), updateTiddlerData({version: 2})));
+    // anonymous cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), updateTiddlerData({version: 2})));
+    // user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
+  });
+
+  it('only user can create docs in their own bag', async function() {
+
+    // admin is another user, cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).adminDb, tiddlerPath()), createTiddlerData()));
+    // anonymous cannot write
+    await assertFails(setDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath()), createTiddlerData()));
+    // user can write
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData()));
+  });
+
+  it('only user can delete docs in their own bag', async function() {
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), tiddlerPath()), tiddlerData({version: 1 }));
+    });
+
+    // admin is another user, cannot write
+    await assertFails(deleteDoc(doc(getUsers(testEnv).adminDb, tiddlerPath())));
+    // anonymous cannot write
+    await assertFails(deleteDoc(doc(getUsers(testEnv).anonymousDb, tiddlerPath())));
+    // user can write
+    await assertSucceeds(deleteDoc(doc(getUsers(testEnv).userDb, tiddlerPath())));
+  });
+  */
+})
