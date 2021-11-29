@@ -11,7 +11,7 @@ interface TiddlerData {
     tags: string[];
     text: string;
     type: string;
-    fields: Record<string, string>;
+    fields: Record<string, string>
     created: FieldValue;
     creator: string;
     modified: FieldValue;
@@ -199,24 +199,25 @@ describe("create tiddler data checks", () => {
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {}));
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice"}));
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp()}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, type: "text/vnd.tiddlywiki"}));
   });
 
   it('create requests must not have update-specific fields set', async function() {
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, modifier: "alice"}));
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, modified: serverTimestamp()}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf", type: "text/vnd.tiddlywiki"}));
   });
 
   it('creator must be userid of current user', async function() {
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: serverTimestamp(), version: 0, text: "asdf"}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({creator: "NotAlice"})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({creator: "alice"})));
   });
 
   it('created must be serverTimestamp()', async function() {
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: Timestamp.now(), version: 0, text: "asdf"}));
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "NotAlice", created: "not even a timestamp", version: 0, text: "asdf"}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {creator: "alice", created: serverTimestamp(), version: 0, text: "asdf"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({created: Timestamp.now()})));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({created: "not even a timestamp" as any as FieldValue})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), createTiddlerData({created: serverTimestamp()})));
   });
 
   it('create requires version to be exactly 0', async function() {
@@ -248,16 +249,16 @@ describe("update tiddler data checks", () => {
   it('update requests must have mandatory fields set', async function() {
     await createDoc();
     await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {}));
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice"}));
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp()}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), ({version: 2, type: "text/vnd.tiddlywiki"})));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), ({version: 2, type: "text/vnd.tiddlywiki", modifier: "alice"})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
   });
 
-  it('create requests must not have update-specific fields set', async function() {
+  it('update requests must not have create-specific fields set', async function() {
     await createDoc();
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, creator: "alice"}));
-    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, created: serverTimestamp()}));
-    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), {modifier: "alice", modified: serverTimestamp(), version: 2, text: "asdf"}));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({creator: "alice", version: 2})));
+    await assertFails(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({created: serverTimestamp(), version: 2})));
+    await assertSucceeds(setDoc(doc(getUsers(testEnv).userDb, tiddlerPath()), updateTiddlerData({version: 2})));
   });
 
   it('creator must be userid of current user', async function() {
@@ -305,6 +306,11 @@ describe("Content bag access", () => {
     await assertSucceeds(getDoc(doc(getUsers(testEnv).userDb, tiddlerPath({bag: "content"}))));
 
   });
+
+  it('admin or users with read permission can read', async function() {
+    // no javascript tiddlers, no global macros, no tiddlers starting with '$' or '~'
+    throw Error('TODO, also for system, personal and public bags');
+  })
 
   /*
   it('only user can update docs in their own bag', async function() {

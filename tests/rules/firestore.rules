@@ -3,13 +3,13 @@ service cloud.firestore {
 
   // TIDDLER fields
   // tags?: list;
-  // text: string;
-  // type?: string;
+  // text?: string;
+  // type: string;
   // fields?: map;
-  // created: Timestamp;
-  // creator: string (id of current user at create time)
-  // modified: Timestamp;
-  // modifier: string (id of current user at update time)
+  // created?: Timestamp;
+  // creator?: string (id of current user at create time)
+  // modified?: Timestamp;
+  // modifier?: string (id of current user at update time)
   // version: int
 
   match /databases/{database}/documents {
@@ -48,8 +48,8 @@ service cloud.firestore {
         && (!('fields' in fields) || request.resource.data.fields is map)
         // 'text' field is optional
         && (!('text' in fields) || request.resource.data.text is string)
-        // 'type' field is optional
-        && (!('type' in fields) || request.resource.data.type is string)
+        // 'type' field is mandatory
+        && (request.resource.data.type is string)
       );
     }
 
@@ -99,6 +99,30 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(validPermissions) && request.resource.data.values().hasOnly([true, false]);
     }
 
+    function titleHasSystemPrefix(title) {
+      // tiddler title is URIencoded, system prefix is '$:/'
+      // encodeURIComponent("$:/") -> '%24%3A%2F'
+      return tiddler[0:9] == "%24%3A%2F";
+    }
+
+    function titleHasPersonalPrefix(title) {
+      // tiddler title is URIencoded, system prefix is '~/'
+      // encodeURIComponent("~/") -> '~%2F'
+      return tiddler[0:4] == "~%2F";
+    }
+
+    function tiddlerBelongsInContentBag(tiddlerTitle) {
+      // Tiddler belongs in content bag iff:
+      // 1. title does not start with system ($:/) or private prefix (~/)
+      // 2. type is in whitelist of allowed types
+      // 3. no system tags (CANNOT VERIFY IN FIRESTORE RULE), these are tags with '$:/' prefix.
+      // NOTE: allowing text/html and image/svg+xml definitely opens up script tag insertion opportunities
+      let allowed_types = ["text/x-markdown", "text/markdown", "text/css", "text/plain", "text/html", "text/vnd.tiddlywiki", "application/x-tiddler", "image/svg+xml", "image/jpeg", "image/jpg", "image/png", "image/gif"];
+      return !titleHasPersonalPrefix(tiddlerTitle)
+        && !titleHasSystemPrefix(tiddlerTitle)
+        && (request.resource.data.type in allowed_types)
+    }
+
     // --- DENY BY DEFAULT ---
     match /{document=**} {
       allow read, write: if false;
@@ -124,8 +148,10 @@ service cloud.firestore {
     }
 
     // --- PERMISSION ACCESS: PUBLIC BAG --
-    match /tw5-firestore-wikis/{wiki}/bags/public/permissions/{otherUser} {
-      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "grant")) && permissionType(["write", "grant"]);
+    match /tw5-firestore-wikis/{wiki}/bags/public/permissions/{userId} {
+      // allow user to check their own permissions
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId || hasBagPermission(wiki, "public", request.auth.uid, "grant"))
+      allow write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "public", request.auth.uid, "grant")) && permissionType(["write", "grant"]);
     }
 
     // --- TIDDLER ACCESS: CONTENT BAG ---
@@ -137,8 +163,9 @@ service cloud.firestore {
     }
 
     // --- PERMISSION ACCESS: CONTENT BAG --
-    match /tw5-firestore-wikis/{wiki}/bags/content/permissions/{otherUser} {
-      allow read, write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "grant")) && permissionType(["read", "write", "grant"]);
+    match /tw5-firestore-wikis/{wiki}/bags/content/permissions/{userId} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId || hasBagPermission(wiki, "content", request.auth.uid, "grant"))
+      allow write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "content", request.auth.uid, "grant")) && permissionType(["read", "write", "grant"]);
     }
 
     // --- TIDDLER ACCESS: SYSTEM BAG ---
@@ -151,7 +178,12 @@ service cloud.firestore {
       allow update: if isSignedIn() && isAdmin() && tiddlerUpdateFieldsValid();
       allow delete: if isSignedIn() && isAdmin();
     }
-    // Note: no option to set custom bag permissions on system bag (hardcoded write: admin, read: anyone).
+
+    // --- PERMISSION ACCESS: SYSTEM BAG --
+    match /tw5-firestore-wikis/{wiki}/bags/system/permissions/{userId} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == userId || hasBagPermission(wiki, "system", request.auth.uid, "grant"))
+      allow write: if isSignedIn() && (isAdmin() || hasBagPermission(wiki, "system", request.auth.uid, "grant")) && permissionType(["write", "grant"]);
+    }
 
   }
 }
